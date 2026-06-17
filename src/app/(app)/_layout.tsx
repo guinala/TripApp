@@ -1,13 +1,13 @@
-import { useAuthStore } from "@/store/authStore";
-import { Redirect, Stack } from "expo-router";
-import { ActivityIndicator, View } from "react-native";
+import { useAuthStore } from '@/store/authStore';
+import { Redirect, Stack } from 'expo-router';
+import { ActivityIndicator, View } from 'react-native';
 
 export default function AppLayout() {
   const { session, loading } = useAuthStore();
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: "center" }}>
+      <View style={{ flex: 1, justifyContent: 'center' }}>
         <ActivityIndicator />
       </View>
     );
@@ -19,6 +19,7 @@ export default function AppLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="trips/[id]" />
+      <Stack.Screen name="trips/new" options={{ presentation: 'modal' }} />
     </Stack>
   );
 }

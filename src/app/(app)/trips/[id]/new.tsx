@@ -1,5 +1,5 @@
 import { View, Text, Alert, StyleSheet, Platform, Pressable } from 'react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTripStore } from '@/store/tripStore';
@@ -22,7 +22,12 @@ function toISODate(d: Date): string {
 export default function NewTripScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const isEdit = !!id;
+
   const addTrip = useTripStore((s) => s.addTrip);
+  const editTrip = useTripStore((s) => s.editTrip);
+  const existing = useTripStore((s) => (id ? s.trips.find((t) => t.id === id) : undefined));
 
   const [title, setTitle] = useState('');
   const [destination, setDestination] = useState('');
@@ -30,28 +35,25 @@ export default function NewTripScreen() {
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [currency, setCurrency] = useState('EUR');
   const [budget, setBudget] = useState('');
+  const [tripType, setTripType] = useState<TripType | null>(null);
   const [picker, setPicker] = useState<'start' | 'end' | null>(null);
   const [saving, setSaving] = useState(false);
-  const [tripType, setTripType] = useState<TripType | null>(null);
 
-  const { id } = useLocalSearchParams<{ id?: string }>();
-  const isEdit = !!id;
-  const editTrip = useTripStore((s) => s.editTrip);
-
-  const nights = startDate && endDate ? differenceInCalendarDays(endDate, startDate) + 1 : 0;
+  const loaded = useRef(false);
 
   useEffect(() => {
-    if (!id) return;
-    const t = useTripStore.getState().trips.find((x) => x.id === id);
-    if (!t) return;
-    setTitle(t.title);
-    setDestination(t.destination);
-    setStartDate(parseISO(t.startDate));
-    setEndDate(parseISO(t.endDate));
-    setCurrency(t.currency);
-    setBudget(t.budget != null ? String(t.budget) : '');
-    setTripType(t.tripType);
-  }, [id]);
+    if (loaded.current || !existing) return;
+    loaded.current = true;
+    setTitle(existing.title);
+    setDestination(existing.destination);
+    setStartDate(parseISO(existing.startDate));
+    setEndDate(parseISO(existing.endDate));
+    setCurrency(existing.currency);
+    setBudget(existing.budget != null ? String(existing.budget) : '');
+    setTripType(existing.tripType);
+  }, [existing]);
+
+  const nights = startDate && endDate ? differenceInCalendarDays(endDate, startDate) + 1 : 0;
 
   const onChangeDate = (_event: unknown, selected?: Date) => {
     const which = picker;
@@ -78,19 +80,20 @@ export default function NewTripScreen() {
 
     setSaving(true);
     try {
-      await addTrip({
+      const payload = {
         title: title.trim() || `Viaje a ${destination.trim()}`,
         destination: destination.trim(),
         startDate: toISODate(startDate),
         endDate: toISODate(endDate),
         currency,
         budget: budgetNum,
-        coverImage: null,
         tripType,
-      });
+      };
+      if (isEdit && id) await editTrip(id, payload);
+      else await addTrip({ ...payload, coverImage: null });
       router.back();
     } catch (e) {
-      Alert.alert('No se pudo crear', (e as Error).message);
+      Alert.alert('No se pudo guardar', (e as Error).message);
       setSaving(false);
     }
   };
@@ -101,7 +104,7 @@ export default function NewTripScreen() {
         <Pressable style={styles.backBtn} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={20} color={colors.secondary} />
         </Pressable>
-        <Text style={styles.headerTitle}>Nuevo Viaje</Text>
+        <Text style={styles.headerTitle}>{isEdit ? 'Editar Viaje' : 'Nuevo Viaje'}</Text>
         <View style={{ width: 36 }} />
       </View>
 
@@ -150,7 +153,6 @@ export default function NewTripScreen() {
           </Text>
         )}
 
-        <Text style={styles.label}>MONEDA</Text>
         <View style={styles.row}>
           <View style={styles.col}>
             <Text style={styles.label}>MONEDA</Text>
@@ -171,16 +173,6 @@ export default function NewTripScreen() {
 
         <Text style={styles.label}>TIPO DE VIAJE</Text>
         <TripTypeSelector value={tripType} onChange={setTripType} />
-
-        <Text style={styles.label}>PRESUPUESTO (opcional)</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="0"
-          placeholderTextColor={colors.textMetadata}
-          keyboardType="decimal-pad"
-          value={budget}
-          onChangeText={setBudget}
-        />
       </ScrollView>
 
       <Pressable
@@ -188,8 +180,10 @@ export default function NewTripScreen() {
         onPress={handleSubmit}
         disabled={saving}
       >
-        <Ionicons name="add" size={20} color={colors.surfacePaper} />
-        <Text style={styles.submitLabel}>{saving ? 'Creando…' : 'Crear viaje'}</Text>
+        <Ionicons name={isEdit ? 'checkmark' : 'add'} size={20} color={colors.surfacePaper} />
+        <Text style={styles.submitLabel}>
+          {saving ? 'Guardando…' : isEdit ? 'Guardar cambios' : 'Crear viaje'}
+        </Text>
       </Pressable>
 
       {picker && (
@@ -252,8 +246,6 @@ const styles = StyleSheet.create({
     color: colors.primary,
     marginTop: 2,
   },
-  currencyText: { fontFamily: fonts.sansBold, fontSize: fontSize.sm, color: colors.textSecondary },
-  currencyTextActive: { color: colors.surfacePaper },
   submit: {
     flexDirection: 'row',
     alignItems: 'center',

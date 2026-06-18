@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { colors, fonts, radius, spacing } from '@/constants/theme';
 
 // react-native-maps no funciona en web => placeholder
-export function TripMap() {
+export default function TripMap() {
   return (
     <View style={styles.wrapper}>
       <Text style={styles.text}>Mapa no disponible en web</Text>

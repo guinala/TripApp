@@ -1,18 +1,22 @@
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, withLayoutContext } from 'expo-router';
+import { createMaterialTopTabNavigator } from 'expo-router/js-top-tabs';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { TripDetailProvider } from '@/context/TripDetailContext';
 import { useTripStore } from '@/store/tripStore';
-import { MaterialTopTabs } from './_top-tabs';
+import TripMap from '@/components/TripMap';
+import DayFilter from '@/components/DayFilter';
+
+// Navegador definido a nivel de módulo (se crea una sola vez)
+const { Navigator } = createMaterialTopTabNavigator();
+const MaterialTopTabs = withLayoutContext(Navigator);
 
 export default function TripDetailLayout() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const trip = useTripStore((s) => s.trips.find((t) => t.id === id));
 
   if (!trip) {
-    // Caso normal: vienes de la lista, así que el viaje ya está en el store.
-    // Pendiente: fallback con un getTripById(id) para deep links.
     return (
       <View
         style={{
@@ -30,6 +34,7 @@ export default function TripDetailLayout() {
   return (
     <TripDetailProvider trip={trip}>
       <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.surfaceCream }}>
+        {/* Cabecera — PLACEHOLDER hasta tener su diseño */}
         <View style={{ paddingHorizontal: spacing.s5, paddingVertical: spacing.s3 }}>
           <Pressable onPress={() => router.back()}>
             <Text
@@ -54,17 +59,29 @@ export default function TripDetailLayout() {
           </Text>
         </View>
 
-        <View
-          style={{
-            height: 180,
-            backgroundColor: colors.surfaceAlt,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Text style={{ fontFamily: fonts.sansRegular, color: colors.secondary300 }}>
-            Mapa (paso 5)
-          </Text>
+        <TripMap />
+
+        {/* Filtros de día + enlace al mapa completo */}
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <View style={{ flex: 1 }}>
+            <DayFilter />
+          </View>
+          <Pressable
+            onPress={() => {
+              /* TODO 5c: mapa completo */
+            }}
+            style={{ paddingRight: spacing.s5 }}
+          >
+            <Text
+              style={{
+                fontFamily: fonts.sansSemiBold,
+                fontSize: fontSize.label,
+                color: colors.primary,
+              }}
+            >
+              Ver mapa completo →
+            </Text>
+          </Pressable>
         </View>
 
         <MaterialTopTabs

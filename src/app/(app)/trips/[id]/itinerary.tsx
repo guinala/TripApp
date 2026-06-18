@@ -4,7 +4,9 @@ import { DaySection } from '@/components/sections/DaySection';
 import { useTripDetail } from '@/context/TripDetailContext';
 
 export default function ItineraryScreen() {
-  const { days, activities, loading, error } = useTripDetail();
+  const { days, activities, selectedDayId, loading, error } = useTripDetail();
+
+  const visibleDays = selectedDayId ? days.filter((d) => d.id === selectedDayId) : days;
 
   if (loading) {
     return (
@@ -24,7 +26,7 @@ export default function ItineraryScreen() {
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      {days.map((day) => (
+      {visibleDays.map((day) => (
         <DaySection
           key={day.id}
           day={day}

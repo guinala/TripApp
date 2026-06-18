@@ -12,6 +12,8 @@ type TripDetailValue = {
   loading: boolean;
   error: string | null;
   reload: () => Promise<void>;
+  selectedDayId: string | null; // null = "Todo"
+  setSelectedDayId: (id: string | null) => void;
 };
 
 const TripDetailContext = createContext<TripDetailValue | null>(null);
@@ -21,6 +23,7 @@ export function TripDetailProvider({ trip, children }: { trip: Trip; children: R
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedDayId, setSelectedDayId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -44,7 +47,18 @@ export function TripDetailProvider({ trip, children }: { trip: Trip; children: R
   }, [load]);
 
   return (
-    <TripDetailContext.Provider value={{ trip, days, activities, loading, error, reload: load }}>
+    <TripDetailContext.Provider
+      value={{
+        trip,
+        days,
+        activities,
+        loading,
+        error,
+        reload: load,
+        selectedDayId,
+        setSelectedDayId,
+      }}
+    >
       {children}
     </TripDetailContext.Provider>
   );

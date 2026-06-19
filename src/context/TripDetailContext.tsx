@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { listActivitiesByTrip } from '@/services/activities';
+import { ActivityInput, createActivity, listActivitiesByTrip } from '@/services/activities';
 import { ensureDays } from '@/services/days';
 import type { Activity } from '@/types/activity';
 import type { Day } from '@/types/day';
@@ -13,6 +13,7 @@ type TripDetailValue = {
   error: string | null;
   reload: () => Promise<void>;
   selectedDayId: string | null; // null = "Todo"
+  addActivity: (input: Omit<ActivityInput, 'orderIndex'>) => Promise<void>;
   setSelectedDayId: (id: string | null) => void;
 };
 
@@ -24,6 +25,15 @@ export function TripDetailProvider({ trip, children }: { trip: Trip; children: R
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedDayId, setSelectedDayId] = useState<string | null>(null);
+
+  const addActivity = useCallback(
+    async (input: Omit<ActivityInput, 'orderIndex'>) => {
+      const dayActivities = activities.filter((a) => a.dayId === input.dayId);
+      const created = await createActivity({ ...input, orderIndex: dayActivities.length });
+      setActivities((prev) => [...prev, created]);
+    },
+    [activities],
+  );
 
   const load = useCallback(async () => {
     try {
@@ -57,6 +67,7 @@ export function TripDetailProvider({ trip, children }: { trip: Trip; children: R
         reload: load,
         selectedDayId,
         setSelectedDayId,
+        addActivity,
       }}
     >
       {children}

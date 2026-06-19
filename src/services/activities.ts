@@ -4,18 +4,7 @@ import { Database } from '@/types/database';
 
 type ActivityUpdate = Database['public']['Tables']['activities']['Update'];
 
-type ActivityRow = {
-  id: string;
-  day_id: string;
-  title: string;
-  time: string | null;
-  location: { lat: number; lng: number } | null;
-  address: string | null;
-  place_id: string | null;
-  notes: string | null;
-  category: ActivityCategory;
-  order_index: number;
-};
+type ActivityRow = Database['public']['Tables']['activities']['Row'];
 
 export type ActivityInput = {
   dayId: string;
@@ -27,6 +16,8 @@ export type ActivityInput = {
   notes?: string | null;
   category: ActivityCategory;
   orderIndex?: number;
+  durationMinutes?: number | null;
+  estimatedCost?: number | null;
 };
 
 function toActivity(row: ActivityRow): Activity {
@@ -36,11 +27,13 @@ function toActivity(row: ActivityRow): Activity {
     title: row.title,
     // Postgres devuelve 'HH:mm:ss'; solo 'HH:mm'
     time: row.time ? row.time.slice(0, 5) : null,
-    location: row.location,
+    location: row.location as { lat: number; lng: number } | null,
     address: row.address,
     placeId: row.place_id,
     notes: row.notes,
-    category: row.category,
+    durationMinutes: row.duration_minutes,
+    estimatedCost: row.estimated_cost,
+    category: row.category as ActivityCategory,
     orderIndex: row.order_index,
   };
 }
@@ -53,7 +46,7 @@ export async function listActivitiesByTrip(tripId: string): Promise<Activity[]> 
     .order('order_index', { ascending: true });
 
   if (error) throw error;
-  return (data as ActivityRow[]).map(toActivity);
+  return (data ?? []).map(toActivity);
 }
 
 export async function createActivity(input: ActivityInput): Promise<Activity> {
@@ -68,6 +61,8 @@ export async function createActivity(input: ActivityInput): Promise<Activity> {
       place_id: input.placeId ?? null,
       notes: input.notes ?? null,
       category: input.category,
+      duration_minutes: input.durationMinutes ?? null,
+      estimated_cost: input.estimatedCost ?? null,
       order_index: input.orderIndex ?? 0,
     })
     .select('*')
@@ -88,6 +83,8 @@ export async function updateActivity(id: string, patch: Partial<ActivityInput>):
   if (patch.notes !== undefined) row.notes = patch.notes;
   if (patch.category !== undefined) row.category = patch.category;
   if (patch.orderIndex !== undefined) row.order_index = patch.orderIndex;
+  if (patch.durationMinutes !== undefined) row.duration_minutes = patch.durationMinutes;
+  if (patch.estimatedCost !== undefined) row.estimated_cost = patch.estimatedCost;
 
   const { data, error } = await supabase
     .from('activities')

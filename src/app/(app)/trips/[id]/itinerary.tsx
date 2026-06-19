@@ -2,38 +2,42 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-nat
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { DaySection } from '@/components/sections/DaySection';
 import { useTripDetail } from '@/context/TripDetailContext';
+import { useState } from 'react';
+import { AddActivityModal } from '@/components/AddActivityModal';
 
 export default function ItineraryScreen() {
   const { days, activities, selectedDayId, loading, error } = useTripDetail();
+  const [targetDayId, setTargetDayId] = useState<string | null>(null);
 
-  const visibleDays = selectedDayId ? days.filter((d) => d.id === selectedDayId) : days;
-
-  if (loading) {
+  if (loading)
     return (
       <View style={styles.centered}>
         <ActivityIndicator />
       </View>
     );
-  }
-
-  if (error) {
+  if (error)
     return (
       <View style={styles.centered}>
         <Text style={styles.error}>{error}</Text>
       </View>
     );
-  }
+
+  const visibleDays = selectedDayId ? days.filter((d) => d.id === selectedDayId) : days;
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      {visibleDays.map((day) => (
-        <DaySection
-          key={day.id}
-          day={day}
-          activities={activities.filter((a) => a.dayId === day.id)}
-        />
-      ))}
-    </ScrollView>
+    <View style={{ flex: 1, backgroundColor: colors.surfaceCream }}>
+      <ScrollView contentContainerStyle={styles.content}>
+        {visibleDays.map((day) => (
+          <DaySection
+            key={day.id}
+            day={day}
+            activities={activities.filter((a) => a.dayId === day.id)}
+            onAddActivity={setTargetDayId}
+          />
+        ))}
+      </ScrollView>
+      <AddActivityModal dayId={targetDayId} onClose={() => setTargetDayId(null)} />
+    </View>
   );
 }
 

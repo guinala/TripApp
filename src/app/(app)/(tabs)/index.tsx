@@ -44,7 +44,9 @@ export default function TripsScreen() {
         Mis <Text style={styles.headingAccent}>Viajes</Text>
       </Text>
 
-      <TripFilters active={filter} total={trips.length} onChange={setFilter} />
+      {trips.length > 0 && (
+        <TripFilters active={filter} total={trips.length} onChange={setFilter} />
+      )}
 
       <FlatList
         data={visibleTrips}
@@ -60,7 +62,7 @@ export default function TripsScreen() {
 
       <Pressable
         style={[styles.fab, { bottom: insets.bottom + 96 }]}
-        onPress={() => router.push('/trips/new')}
+        onPress={() => router.push('../trips/new')}
       >
         <Ionicons name="add" size={28} color={colors.surfacePaper} />
       </Pressable>

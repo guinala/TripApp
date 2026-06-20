@@ -12,6 +12,10 @@ import { es } from 'date-fns/locale';
 import { TripType } from '@/types/trip';
 import { CurrencySelect } from '@/components/CurrencySelect';
 import { TripTypeSelector } from '@/components/TripTypeSelector';
+import { DestinationInput } from '@/components/DestinationInput';
+import { useAuthStore } from '@/store/authStore';
+import { CoverImagePicker } from '@/components/CoverImagePicker';
+import { uploadTripCover } from '@/services/storage';
 
 function toISODate(d: Date): string {
   const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -24,6 +28,9 @@ export default function NewTripScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const isEdit = !!id;
+
+  const userId = useAuthStore((s) => s.session?.user.id);
+  const [pickedCover, setPickedCover] = useState<{ uri: string; base64: string } | null>(null);
 
   const addTrip = useTripStore((s) => s.addTrip);
   const editTrip = useTripStore((s) => s.editTrip);
@@ -57,7 +64,7 @@ export default function NewTripScreen() {
 
   const onChangeDate = (_event: unknown, selected?: Date) => {
     const which = picker;
-    setPicker(null); // en Android el picker se cierra solo al elegir
+    setPicker(null); // en Android el picker se cierra solo
     if (!selected || !which) return;
     if (which === 'start') {
       setStartDate(selected);
@@ -89,8 +96,20 @@ export default function NewTripScreen() {
         budget: budgetNum,
         tripType,
       };
-      if (isEdit && id) await editTrip(id, payload);
-      else await addTrip({ ...payload, coverImage: null });
+
+      let tripId = id;
+      if (isEdit && id) {
+        await editTrip(id, payload);
+      } else {
+        const created = await addTrip({ ...payload, coverImage: null });
+        tripId = created.id;
+      }
+
+      if (pickedCover && userId && tripId) {
+        const url = await uploadTripCover(userId, tripId, pickedCover.base64);
+        await editTrip(tripId, { coverImage: url });
+      }
+
       router.back();
     } catch (e) {
       Alert.alert('No se pudo guardar', (e as Error).message);
@@ -109,6 +128,8 @@ export default function NewTripScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+        <CoverImagePicker currentUrl={existing?.coverImage ?? null} onPick={setPickedCover} />
+
         <Text style={styles.label}>NOMBRE DEL VIAJE</Text>
         <TextInput
           style={styles.input}
@@ -119,13 +140,7 @@ export default function NewTripScreen() {
         />
 
         <Text style={styles.label}>DESTINO</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Ej. Tokio, Japón"
-          placeholderTextColor={colors.textMetadata}
-          value={destination}
-          onChangeText={setDestination}
-        />
+        <DestinationInput value={destination} onChange={setDestination} />
 
         <View style={styles.row}>
           <View style={styles.col}>

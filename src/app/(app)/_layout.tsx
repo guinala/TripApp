@@ -17,8 +17,6 @@ export default function AppLayout() {
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="trips/[id]" />
       <Stack.Screen name="trips/new" options={{ presentation: 'modal' }} />
     </Stack>
   );

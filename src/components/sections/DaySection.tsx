@@ -1,3 +1,7 @@
+import {
+  NestableDraggableFlatList,
+  type RenderItemParams,
+} from 'react-native-reanimated-drag-list';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -11,11 +15,18 @@ type DaySectionProps = {
   day: Day;
   activities: Activity[];
   onAddActivity: (dayId: string) => void;
+  onReorder: (dayId: string, orderedIds: string[]) => void;
 };
 
-export function DaySection({ day, activities, onAddActivity }: DaySectionProps) {
+export function DaySection({ day, activities, onAddActivity, onReorder }: DaySectionProps) {
   const label = `DÍA ${day.dayNumber} · ${format(parseISO(day.date), 'EEE d MMM', { locale: es }).toUpperCase()}`;
   const count = activities.length;
+
+  const renderItem = ({ item }: RenderItemParams<Activity>) => (
+    <View style={{ marginBottom: spacing.s2 }}>
+      <ActivityCard activity={item} />
+    </View>
+  );
 
   return (
     <View style={styles.section}>
@@ -25,15 +36,23 @@ export function DaySection({ day, activities, onAddActivity }: DaySectionProps) 
         {count} {count === 1 ? 'actividad' : 'actividades'}
       </Text>
 
-      <View style={styles.cards}>
-        {activities.map((a) => (
-          <ActivityCard key={a.id} activity={a} />
-        ))}
-        <Pressable style={styles.addBtn} onPress={() => onAddActivity(day.id)}>
-          <Ionicons name="add" size={18} color={colors.primary} />
-          <Text style={styles.addText}>Añadir actividad</Text>
-        </Pressable>
-      </View>
+      <NestableDraggableFlatList
+        data={activities}
+        keyExtractor={(a) => a.id}
+        renderItem={renderItem}
+        estimatedItemHeight={88}
+        onDragEnd={(newData) =>
+          onReorder(
+            day.id,
+            newData.map((a) => a.id),
+          )
+        }
+      />
+
+      <Pressable style={styles.addBtn} onPress={() => onAddActivity(day.id)}>
+        <Ionicons name="add" size={18} color={colors.primary} />
+        <Text style={styles.addText}>Añadir actividad</Text>
+      </Pressable>
     </View>
   );
 }

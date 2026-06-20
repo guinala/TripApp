@@ -7,40 +7,43 @@ import {
   type PlaceSuggestion,
 } from '@/services/places';
 
-export function usePlacesAutocomplete() {
+export function usePlacesAutocomplete(includedPrimaryTypes?: string[]) {
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Token vivo durante toda una búsqueda; se renueva al seleccionar
   const sessionToken = useRef<string>(Crypto.randomUUID());
+  const skipNext = useRef(false);
 
   useEffect(() => {
+    if (skipNext.current) {
+      skipNext.current = false;
+      return;
+    }
     const q = query.trim();
     if (q.length < 3) {
       setSuggestions([]);
       return;
     }
-
     setLoading(true);
     const handle = setTimeout(async () => {
       try {
-        setSuggestions(await autocompletePlaces(q, sessionToken.current));
+        setSuggestions(await autocompletePlaces(q, sessionToken.current, includedPrimaryTypes));
       } catch {
         setSuggestions([]);
       } finally {
         setLoading(false);
       }
-    }, 300); // debounce
-
-    return () => clearTimeout(handle); // cancela si sigues tecleando
-  }, [query]);
+    }, 300);
+    return () => clearTimeout(handle);
+  }, [query, includedPrimaryTypes]);
 
   const selectPlace = useCallback(async (placeId: string): Promise<PlaceDetails> => {
     const details = await getPlaceDetails(placeId, sessionToken.current);
     sessionToken.current = Crypto.randomUUID();
-    setSuggestions([]);
+    skipNext.current = true;
     setQuery(details.name);
+    setSuggestions([]);
     return details;
   }, []);
 

@@ -1,22 +1,36 @@
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useLocalSearchParams, withLayoutContext } from 'expo-router';
+import { Redirect, router, useLocalSearchParams, withLayoutContext } from 'expo-router';
 import { createMaterialTopTabNavigator } from 'expo-router/js-top-tabs';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { TripDetailProvider } from '@/context/TripDetailContext';
 import { useTripStore } from '@/store/tripStore';
 import TripMap from '@/components/TripMap';
 import DayFilter from '@/components/DayFilter';
+import { useEffect, useState } from 'react';
+import { FullMapModal } from '@/components/FullMapModal';
+import { Trip } from '@/types/trip';
+import { getTripById } from '@/services/trips';
 
-// Navegador definido a nivel de módulo (se crea una sola vez)
 const { Navigator } = createMaterialTopTabNavigator();
 const MaterialTopTabs = withLayoutContext(Navigator);
 
 export default function TripDetailLayout() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const trip = useTripStore((s) => s.trips.find((t) => t.id === id));
+  const storeTrip = useTripStore((s) => s.trips.find((t) => t.id === id));
+  const [mapOpen, setMapOpen] = useState(false);
+  const [fetched, setFetched] = useState<Trip | null | undefined>(undefined);
+  const trip = storeTrip ?? fetched ?? null;
 
-  if (!trip) {
+  useEffect(() => {
+    if (storeTrip || !id) return;
+    getTripById(id)
+      .then(setFetched)
+      .catch(() => setFetched(null));
+  }, [storeTrip, id]);
+
+  // Fallback
+  if (!storeTrip && fetched === undefined) {
     return (
       <View
         style={{
@@ -31,10 +45,28 @@ export default function TripDetailLayout() {
     );
   }
 
+  if (!trip) {
+    return <Redirect href="/(app)/(tabs)" />;
+  }
+
+  // if (!trip) {
+  //   return (
+  //     <View
+  //       style={{
+  //         flex: 1,
+  //         alignItems: 'center',
+  //         justifyContent: 'center',
+  //         backgroundColor: colors.surfaceCream,
+  //       }}
+  //     >
+  //       <ActivityIndicator />
+  //     </View>
+  //   );
+  // }
+
   return (
     <TripDetailProvider trip={trip}>
       <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.surfaceCream }}>
-        {/* Cabecera — PLACEHOLDER hasta tener su diseño */}
         <View style={{ paddingHorizontal: spacing.s5, paddingVertical: spacing.s3 }}>
           <Pressable onPress={() => router.back()}>
             <Text
@@ -61,17 +93,11 @@ export default function TripDetailLayout() {
 
         <TripMap />
 
-        {/* Filtros de día + enlace al mapa completo */}
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <View style={{ flex: 1 }}>
             <DayFilter />
           </View>
-          <Pressable
-            onPress={() => {
-              /* TODO 5c: mapa completo */
-            }}
-            style={{ paddingRight: spacing.s5 }}
-          >
+          <Pressable onPress={() => setMapOpen(true)} style={{ paddingRight: spacing.s5 }}>
             <Text
               style={{
                 fontFamily: fonts.sansSemiBold,
@@ -102,6 +128,8 @@ export default function TripDetailLayout() {
           <MaterialTopTabs.Screen name="packing" options={{ title: 'Equipaje' }} />
           <MaterialTopTabs.Screen name="diary" options={{ title: 'Diario' }} />
         </MaterialTopTabs>
+
+        <FullMapModal visible={mapOpen} onClose={() => setMapOpen(false)} />
       </SafeAreaView>
     </TripDetailProvider>
   );

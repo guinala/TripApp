@@ -17,13 +17,17 @@ export type PlaceDetails = {
 export async function autocompletePlaces(
   input: string,
   sessionToken: string,
+  includedPrimaryTypes?: string[],
 ): Promise<PlaceSuggestion[]> {
   if (!input.trim()) return [];
+
+  const body: Record<string, unknown> = { input, sessionToken };
+  if (includedPrimaryTypes?.length) body.includedPrimaryTypes = includedPrimaryTypes;
 
   const res = await fetch(`${PLACES_BASE}/places:autocomplete`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': API_KEY },
-    body: JSON.stringify({ input, sessionToken }),
+    body: JSON.stringify(body),
   });
 
   if (!res.ok) throw new Error(`Autocomplete falló: ${res.status}`);

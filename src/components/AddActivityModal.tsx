@@ -18,6 +18,7 @@ import { usePlacesAutocomplete } from '@/hooks/use-places-autocomplete';
 import { useTripDetail } from '@/context/TripDetailContext';
 import type { ActivityCategory } from '@/types/activity';
 import type { PlaceDetails } from '@/services/places';
+import { TimeField } from './TimeField';
 
 const CATEGORIES: { key: ActivityCategory; label: string; icon: keyof typeof Ionicons.glyphMap }[] =
   [
@@ -34,7 +35,7 @@ type AddActivityModalProps = {
 };
 
 export function AddActivityModal({ dayId, onClose }: AddActivityModalProps) {
-  const { days, addActivity } = useTripDetail();
+  const { days, addActivity, trip } = useTripDetail();
   const { query, setQuery, suggestions, loading, selectPlace } = usePlacesAutocomplete();
 
   const [place, setPlace] = useState<PlaceDetails | null>(null);
@@ -148,28 +149,43 @@ export function AddActivityModal({ dayId, onClose }: AddActivityModalProps) {
           <View style={styles.row}>
             <View style={styles.half}>
               <Text style={styles.label}>HORA</Text>
-              <View style={styles.fieldRow}>
-                <Ionicons name="time-outline" size={20} color={colors.secondary300} />
-                <TextInput
-                  style={styles.fieldInput}
-                  placeholder="09:30"
-                  placeholderTextColor={colors.secondary300}
-                  value={time}
-                  onChangeText={setTime}
-                />
-              </View>
+              <TimeField value={time || null} onChange={setTime} />
             </View>
             <View style={styles.half}>
-              <Text style={styles.label}>DURACIÓN (h)</Text>
-              <View style={styles.fieldRow}>
-                <TextInput
-                  style={styles.fieldInput}
-                  placeholder="2"
-                  placeholderTextColor={colors.secondary300}
-                  keyboardType="decimal-pad"
-                  value={hours}
-                  onChangeText={setHours}
-                />
+              <Text style={styles.label}>DURACIÓN</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.s2 }}>
+                {[
+                  { label: '30m', v: 30 },
+                  { label: '1h', v: 60 },
+                  { label: '1h30', v: 90 },
+                  { label: '2h', v: 120 },
+                  { label: '3h', v: 180 },
+                  { label: 'Medio día', v: 240 },
+                ].map((d) => {
+                  const active = Math.round((parseFloat(hours) || 0) * 60) === d.v;
+                  return (
+                    <Pressable
+                      key={d.v}
+                      onPress={() => setHours(String(d.v / 60))}
+                      style={[
+                        styles.cat,
+                        active && {
+                          borderColor: colors.primary,
+                          backgroundColor: `${colors.primary}1A`,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.catLabel,
+                          { color: active ? colors.primary : colors.secondary300 },
+                        ]}
+                      >
+                        {d.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
               </View>
             </View>
           </View>
@@ -210,6 +226,11 @@ export function AddActivityModal({ dayId, onClose }: AddActivityModalProps) {
               value={cost}
               onChangeText={setCost}
             />
+            {trip?.currency ? (
+              <Text style={{ fontFamily: fonts.sansSemiBold, color: colors.secondary300 }}>
+                {trip.currency}
+              </Text>
+            ) : null}
           </View>
 
           <Text style={styles.label}>NOTAS</Text>

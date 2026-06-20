@@ -5,6 +5,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useAuthStore } from '@/store/authStore';
 import { useFonts } from 'expo-font';
+import { ActivityIndicator, View } from 'react-native';
+import { colors } from '@/constants/theme';
 
 export default function RootLayout() {
   const initialize = useAuthStore((s) => s.initialize);
@@ -24,7 +26,18 @@ export default function RootLayout() {
   }, [initialize]);
 
   if (!fontsLoaded) {
-    return null; // pendiente: poner <ActivityIndicator>
+    return (
+      <View
+        style={{
+          flex: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: colors.surfaceCream,
+        }}
+      >
+        <ActivityIndicator color={colors.primary} />
+      </View>
+    );
   }
 
   return (

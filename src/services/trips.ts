@@ -16,6 +16,12 @@ export type CreateTripInput = {
 // Datos de Supabase
 type TripRow = Database['public']['Tables']['trips']['Row'];
 
+export async function getTripById(id: string): Promise<Trip | null> {
+  const { data, error } = await supabase.from('trips').select('*').eq('id', id).maybeSingle();
+  if (error) throw error;
+  return data ? mapRowToTrip(data) : null;
+}
+
 // DB -> dominio
 function mapRowToTrip(row: TripRow): Trip {
   return {

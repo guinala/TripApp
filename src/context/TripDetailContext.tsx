@@ -1,9 +1,15 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { ActivityInput, createActivity, listActivitiesByTrip } from '@/services/activities';
+import {
+  ActivityInput,
+  createActivity,
+  listActivitiesByTrip,
+  reorderActivities,
+} from '@/services/activities';
 import { ensureDays } from '@/services/days';
 import type { Activity } from '@/types/activity';
 import type { Day } from '@/types/day';
 import type { Trip } from '@/types/trip';
+import { reload } from 'expo-router/build/global-state/router';
 
 type TripDetailValue = {
   trip: Trip;
@@ -15,6 +21,7 @@ type TripDetailValue = {
   selectedDayId: string | null; // null = "Todo"
   addActivity: (input: Omit<ActivityInput, 'orderIndex'>) => Promise<void>;
   setSelectedDayId: (id: string | null) => void;
+  reorder: (dayId: string, orderedIds: string[]) => Promise<void>;
 };
 
 const TripDetailContext = createContext<TripDetailValue | null>(null);
@@ -51,6 +58,19 @@ export function TripDetailProvider({ trip, children }: { trip: Trip; children: R
       setLoading(false);
     }
   }, [trip]);
+
+  const reorder = useCallback(async (dayId: string, orderedIds: string[]) => {
+    setActivities((prev) => {
+      const byId = new Map(prev.map((a) => [a.id, a]));
+      const reordered = orderedIds.map((id, i) => ({ ...byId.get(id)!, orderIndex: i }));
+      return [...prev.filter((a) => a.dayId !== dayId), ...reordered];
+    });
+    try {
+      await reorderActivities(orderedIds);
+    } catch {
+      reload(); // volver al estado real
+    }
+  }, []);
 
   useEffect(() => {
     load();

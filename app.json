@@ -11,6 +11,11 @@
       "icon": "./assets/expo.icon"
     },
     "android": {
+      "config": {
+        "googleMaps": {
+          "apiKey": "TU_KEY_ANDROID"
+        }
+      },
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -42,6 +47,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "cd268fbe-fc9b-49c2-8879-8a202b22e277"
+      }
     }
   }
 }

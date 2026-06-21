@@ -3,10 +3,13 @@ import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import * as SplashScreen from 'expo-splash-screen';
 import { useAuthStore } from '@/store/authStore';
 import { useFonts } from 'expo-font';
 import { ActivityIndicator, View } from 'react-native';
 import { colors } from '@/constants/theme';
+
+SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const initialize = useAuthStore((s) => s.initialize);
@@ -24,6 +27,10 @@ export default function RootLayout() {
   useEffect(() => {
     initialize();
   }, [initialize]);
+
+  useEffect(() => {
+    if (fontsLoaded) SplashScreen.hideAsync();
+  }, [fontsLoaded]);
 
   if (!fontsLoaded) {
     return (
@@ -47,7 +54,7 @@ export default function RootLayout() {
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(app)" />
         </Stack>
-        <StatusBar style="auto" />
+        <StatusBar style="light" />
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

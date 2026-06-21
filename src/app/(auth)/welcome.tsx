@@ -2,15 +2,9 @@ import { ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { onboarding } from '@/constants/theme';
 
 const BG = require('../../assets/images/welcome-bg.jpg');
-
-// Colores propios del onboarding. Candidatos a vivir en theme.ts (ver nota al final).
-const OVERLAY_TOP = 'rgba(226, 109, 79, 0.67)';
-const OVERLAY_BOTTOM = 'rgba(113, 37, 37, 0.9)';
-const ACCENT_GOLD = '#FFDB8F';
-const MUTED = '#D0C8C8';
-const BRAND = '#FF5A14';
 
 export default function WelcomeScreen() {
   const router = useRouter();
@@ -18,7 +12,7 @@ export default function WelcomeScreen() {
   return (
     <ImageBackground source={BG} resizeMode="cover" style={styles.bg}>
       <LinearGradient
-        colors={[OVERLAY_TOP, OVERLAY_BOTTOM]}
+        colors={[onboarding.overlayTop, onboarding.overlayBottom]}
         locations={[0, 0.894]}
         style={StyleSheet.absoluteFill}
       />
@@ -75,12 +69,12 @@ const styles = StyleSheet.create({
     lineHeight: 56,
     color: '#FFFFFF',
   },
-  titleAccent: { color: ACCENT_GOLD },
+  titleAccent: { color: onboarding.gold },
   subtitle: {
     fontFamily: 'PlusJakartaSans-SemiBold',
     fontSize: 15,
     lineHeight: 20,
-    color: MUTED,
+    color: onboarding.muted,
   },
   spacer: { flex: 1 },
   buttons: { alignItems: 'center', gap: 15, paddingVertical: 30 },
@@ -94,11 +88,11 @@ const styles = StyleSheet.create({
   startText: {
     fontFamily: 'PlusJakartaSans-Bold',
     fontSize: 16,
-    color: BRAND,
+    color: onboarding.cta,
   },
   loginText: {
     fontFamily: 'PlusJakartaSans-Bold',
     fontSize: 16,
-    color: MUTED,
+    color: onboarding.muted,
   },
 });

@@ -1,153 +1,229 @@
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Link } from 'expo-router';
-import { colors, fonts, fontSize, radius, spacing } from '@/constants/theme';
+import { useRouter } from 'expo-router';
+import { ArrowLeft } from 'lucide-react-native';
+import { colors, fontSize, fonts, radius } from '@/constants/theme';
+import AuthTextField from '@/components/auth/AuthTextField';
+import { PasswordStrengthMeter } from '@/components/auth/PasswordStrengthMeter';
+import { SelectField, SelectOption } from '@/components/ui/SelectField';
 import { useAuthStore } from '@/store/authStore';
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Candidatos a vivir en un módulo compartido (Perfil/Ajustes los reusará)
+const CURRENCIES: SelectOption[] = [
+  { label: 'EUR (€)', value: 'EUR' },
+  { label: 'USD ($)', value: 'USD' },
+  { label: 'GBP (£)', value: 'GBP' },
+  { label: 'MXN ($)', value: 'MXN' },
+  { label: 'ARS ($)', value: 'ARS' },
+  { label: 'JPY (¥)', value: 'JPY' },
+];
+
+const LANGUAGES: SelectOption[] = [
+  { label: 'Español', value: 'es' },
+  { label: 'English', value: 'en' },
+  { label: 'Français', value: 'fr' },
+  { label: 'Português', value: 'pt' },
+];
 
 export default function RegisterScreen() {
+  const router = useRouter();
   const signUp = useAuthStore((s) => s.signUp);
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirm, setConfirm] = useState('');
+  const [currency, setCurrency] = useState('EUR');
+  const [language, setLanguage] = useState('es');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
+  const [emailTaken, setEmailTaken] = useState(false);
 
-  const validate = (): string | null => {
-    if (!name.trim()) return 'Introduce tu nombre';
-    if (!EMAIL_RE.test(email.trim())) return 'Email no válido';
-    if (password.length < 8) return 'La contraseña debe tener al menos 8 caracteres';
-    if (password !== confirm) return 'Las contraseñas no coinciden';
-    return null;
-  };
+  const goBack = () => (router.canGoBack() ? router.back() : router.replace('./welcome'));
 
-  const onSubmit = async () => {
+  async function handleRegister() {
     setError(null);
-    setInfo(null);
-    const v = validate();
-    if (v) return setError(v);
-    setLoading(true);
+    setEmailTaken(false);
+
+    const cleanName = name.trim();
+    const cleanEmail = email.trim();
+
+    if (!cleanName) return setError('Escribe tu nombre.');
+    if (!/^\S+@\S+\.\S+$/.test(cleanEmail)) return setError('Introduce un email válido.');
+    if (password.length < 6) return setError('La contraseña debe tener al menos 6 caracteres.');
+
     try {
-      await signUp(email.trim(), password, name.trim());
-      // Con confirmación de email desactivada, el gate te mete directo en (app).
-      // Con ella activada, no hay sesión aún:
-      setInfo('Te hemos enviado un correo para confirmar tu cuenta.');
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo crear la cuenta.');
+      setLoading(true);
+      await signUp({ email: cleanEmail, password, displayName: cleanName, currency, language });
+      // Si NO tienes confirmación de email activada en Supabase, aquí ya hay
+      // sesión y el gate de (auth)/_layout redirige solo. Si la tienes activada,
+      // no habrá sesión todavía (ver nota abajo).
+    } catch (e: any) {
+      const m = e?.message ?? '';
+      if (/already.*regist/i.test(m)) setEmailTaken(true);
+      else if (/Password should be at least/i.test(m))
+        setError('La contraseña debe tener al menos 6 caracteres.');
+      else setError('No se pudo crear la cuenta. Inténtalo de nuevo.');
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   return (
     <SafeAreaView style={styles.screen}>
-      <View style={styles.content}>
-        <Text style={styles.title}>Crear cuenta</Text>
-
-        <TextInput
-          style={styles.input}
-          placeholder="Nombre"
-          placeholderTextColor={colors.secondary300}
-          value={name}
-          onChangeText={setName}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          placeholderTextColor={colors.secondary300}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          value={email}
-          onChangeText={setEmail}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Contraseña"
-          placeholderTextColor={colors.secondary300}
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Confirmar contraseña"
-          placeholderTextColor={colors.secondary300}
-          secureTextEntry
-          value={confirm}
-          onChangeText={setConfirm}
-        />
-
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-        {info ? <Text style={styles.info}>{info}</Text> : null}
-
-        <Pressable
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={onSubmit}
-          disabled={loading}
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          {loading ? (
-            <ActivityIndicator color={colors.white} />
-          ) : (
-            <Text style={styles.buttonText}>Crear cuenta</Text>
-          )}
-        </Pressable>
+          <TouchableOpacity style={styles.backButton} onPress={goBack} activeOpacity={0.7}>
+            <ArrowLeft size={22} color={colors.textPrimary} />
+          </TouchableOpacity>
 
-        <Link href="/login" style={styles.link}>
-          ¿Ya tienes cuenta? Inicia sesión
-        </Link>
-      </View>
+          <View style={styles.header}>
+            <Text style={styles.title}>
+              Crea <Text style={styles.titleAccent}>tu cuenta</Text>
+            </Text>
+            <Text style={styles.subtitle}>Solo será un minuto</Text>
+          </View>
+
+          <View style={styles.fields}>
+            <AuthTextField
+              label="Nombre"
+              value={name}
+              onChangeText={setName}
+              placeholder="Tu nombre"
+              autoCapitalize="words"
+              autoComplete="name"
+            />
+
+            <View>
+              <AuthTextField
+                label="Email"
+                value={email}
+                onChangeText={(t) => {
+                  setEmail(t);
+                  if (emailTaken) setEmailTaken(false);
+                }}
+                placeholder="tu@email.com"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="email"
+              />
+              {emailTaken ? (
+                <Text style={styles.fieldError}>Este e-mail ya está registrado</Text>
+              ) : null}
+            </View>
+
+            <View>
+              <AuthTextField
+                label="Contraseña"
+                value={password}
+                onChangeText={setPassword}
+                placeholder="••••••••"
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                autoComplete="password-new"
+                rightSlot={
+                  <TouchableOpacity onPress={() => setShowPassword((s) => !s)} hitSlop={8}>
+                    <Text style={styles.showText}>{showPassword ? 'Ocultar' : 'Mostrar'}</Text>
+                  </TouchableOpacity>
+                }
+              />
+              <PasswordStrengthMeter password={password} />
+            </View>
+
+            <SelectField
+              label="Divisa"
+              value={currency}
+              options={CURRENCIES}
+              onChange={setCurrency}
+            />
+
+            <SelectField
+              label="Idioma"
+              value={language}
+              options={LANGUAGES}
+              onChange={setLanguage}
+            />
+
+            {error ? <Text style={styles.error}>{error}</Text> : null}
+          </View>
+
+          <TouchableOpacity
+            style={[styles.primaryButton, loading && styles.buttonDisabled]}
+            onPress={handleRegister}
+            activeOpacity={0.85}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color={colors.white} />
+            ) : (
+              <Text style={styles.primaryText}>Empezar</Text>
+            )}
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-// Pega aquí el mismo `const styles = StyleSheet.create({ ... })` de login.tsx
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.surfaceCream },
-  content: { flex: 1, justifyContent: 'center', paddingHorizontal: spacing.s7, gap: spacing.s4 },
+  flex: { flex: 1 },
+  scroll: { flexGrow: 1, paddingHorizontal: 25, paddingTop: 8, paddingBottom: 32 },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surfaceAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  header: { marginTop: 16, gap: 6 },
   title: {
     fontFamily: fonts.serifItalic,
-    fontSize: fontSize.textSm,
-    color: colors.secondary,
-    textAlign: 'center',
+    fontSize: fontSize.textMd,
+    color: colors.textPrimary,
   },
+  titleAccent: { color: colors.primary },
   subtitle: {
-    fontFamily: fonts.sansRegular,
-    fontSize: fontSize.body,
-    color: colors.secondary300,
-    textAlign: 'center',
-    marginBottom: spacing.s4,
+    fontFamily: fonts.sansSemiBold,
+    fontSize: fontSize.base,
+    color: colors.textSecondary,
   },
-  input: {
-    backgroundColor: colors.surfacePaper,
-    borderWidth: 1,
-    borderColor: colors.secondary100,
-    borderRadius: radius.lg,
-    paddingHorizontal: spacing.s5,
-    paddingVertical: spacing.s4,
-    fontFamily: fonts.sansRegular,
-    fontSize: fontSize.input,
-    color: colors.secondary,
+  fields: { marginTop: 24, gap: 18 },
+  showText: { fontFamily: fonts.sansSemiBold, fontSize: fontSize.sm, color: colors.primary },
+  fieldError: {
+    fontFamily: fonts.sansMedium,
+    fontSize: fontSize.sm,
+    color: colors.danger,
+    marginTop: 8,
   },
-  error: { fontFamily: fonts.sansRegular, fontSize: fontSize.sm, color: colors.danger },
-  info: { fontFamily: fonts.sansRegular, fontSize: fontSize.sm, color: colors.success },
-  button: {
+  error: { fontFamily: fonts.sansMedium, fontSize: fontSize.sm, color: colors.danger },
+  primaryButton: {
     backgroundColor: colors.primary,
-    borderRadius: radius.lg,
-    paddingVertical: spacing.s5,
+    borderRadius: radius.md,
+    paddingVertical: 16,
     alignItems: 'center',
-    marginTop: spacing.s2,
+    justifyContent: 'center',
+    marginTop: 28,
   },
   buttonDisabled: { opacity: 0.6 },
-  buttonText: { fontFamily: fonts.sansBold, fontSize: fontSize.input, color: colors.white },
-  link: {
-    fontFamily: fonts.sansSemiBold,
-    fontSize: fontSize.sm,
-    color: colors.primary,
-    textAlign: 'center',
-    marginTop: spacing.s3,
-  },
+  primaryText: { fontFamily: fonts.sansBold, fontSize: fontSize.base, color: colors.white },
 });

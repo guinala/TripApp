@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/services/supabase';
+import * as WebBrowser from 'expo-web-browser';
+import * as QueryParams from 'expo-auth-session/build/QueryParams';
+import * as Linking from 'expo-linking';
 
 type AuthState = {
   session: Session | null;
@@ -8,8 +11,16 @@ type AuthState = {
   loading: boolean;
   initialize: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, displayName: string) => Promise<void>;
+  signUp: (params: {
+    email: string;
+    password: string;
+    displayName: string;
+    currency: string;
+    language: string;
+  }) => Promise<void>;
   signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
 };
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -33,16 +44,56 @@ export const useAuthStore = create<AuthState>((set) => ({
     if (error) throw error;
   },
 
-  signUp: async (email, password, displayName) => {
+  signInWithGoogle: async () => {
+    const redirectTo = Linking.createURL('/');
+
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo, skipBrowserRedirect: true },
+    });
+    if (error) throw error;
+
+    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+    if (result.type !== 'success') return;
+
+    const { params } = QueryParams.getQueryParams(result.url);
+    if (params.access_token) {
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: params.access_token,
+        refresh_token: params.refresh_token,
+      });
+      if (sessionError) throw sessionError;
+    }
+  },
+
+  signUp: async (params: {
+    email: string;
+    password: string;
+    displayName: string;
+    currency: string;
+    language: string;
+  }) => {
     const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { display_name: displayName } },
+      email: params.email,
+      password: params.password,
+      options: {
+        data: {
+          display_name: params.displayName,
+          default_currency: params.currency,
+          preferred_language: params.language,
+        },
+      },
     });
     if (error) throw error;
   },
 
   signOut: async () => {
     await supabase.auth.signOut();
+  },
+
+  resetPassword: async (email: string) => {
+    const redirectTo = Linking.createURL('/reset-password');
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
+    if (error) throw error;
   },
 }));

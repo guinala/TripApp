@@ -83,3 +83,11 @@ export const fonts = {
   serif: 'InstrumentSerif-Regular',
   serifItalic: 'InstrumentSerif-Italic',
 } as const;
+
+export const onboarding = {
+  overlayTop: 'rgba(226, 109, 79, 0.67)',
+  overlayBottom: 'rgba(113, 37, 37, 0.9)',
+  gold: '#ffdb8f',
+  muted: '#d0c8c8',
+  cta: '#ff5a14',
+} as const;

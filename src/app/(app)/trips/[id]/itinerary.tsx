@@ -1,4 +1,4 @@
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { DaySection } from '@/components/sections/DaySection';
 import { useTripDetail } from '@/context/TripDetailContext';

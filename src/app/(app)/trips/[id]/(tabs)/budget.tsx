@@ -12,6 +12,7 @@ import { DayBarChart } from '@/components/cards/DayBarChart';
 import { RecentExpenses } from '@/components/budget/RecentExpenses';
 import type { Expense } from '@/types/expense';
 import { Fab } from '@/components/Fab';
+import { useBudgetAlert } from '@/hooks/use-budget-alert';
 
 const EMPTY: Expense[] = [];
 
@@ -36,6 +37,7 @@ export default function BudgetScreen() {
     trip?.startDate,
     trip?.endDate,
   );
+  useBudgetAlert(id, summary.percentage);
 
   const handleAddExpense = () => router.push(`/trips/${id}/expenses/new`);
   const handleViewAll = () => router.push(`./trips/${id}/expenses`);

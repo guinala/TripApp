@@ -88,6 +88,7 @@ export function TripDetailProvider({ trip, children }: { trip: Trip; children: R
         selectedDayId,
         setSelectedDayId,
         addActivity,
+        reorder,
       }}
     >
       {children}

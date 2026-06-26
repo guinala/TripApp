@@ -56,11 +56,13 @@ export const useExpenseStore = create<ExpenseState>((set, get) => ({
     const optimistic: Expense = {
       id: tempId,
       tripId,
+      dayId: input.dayId ?? null,
       amount: input.amount,
       currency: input.currency,
       category: input.category,
       description: input.description ?? null,
       date: input.date,
+      receiptPath: input.receiptPath ?? null,
       createdAt: new Date().toISOString(),
     };
 

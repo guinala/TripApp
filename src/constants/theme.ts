@@ -1,3 +1,5 @@
+import { ExpenseCategory } from '@/types/expense';
+
 export const colors = {
   // Primary
   primary: '#e26d4f',
@@ -28,16 +30,26 @@ export const colors = {
   danger: '#c84a2e',
   // Misc
   white: '#ffffff',
+
+  categoryColors: {
+    visit: '#e26d4f',
+    restaurant: '#c99422',
+    transport: '#1b2d4f',
+    hotel: '#2d7a55',
+    entertainment: '#8b5cb8',
+    others: '#6b7a99',
+  },
 } as const;
 
-export const categoryColors = {
-  visit: '#e26d4f',
-  restaurant: '#c99422',
-  transport: '#1b2d4f',
-  hotel: '#2d7a55',
-  entertainment: '#8b5cb8',
-  others: '#6b7a99',
-} as const;
+export const expenseCategoryColors: Record<ExpenseCategory, string> = {
+  transport: colors.categoryColors.transport,
+  food: colors.categoryColors.restaurant,
+  stay: colors.categoryColors.hotel,
+  leisure: colors.categoryColors.entertainment,
+  other: colors.categoryColors.others,
+};
+
+export const remainingColor = colors.textMetadata;
 
 export const fontSize = {
   nano: 10,

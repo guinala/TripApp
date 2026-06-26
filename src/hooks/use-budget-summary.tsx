@@ -7,17 +7,25 @@ const EMPTY: Expense[] = [];
 
 export type BudgetStatus = 'safe' | 'caution' | 'warning' | 'over';
 
-export interface CategoryBreakdown {
+export type DonutSegmentKey = ExpenseCategory | 'remaining';
+
+export type DonutSegment = {
+  key: DonutSegmentKey;
+  amount: number;
+  percentage: number;
+};
+
+export type CategoryBreakdown = {
   category: ExpenseCategory;
   amount: number;
-}
+};
 
-export interface DayBreakdown {
+export type DayBreakdown = {
   date: string; // YYYY-MM-DD
   amount: number;
-}
+};
 
-export interface BudgetSummary {
+export type BudgetSummary = {
   loading: boolean;
   spent: number | null;
   byCategory: CategoryBreakdown[];
@@ -25,7 +33,7 @@ export interface BudgetSummary {
   remaining: number | null;
   percentage: number | null;
   status: BudgetStatus;
-}
+};
 
 export function getBudgetStatus(percentage: number | null): BudgetStatus {
   if (percentage === null) return 'safe';
@@ -33,6 +41,16 @@ export function getBudgetStatus(percentage: number | null): BudgetStatus {
   if (percentage > 80) return 'warning';
   if (percentage > 60) return 'caution';
   return 'safe';
+}
+
+function elapsedTripDays(start?: string, end?: string): number | null {
+  if (!start) return null;
+  const MS = 86_400_000;
+  const startMs = new Date(start).getTime();
+  const endMs = end ? new Date(end).getTime() : Date.now();
+  const nowMs = Date.now();
+  const clamped = Math.min(Math.max(nowMs, startMs), endMs);
+  return Math.max(1, Math.floor((clamped - startMs) / MS) + 1);
 }
 
 async function breakdownBy<K extends string>(
@@ -60,6 +78,8 @@ export function useBudgetSummary(
   tripId: string,
   budget: number,
   tripCurrency: string,
+  tripStart?: string,
+  tripEnd?: string,
 ): BudgetSummary {
   const expenses = useExpenseStore((s) => s.byTrip[tripId] ?? EMPTY);
 
@@ -91,7 +111,11 @@ export function useBudgetSummary(
         if (cancelled) return;
 
         setSpent(total);
-        setByCategory(cats.map((c) => ({ category: c.key as ExpenseCategory, amount: c.amount })));
+        setByCategory(
+          cats
+            .map((c) => ({ category: c.key as ExpenseCategory, amount: c.amount }))
+            .sort((a, b) => b.amount - a.amount),
+        );
         setByDay(
           days
             .map((d) => ({ date: d.key, amount: d.amount }))
@@ -111,14 +135,42 @@ export function useBudgetSummary(
     const percentage = spent !== null && budget > 0 ? (spent / budget) * 100 : null;
     const remaining = spent !== null ? budget - spent : null;
 
+    const days = elapsedTripDays(tripStart, tripEnd) ?? (byDay.length || 1);
+    const dailyAverage = spent !== null ? spent / days : null;
+
+    const donutSegments: DonutSegment[] = [];
+    if (spent !== null) {
+      const overBudget = spent > budget;
+      const denom = overBudget ? spent : budget;
+      if (denom > 0) {
+        for (const c of byCategory) {
+          donutSegments.push({
+            key: c.category,
+            amount: c.amount,
+            percentage: (c.amount / denom) * 100,
+          });
+        }
+        if (!overBudget) {
+          const rem = budget - spent;
+          donutSegments.push({
+            key: 'remaining',
+            amount: rem,
+            percentage: (rem / denom) * 100,
+          });
+        }
+      }
+    }
+
     return {
       loading,
       spent,
-      byCategory,
-      byDay,
       remaining,
       percentage,
       status: getBudgetStatus(percentage),
+      dailyAverage,
+      byCategory,
+      donutSegments,
+      byDay,
     };
-  }, [loading, spent, byCategory, byDay, budget]);
+  }, [loading, spent, byCategory, byDay, budget, tripStart, tripEnd]);
 }

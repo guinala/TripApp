@@ -25,15 +25,17 @@ export type DayBreakdown = {
   amount: number;
 };
 
-export type BudgetSummary = {
+export interface BudgetSummary {
   loading: boolean;
   spent: number | null;
-  byCategory: CategoryBreakdown[];
-  byDay: DayBreakdown[];
   remaining: number | null;
   percentage: number | null;
   status: BudgetStatus;
-};
+  dailyAverage: number | null;
+  byCategory: CategoryBreakdown[];
+  donutSegments: DonutSegment[];
+  byDay: DayBreakdown[];
+}
 
 export function getBudgetStatus(percentage: number | null): BudgetStatus {
   if (percentage === null) return 'safe';

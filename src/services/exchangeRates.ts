@@ -3,7 +3,13 @@ type CacheEntry = {
   timestamp: number;
 };
 
+type HistoricalEntry = {
+  rate: number;
+  rateDate: string;
+};
+
 const cache = new Map<string, CacheEntry>();
+const historicalCache = new Map<string, HistoricalEntry>();
 const TTL_MS = 60 * 60 * 1000; // 1 hora
 
 export async function getRate(from: string, to: string): Promise<number> {
@@ -33,5 +39,34 @@ export async function getRate(from: string, to: string): Promise<number> {
   } catch (err) {
     console.warn(`[exchangeRates] Falló getRate(${from}, ${to}):`, err);
     return 1; // fallback: se muestra el importe sin convertir
+  }
+}
+
+export async function getRateOn(
+  from: string,
+  to: string,
+  date: string, // YYYY-MM-DD
+): Promise<HistoricalEntry> {
+  if (from === to) return { rate: 1, rateDate: date };
+
+  const key = `${from}->${to}@${date}`;
+  const cached = historicalCache.get(key);
+  if (cached) return cached;
+
+  try {
+    const url = `https://api.frankfurter.dev/v1/${date}?base=${from}&symbols=${to}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const json = await res.json();
+    const rate = json?.rates?.[to];
+    if (typeof rate !== 'number') throw new Error(`Sin tipo ${from}->${to} en ${date}`);
+
+    const entry: HistoricalEntry = { rate, rateDate: json.date ?? date };
+    historicalCache.set(key, entry);
+    return entry;
+  } catch (err) {
+    console.warn(`[exchangeRates] getRateOn(${from}, ${to}, ${date}) falló:`, err);
+    return { rate: 1, rateDate: date };
   }
 }

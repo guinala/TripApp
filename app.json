@@ -23,7 +23,7 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.TripApp"
+      "package": "com.anonymous.TripMate"
     },
     "web": {
       "output": "static",
@@ -53,7 +53,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "cd268fbe-fc9b-49c2-8879-8a202b22e277"
+        "projectId": "1d166c3b-84fe-4444-bcb7-61fc1bafab67"
       }
     }
   }

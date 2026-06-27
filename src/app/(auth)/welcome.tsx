@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { onboarding } from '@/constants/theme';
 
-const BG = require('../../assets/images/welcome-bg.jpg');
+const BG = require('../../../assets/images/welcome-bg.jpg');
 
 export default function WelcomeScreen() {
   const router = useRouter();

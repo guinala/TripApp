@@ -10,6 +10,7 @@ import { colors, fonts, fontSize } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import TripsEmptyState from '@/components/TripsEmptyState';
 import { SwipeableTripCard } from '@/components/SwipeableTripCard';
+import { Fab } from '@/components/Fab';
 
 export default function TripsScreen() {
   const router = useRouter();
@@ -60,12 +61,7 @@ export default function TripsScreen() {
         ListEmptyComponent={loading ? null : <TripsEmptyState />}
       />
 
-      <Pressable
-        style={[styles.fab, { bottom: insets.bottom + 96 }]}
-        onPress={() => router.push('../trips/new')}
-      >
-        <Ionicons name="add" size={28} color={colors.surfacePaper} />
-      </Pressable>
+      <Fab onPress={() => router.push('../trips/new')} accessibilityLabel="Nuevo viaje" />
     </View>
   );
 }

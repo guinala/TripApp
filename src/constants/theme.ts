@@ -1,3 +1,5 @@
+import { ExpenseCategory } from '@/types/expense';
+
 export const colors = {
   // Primary
   primary: '#e26d4f',
@@ -38,6 +40,16 @@ export const categoryColors = {
   entertainment: '#8b5cb8',
   others: '#6b7a99',
 } as const;
+
+export const expenseCategoryColors: Record<ExpenseCategory, string> = {
+  transport: categoryColors.transport,
+  food: categoryColors.restaurant,
+  stay: categoryColors.hotel,
+  leisure: categoryColors.entertainment,
+  other: categoryColors.others,
+};
+
+export const remainingColor = colors.textMetadata;
 
 export const fontSize = {
   nano: 10,

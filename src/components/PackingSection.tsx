@@ -10,6 +10,9 @@ type PackingSectionProps = {
   onToggle: (id: string, next: boolean) => void;
   onAddItem: (name: string) => void;
   onLongPressItem?: (item: PackingItem) => void;
+  editingId?: string | null;
+  onSubmitEdit?: (id: string, name: string) => void;
+  onCancelEdit?: () => void;
 };
 
 function PackingSectionBase({
@@ -18,19 +21,31 @@ function PackingSectionBase({
   onToggle,
   onAddItem,
   onLongPressItem,
+  editingId,
+  onSubmitEdit,
+  onCancelEdit,
 }: PackingSectionProps) {
   const [adding, setAdding] = useState(false);
-  const [draft, setDraft] = useState('');
+  const [value, setValue] = useState('');
   const done = items.filter((i) => i.checked).length;
 
+  const close = () => {
+    setAdding(false);
+    setValue('');
+  };
+
   const submit = () => {
-    const name = draft.trim();
-    if (!name) {
-      setAdding(false);
-      return;
+    const name = value.trim();
+    if (name) {
+      onAddItem(name);
+      setValue('');
     }
-    onAddItem(name);
-    setDraft(''); // se queda abierto para encadenar varios
+  };
+
+  const blur = () => {
+    const name = value.trim();
+    if (name) onAddItem(name);
+    close();
   };
 
   return (
@@ -48,27 +63,28 @@ function PackingSectionBase({
             key={item.id}
             name={item.name}
             checked={item.checked}
+            editing={editingId === item.id}
             onToggle={() => onToggle(item.id, !item.checked)}
             onLongPress={onLongPressItem ? () => onLongPressItem(item) : undefined}
+            onSubmitEdit={(name) => onSubmitEdit?.(item.id, name)}
+            onCancelEdit={onCancelEdit}
           />
         ))}
 
         {adding ? (
-          <View style={styles.addInputRow}>
-            <View style={styles.ghostCheckbox} />
+          <View style={styles.inputRow}>
+            <View style={styles.inputCheckbox} />
             <TextInput
-              style={styles.addInput}
-              value={draft}
-              onChangeText={setDraft}
+              style={styles.input}
+              value={value}
+              onChangeText={setValue}
               placeholder="Nombre del ítem"
               placeholderTextColor={colors.secondary300}
               autoFocus
               returnKeyType="done"
               blurOnSubmit={false}
               onSubmitEditing={submit}
-              onBlur={() => {
-                if (!draft.trim()) setAdding(false);
-              }}
+              onBlur={blur}
             />
           </View>
         ) : (
@@ -115,25 +131,25 @@ const styles = StyleSheet.create({
     fontSize: fontSize.nano,
     color: colors.primary,
   },
-  addInputRow: {
+  inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     paddingHorizontal: 15,
-    paddingVertical: 10,
+    paddingVertical: 8,
   },
-  ghostCheckbox: {
+  inputCheckbox: {
     width: 18,
     height: 18,
     borderRadius: 6,
     borderWidth: 1.5,
     borderColor: colors.textSubtitle,
   },
-  addInput: {
+  input: {
     flex: 1,
-    padding: 0,
     fontFamily: fonts.sansBold,
-    fontSize: fontSize.nano,
+    fontSize: fontSize.body,
     color: colors.secondary,
+    padding: 0,
   },
 });

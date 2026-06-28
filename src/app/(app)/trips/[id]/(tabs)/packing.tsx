@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -17,6 +17,7 @@ import { PackingProgressRing } from '@/components/PackingProgressRing';
 import { PackingTemplatesSheet } from '@/components/PackingTemplatesSheet';
 import { buildSeedsFromTemplates, type PackingTemplateKey } from '@/constants/packingTemplates';
 import type { PackingCategory } from '@/types/packing';
+import { Celebration } from '@/components/Celebration';
 
 const CATEGORY_ORDER: PackingCategory[] = ['docs', 'clothes', 'tech', 'hygiene', 'other'];
 const CATEGORY_LABEL: Record<PackingCategory, string> = {
@@ -51,6 +52,28 @@ export default function PackingScreen() {
 
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  const allDone = items.length > 0 && done === items.length;
+  const [celebrationId, setCelebrationId] = useState(0);
+  const initialized = useRef(false);
+  const prevAllDone = useRef(false);
+
+  useEffect(() => {
+    if (items.length === 0) {
+      initialized.current = false;
+      prevAllDone.current = false;
+      return;
+    }
+    if (!initialized.current) {
+      initialized.current = true;
+      prevAllDone.current = allDone;
+      return;
+    }
+    if (allDone && !prevAllDone.current) {
+      setCelebrationId((n) => n + 1);
+    }
+    prevAllDone.current = allDone;
+  }, [items.length, allDone]);
 
   useEffect(() => {
     fetchItems(tripId);
@@ -93,7 +116,6 @@ export default function PackingScreen() {
       {
         text: 'Añadir',
         onPress: () => {
-          // No duplicar lo que ya está en la lista
           const existing = new Set(items.map((i) => i.name.trim().toLowerCase()));
           const fresh = seeds.filter((s) => !existing.has(s.name.trim().toLowerCase()));
           if (fresh.length === 0) return;
@@ -203,6 +225,7 @@ export default function PackingScreen() {
         onClose={() => setTemplatesOpen(false)}
         onApply={handleApplyTemplates}
       />
+      {celebrationId > 0 && <Celebration key={celebrationId} />}
     </View>
   );
 }

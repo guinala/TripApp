@@ -1,9 +1,9 @@
 // app/(app)/trips/[id]/budget.tsx
 import { useCallback } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
-import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { colors, spacing } from '@/constants/theme';
-import { useTripStore } from '@/store/tripStore';
+import { useTripDetail } from '@/context/TripDetailContext';
 import { useExpenseStore } from '@/store/expenseStore';
 import { useBudgetSummary } from '@/hooks/use-budget-summary';
 import { BudgetSummaryCard } from '@/components/cards/BudgetSummaryCard';
@@ -17,9 +17,10 @@ import { useBudgetAlert } from '@/hooks/use-budget-alert';
 const EMPTY: Expense[] = [];
 
 export default function BudgetScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { trip } = useTripDetail();
+  const id = trip.id;
+  const budget = trip.budget ?? 0;
 
-  const trip = useTripStore((s) => s.trips.find((t) => t.id === id));
   const expenses = useExpenseStore((s) => s.byTrip[id] ?? EMPTY);
   const loading = useExpenseStore((s) => s.loadingByTrip[id] ?? false);
   const loadExpenses = useExpenseStore((s) => s.loadExpenses);
@@ -32,10 +33,10 @@ export default function BudgetScreen() {
 
   const summary = useBudgetSummary(
     id,
-    trip?.budget ?? 0,
-    trip?.currency ?? 'EUR',
-    trip?.startDate,
-    trip?.endDate,
+    budget,
+    trip.currency,
+    trip.startDate,
+    trip.endDate,
   );
   useBudgetAlert(id, summary.percentage);
 
@@ -56,21 +57,21 @@ export default function BudgetScreen() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <BudgetSummaryCard
           spent={summary.spent ?? 0}
-          budget={trip?.budget ?? 0}
+          budget={budget}
           percentage={summary.percentage ?? 0}
           remaining={summary.remaining ?? 0}
           dailyAverage={summary.dailyAverage ?? 0}
-          currency={trip?.currency ?? 'EUR'}
+          currency={trip.currency}
         />
 
         <View style={styles.charts}>
           <CategoryCard segments={summary.donutSegments} />
-          <DayBarChart byDay={summary.byDay} tripStart={trip?.startDate} />
+          <DayBarChart byDay={summary.byDay} tripStart={trip.startDate} />
         </View>
 
         <RecentExpenses
           expenses={expenses}
-          tripStart={trip?.startDate}
+          tripStart={trip.startDate}
           onViewAll={handleViewAll}
           onEditExpense={handleEditExpense}
           onAddExpense={handleAddExpense}

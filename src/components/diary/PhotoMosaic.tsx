@@ -13,8 +13,8 @@ import { colors, fonts, fontSize, radius } from '@/constants/theme';
 
 export type MosaicPhoto = {
   id: string;
-  url: string | null; // signed URL; null mientras carga
-  locationLabel?: string | null; // solo se muestra sobre la foto destacada
+  url: string | null;
+  locationLabel?: string | null;
 };
 
 type PhotoMosaicProps = {
@@ -25,19 +25,12 @@ type PhotoMosaicProps = {
 
 type CellRect = { left: number; top: number; width: number; height: number };
 
-// Calcula la posición/tamaño en píxeles de cada celda a partir de su
-// colSpan/rowSpan, replicando el grid-template de Figma (3 cols, gap fijo).
-// La altura de fila se deriva del ancho de columna para mantener celdas
-// aprox. cuadradas, igual que en el diseño original.
 function layoutMosaic(slots: MosaicSlot[], containerWidth: number): CellRect[] {
   const cols = DIARY_MOSAIC_COLUMNS;
   const gap = DIARY_MOSAIC_GAP;
   const colWidth = (containerWidth - gap * (cols - 1)) / cols;
-  const rowHeight = colWidth; // celdas ~cuadradas, como en el Figma
+  const rowHeight = colWidth;
 
-  // Ocupación de la rejilla: avanzamos celda a celda buscando el primer
-  // hueco libre que pueda alojar el colSpan/rowSpan pedido (igual que
-  // haría el navegador con CSS Grid auto-placement).
   const occupied = new Set<string>();
   const rects: CellRect[] = [];
   let row = 0;
@@ -74,10 +67,7 @@ function layoutMosaic(slots: MosaicSlot[], containerWidth: number): CellRect[] {
 
 export function PhotoMosaic({ photos, width, onPressPhoto }: PhotoMosaicProps) {
   const slots = useMemo<MosaicSlot[]>(
-    () =>
-      photos.map(
-        (_, i) => DIARY_MOSAIC_SLOTS[i] ?? DIARY_MOSAIC_OVERFLOW_SLOT,
-      ),
+    () => photos.map((_, i) => DIARY_MOSAIC_SLOTS[i] ?? DIARY_MOSAIC_OVERFLOW_SLOT),
     [photos],
   );
 

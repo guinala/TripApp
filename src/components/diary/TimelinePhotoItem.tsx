@@ -2,7 +2,6 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { format, parseISO } from 'date-fns';
-import { es } from 'date-fns/locale';
 import { colors, fonts, fontSize, radius, spacing } from '@/constants/theme';
 import type { DiaryPhoto } from '@/hooks/use-diary-photos';
 
@@ -27,8 +26,8 @@ export function TimelinePhotoItem({ photo, onPress }: TimelinePhotoItemProps) {
 
       <View style={styles.card}>
         <Pressable onPress={onPress}>
-          {photo.url ? (
-            <Image source={{ uri: photo.url }} style={styles.image} contentFit="cover" />
+          {photo.uri ? (
+            <Image source={{ uri: photo.uri }} style={styles.image} contentFit="cover" />
           ) : (
             <View style={[styles.image, styles.placeholder]} />
           )}

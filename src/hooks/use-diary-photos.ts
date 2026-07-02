@@ -11,7 +11,7 @@ export type DiaryDayGroup = {
   photos: Photo[];
 };
 
-export type DiaryPhoto = Photo & { url: string | null };
+export type DiaryPhoto = Photo & { uri: string | null };
 
 function groupByDay(photos: Photo[], days: Day[]): DiaryDayGroup[] {
   const byDayId = new Map<string, Photo[]>();

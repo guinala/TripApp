@@ -11,9 +11,9 @@ type LocationPickerModalProps = {
   visible: boolean;
   initialLocation: LatLng | null;
   fallbackRegion?: MapRegion;
-  resetKey?: string; // fuerza remount del mapa al cambiar de foto
+  resetKey?: string;
   onClose: () => void;
-  onConfirm: (location: LatLng | null) => void; // null = quitar ubicación
+  onConfirm: (location: LatLng | null) => void;
 };
 
 const DEFAULT_DELTA = 0.02;
@@ -30,7 +30,6 @@ export function LocationPickerModal({
   const [picked, setPicked] = useState<LatLng | null>(initialLocation);
   const [locating, setLocating] = useState(false);
 
-  // Al reabrir el modal para otra foto, partimos de su ubicación actual
   useEffect(() => {
     if (visible) setPicked(initialLocation);
   }, [visible, initialLocation]);
@@ -124,7 +123,10 @@ export function LocationPickerModal({
 
           <View style={styles.actions}>
             {initialLocation ? (
-              <Pressable style={[styles.actionBtn, styles.removeBtn]} onPress={() => onConfirm(null)}>
+              <Pressable
+                style={[styles.actionBtn, styles.removeBtn]}
+                onPress={() => onConfirm(null)}
+              >
                 <Text style={styles.removeText}>Quitar ubicación</Text>
               </Pressable>
             ) : null}
@@ -192,7 +194,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     paddingVertical: spacing.s3,
   },
-  currentLocationText: { fontFamily: fonts.sansBold, fontSize: fontSize.base, color: colors.primary },
+  currentLocationText: {
+    fontFamily: fonts.sansBold,
+    fontSize: fontSize.base,
+    color: colors.primary,
+  },
   hint: {
     fontFamily: fonts.sansRegular,
     fontSize: fontSize.sm,

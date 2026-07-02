@@ -5,7 +5,7 @@ import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import type { Day } from '@/types/day';
 
 type DiaryDayHeaderProps = {
-  day: Day | null; // null = "Sin día asignado"
+  day: Day | null;
   photoCount: number;
   destination?: string | null;
 };

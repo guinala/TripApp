@@ -13,17 +13,7 @@ type DiaryMapProps = {
   style?: object;
 };
 
-// Marker individual: trackea cambios (necesario en Android para que la
-// imagen remota se capture como bitmap nativo) solo hasta que la imagen
-// termina de cargar, luego lo desactiva. Evita el coste de CPU de dejarlo
-// activo permanentemente con muchos pines.
-function PhotoMarker({
-  photo,
-  onPress,
-}: {
-  photo: DiaryPhoto;
-  onPress?: () => void;
-}) {
+function PhotoMarker({ photo, onPress }: { photo: DiaryPhoto; onPress?: () => void }) {
   const [loaded, setLoaded] = useState(false);
 
   return (
@@ -33,9 +23,9 @@ function PhotoMarker({
       tracksViewChanges={!loaded}
     >
       <View style={styles.pin}>
-        {photo.url ? (
+        {photo.uri ? (
           <Image
-            source={{ uri: photo.url }}
+            source={{ uri: photo.uri }}
             style={styles.thumb}
             onLoadEnd={() => setLoaded(true)}
           />
@@ -50,10 +40,7 @@ function PhotoMarker({
 export function DiaryMap({ photos, onPressPhoto, style }: DiaryMapProps) {
   const located = useMemo(() => photos.filter((p) => p.location != null), [photos]);
 
-  const initialRegion = useMemo(
-    () => regionForPoints(located.map((p) => p.location!)),
-    [located],
-  );
+  const initialRegion = useMemo(() => regionForPoints(located.map((p) => p.location!)), [located]);
 
   return (
     <View style={[styles.wrapper, style]}>

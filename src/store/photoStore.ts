@@ -94,7 +94,9 @@ export const usePhotoStore = create<PhotoState>((set, get) => ({
     set((s) => ({
       byTrip: {
         ...s.byTrip,
-        [tripId]: sortByTakenAtAsc(snapshot.map((p) => (p.id === id ? { ...p, ...patch } : p))),
+        [tripId]: sortByTakenAtAsc(
+          snapshot.map((p) => (p.id === id ? { ...p, ...patch } : p)),
+        ),
       },
       error: null,
     }));
@@ -104,9 +106,7 @@ export const usePhotoStore = create<PhotoState>((set, get) => ({
       set((s) => ({
         byTrip: {
           ...s.byTrip,
-          [tripId]: sortByTakenAtAsc(
-            (s.byTrip[tripId] ?? []).map((p) => (p.id === id ? saved : p)),
-          ),
+          [tripId]: sortByTakenAtAsc((s.byTrip[tripId] ?? []).map((p) => (p.id === id ? saved : p))),
         },
       }));
     } catch (err) {

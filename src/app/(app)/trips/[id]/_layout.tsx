@@ -5,6 +5,7 @@ export default function TripLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="expenses/new" />
+      <Stack.Screen name="photo/[photoId]" options={{ presentation: 'fullScreenModal' }} />
     </Stack>
   );
 }

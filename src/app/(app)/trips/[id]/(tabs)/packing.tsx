@@ -53,6 +53,12 @@ export default function PackingScreen() {
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
+  useEffect(() => {
+    fetchItems(tripId);
+  }, [tripId, fetchItems]);
+
+  const done = items.filter((i) => i.checked).length;
+
   const allDone = items.length > 0 && done === items.length;
   const [celebrationId, setCelebrationId] = useState(0);
   const initialized = useRef(false);
@@ -74,12 +80,6 @@ export default function PackingScreen() {
     }
     prevAllDone.current = allDone;
   }, [items.length, allDone]);
-
-  useEffect(() => {
-    fetchItems(tripId);
-  }, [tripId, fetchItems]);
-
-  const done = items.filter((i) => i.checked).length;
 
   const sections = useMemo(
     () =>

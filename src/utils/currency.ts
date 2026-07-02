@@ -13,7 +13,7 @@ export function formatCurrency(amount: number, currency: string, locale = 'es-ES
       currency,
     }).format(amount);
   } catch {
-    // Código de moneda no válido para Intl → formato plano de seguridad
+    // Formato plano
     return `${amount.toFixed(2)} ${currency}`;
   }
 }

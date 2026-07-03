@@ -21,12 +21,12 @@ export function usePlacesAutocomplete(includedPrimaryTypes?: string[]) {
       return;
     }
     const q = query.trim();
-    if (q.length < 3) {
-      setSuggestions([]);
-      return;
-    }
-    setLoading(true);
     const handle = setTimeout(async () => {
+      if (q.length < 3) {
+        setSuggestions([]);
+        return;
+      }
+      setLoading(true);
       try {
         setSuggestions(await autocompletePlaces(q, sessionToken.current, includedPrimaryTypes));
       } catch {
@@ -34,7 +34,7 @@ export function usePlacesAutocomplete(includedPrimaryTypes?: string[]) {
       } finally {
         setLoading(false);
       }
-    }, 300);
+    }, q.length < 3 ? 0 : 300);
     return () => clearTimeout(handle);
   }, [query, includedPrimaryTypes]);
 

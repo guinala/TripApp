@@ -26,7 +26,10 @@ function toISODate(d: Date): string {
 export default function NewTripScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  const { id, destination: destinationParam } = useLocalSearchParams<{
+    id?: string;
+    destination?: string;
+  }>();
   const isEdit = !!id;
 
   const userId = useAuthStore((s) => s.session?.user.id);
@@ -37,7 +40,7 @@ export default function NewTripScreen() {
   const existing = useTripStore((s) => (id ? s.trips.find((t) => t.id === id) : undefined));
 
   const [title, setTitle] = useState('');
-  const [destination, setDestination] = useState('');
+  const [destination, setDestination] = useState(destinationParam ?? '');
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [currency, setCurrency] = useState('EUR');

@@ -36,10 +36,10 @@ export function useSignedUrls(paths: string[]): {
   const key = paths.join('|');
 
   useEffect(() => {
-    if (paths.length === 0) {
-      setUrls(new Map());
-      return;
-    }
+    // if (paths.length === 0) {
+    //   setUrls(new Map());
+    //   return;
+    // }
 
     let cancelled = false;
     const now = Date.now();
@@ -63,7 +63,9 @@ export function useSignedUrls(paths: string[]): {
       return;
     }
 
-    setLoading(true);
+    Promise.resolve().then(() => {
+      if (!cancelled) setLoading(true);
+    });
     fetchMissing(missing).finally(() => {
       if (cancelled) return;
       applyFromCache();

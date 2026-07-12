@@ -26,6 +26,7 @@ export default function RootLayout() {
     'PlusJakartaSans-ExtraBold': require('../../assets/fonts/PlusJakartaSans-ExtraBold.ttf'),
     'InstrumentSerif-Regular': require('../../assets/fonts/InstrumentSerif-Regular.ttf'),
     'InstrumentSerif-Italic': require('../../assets/fonts/InstrumentSerif-Italic.ttf'),
+    'JetBrainsMono-Regular': require('../../assets/fonts/JetBrainsMono-Regular.ttf'),
   });
 
   useEffect(() => {

@@ -11,6 +11,8 @@ import { Ionicons } from '@expo/vector-icons';
 import TripsEmptyState from '@/components/TripsEmptyState';
 import { SwipeableTripCard } from '@/components/SwipeableTripCard';
 import { Fab } from '@/components/Fab';
+import { useUIStore } from '@/store/uiStore';
+import { resyncNotifications } from '@/services/notifications';
 
 export default function TripsScreen() {
   const router = useRouter();
@@ -25,7 +27,15 @@ export default function TripsScreen() {
 
   useEffect(() => {
     fetchTrips();
-  }, [fetchTrips]);
+
+    if (trips.length === 0) return;
+    const s = useUIStore.getState();
+    resyncNotifications(trips, {
+      tripReminders: s.notifTripReminders,
+      budgetSummary: s.notifBudgetSummary,
+      weeklyInspiration: s.notifWeeklyInspiration,
+    });
+  }, [trips, fetchTrips]);
 
   const displayName =
     (user?.user_metadata?.display_name as string | undefined) ?? user?.email ?? 'nómada';

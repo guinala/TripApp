@@ -1,9 +1,11 @@
+import { initNotifications } from '@/services/notifications';
 import { useAuthStore } from '@/store/authStore';
 import { Redirect, Stack } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
 
 export default function AppLayout() {
   const { session, loading } = useAuthStore();
+  initNotifications();
 
   if (loading) {
     return (
@@ -18,6 +20,8 @@ export default function AppLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="trips/new" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="settings" />
+      <Stack.Screen name="profile/edit" />
     </Stack>
   );
 }

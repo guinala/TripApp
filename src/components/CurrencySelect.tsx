@@ -2,15 +2,7 @@ import { useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, fontSize, radius } from '@/constants/theme';
-
-export const CURRENCIES = [
-  { code: 'EUR', symbol: '€' },
-  { code: 'USD', symbol: '$' },
-  { code: 'GBP', symbol: '£' },
-  { code: 'JPY', symbol: '¥' },
-  { code: 'CHF', symbol: 'CHF' },
-  { code: 'MXN', symbol: '$' },
-];
+import { CURRENCIES } from '@/constants/currencies';
 
 interface CurrencySelectProps {
   value: string;

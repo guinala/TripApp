@@ -1,16 +1,8 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
 import { categoryColors, colors, fonts, fontSize, radius, spacing } from '@/constants/theme';
-import type { Activity, ActivityCategory } from '@/types/activity';
-
-const CATEGORY_ICON: Record<ActivityCategory, keyof typeof Ionicons.glyphMap> = {
-  visit: 'camera',
-  restaurant: 'restaurant',
-  transport: 'airplane',
-  hotel: 'bed',
-  entertainment: 'musical-notes',
-  others: 'ellipsis-horizontal',
-};
+import type { Activity } from '@/types/activity';
+import { ACTIVITY_ICON } from '@/constants/activityIcons';
 
 function withAlpha(hex: string, opacity: number): string {
   const a = Math.round(opacity * 255)
@@ -28,7 +20,7 @@ export function ActivityCard({ activity }: { activity: Activity }) {
       <Text style={styles.hour}>{activity.time ?? '--:--'}</Text>
 
       <View style={[styles.iconBox, { backgroundColor: withAlpha(tint, 0.15) }]}>
-        <Ionicons name={CATEGORY_ICON[activity.category]} size={20} color={tint} />
+        <Ionicons name={ACTIVITY_ICON[activity.category]} size={20} color={tint} />
       </View>
 
       <View style={styles.info}>

@@ -18,7 +18,7 @@ type TripDetailValue = {
   loading: boolean;
   error: string | null;
   reload: () => Promise<void>;
-  selectedDayId: string | null; // null = "Todo"
+  selectedDayId: string | null;
   addActivity: (input: Omit<ActivityInput, 'orderIndex'>) => Promise<void>;
   setSelectedDayId: (id: string | null) => void;
   reorder: (dayId: string, orderedIds: string[]) => Promise<void>;
@@ -68,7 +68,7 @@ export function TripDetailProvider({ trip, children }: { trip: Trip; children: R
     try {
       await reorderActivities(orderedIds);
     } catch {
-      reload(); // volver al estado real
+      reload();
     }
   }, []);
 

@@ -19,7 +19,7 @@ export default function RootLayout() {
   const initialize = useAuthStore((s) => s.initialize);
 
   const [fontsLoaded] = useFonts({
-    'PlusJakartaSans-Regular': require('../../assets/fonts/InstrumentSerif-Regular.ttf'),
+    'PlusJakartaSans-Regular': require('../../assets/fonts/PlusJakartaSans-Regular.ttf'),
     'PlusJakartaSans-Medium': require('../../assets/fonts/PlusJakartaSans-Medium.ttf'),
     'PlusJakartaSans-SemiBold': require('../../assets/fonts/PlusJakartaSans-SemiBold.ttf'),
     'PlusJakartaSans-Bold': require('../../assets/fonts/PlusJakartaSans-Bold.ttf'),

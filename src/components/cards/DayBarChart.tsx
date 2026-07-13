@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, radius } from '@/constants/theme';
 import type { DayBreakdown } from '@/hooks/use-budget-summary';
 
@@ -19,6 +20,7 @@ function dayNumber(date: string, index: number, tripStart?: string): number {
 }
 
 export function DayBarChart({ byDay, tripStart }: Props) {
+  const { t } = useTranslation();
   const max = byDay.reduce((m, d) => Math.max(m, d.amount), 0);
 
   const lastIdx = byDay.length - 1;
@@ -27,7 +29,7 @@ export function DayBarChart({ byDay, tripStart }: Props) {
 
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>POR DÍA</Text>
+      <Text style={styles.title}>{t('budget.byDay').toUpperCase()}</Text>
 
       <View style={styles.chart}>
         {byDay.map((d) => {
@@ -55,7 +57,7 @@ export function DayBarChart({ byDay, tripStart }: Props) {
               { textAlign: pos === 0 ? 'left' : pos === labelIdxs.length - 1 ? 'right' : 'center' },
             ]}
           >
-            D{dayNumber(byDay[i].date, i, tripStart)}
+            {t('itinerary.dayFilter.day', { number: dayNumber(byDay[i].date, i, tripStart) })}
           </Text>
         ))}
       </View>

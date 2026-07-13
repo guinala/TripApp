@@ -16,7 +16,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Sharing from 'expo-sharing';
 import { router, useLocalSearchParams } from 'expo-router';
 import { format, parseISO } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
+import { dateLocale } from '@/i18n/date';
 import { ImageZoom } from '@likashefqet/react-native-image-zoom';
 import { colors, fonts, fontSize, radius, spacing } from '@/constants/theme';
 import { usePhotoStore } from '@/store/photoStore';
@@ -26,6 +27,7 @@ import { regionForPoints, type LatLng } from '@/utils/mapRegion';
 import type { Photo } from '@/types/photo';
 
 export default function PhotoViewerScreen() {
+  const { t } = useTranslation();
   const { id: tripId, photoId } = useLocalSearchParams<{ id: string; photoId: string }>();
 
   const photos = usePhotoStore((s) => s.byTrip[tripId] ?? []);
@@ -89,11 +91,11 @@ export default function PhotoViewerScreen() {
     try {
       await editPhoto(tripId, activePhoto.id, { caption: next || null });
     } catch {
-      Alert.alert('No se pudo guardar', 'Inténtalo de nuevo.');
+      Alert.alert(t('common.saveError'), t('common.tryAgain'));
     } finally {
       setSaving(false);
     }
-  }, [activePhoto, draftCaption, editPhoto, tripId]);
+  }, [activePhoto, draftCaption, editPhoto, tripId, t]);
 
   const handleSaveLocation = useCallback(
     async (location: LatLng | null) => {
@@ -105,12 +107,12 @@ export default function PhotoViewerScreen() {
       try {
         await editPhoto(tripId, activePhoto.id, { location });
       } catch {
-        Alert.alert('No se pudo guardar la ubicación', 'Inténtalo de nuevo.');
+        Alert.alert(t('photo.locationSaveError'), t('common.tryAgain'));
       } finally {
         setSavingLocation(false);
       }
     },
-    [activePhoto, editPhoto, tripId],
+    [activePhoto, editPhoto, tripId, t],
   );
 
   const handleShare = useCallback(async () => {
@@ -119,7 +121,7 @@ export default function PhotoViewerScreen() {
 
     const available = await Sharing.isAvailableAsync();
     if (!available) {
-      Alert.alert('No disponible', 'Compartir no está disponible en este dispositivo.');
+      Alert.alert(t('photo.unavailable'), t('photo.shareUnavailable'));
       return;
     }
     try {
@@ -127,14 +129,14 @@ export default function PhotoViewerScreen() {
     } catch {
       // el usuario canceló el share sheet; no hace falta avisar
     }
-  }, [activePhoto, urls]);
+  }, [activePhoto, urls, t]);
 
   const handleDelete = useCallback(() => {
     if (!activePhoto) return;
-    Alert.alert('Eliminar foto', 'Esta acción no se puede deshacer.', [
-      { text: 'Cancelar', style: 'cancel' },
+    Alert.alert(t('photo.deleteTitle'), t('photo.deleteMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Eliminar',
+        text: t('common.delete'),
         style: 'destructive',
         onPress: async () => {
           try {
@@ -142,19 +144,19 @@ export default function PhotoViewerScreen() {
             if (orderedPhotos.length <= 1) close();
             else close();
           } catch {
-            Alert.alert('No se pudo eliminar', 'Inténtalo de nuevo.');
+            Alert.alert(t('photo.deleteError'), t('common.tryAgain'));
           }
         },
       },
     ]);
-  }, [activePhoto, orderedPhotos.length, removePhoto, tripId, close]);
+  }, [activePhoto, orderedPhotos.length, removePhoto, tripId, close, t]);
 
   if (orderedPhotos.length === 0) {
     return (
       <View style={styles.emptyScreen}>
-        <Text style={styles.emptyText}>Esta foto ya no está disponible.</Text>
+        <Text style={styles.emptyText}>{t('photo.unavailablePhoto')}</Text>
         <Pressable onPress={close} style={styles.emptyBtn}>
-          <Text style={styles.emptyBtnText}>Volver</Text>
+          <Text style={styles.emptyBtnText}>{t('common.back')}</Text>
         </Pressable>
       </View>
     );
@@ -212,7 +214,7 @@ export default function PhotoViewerScreen() {
         <SafeAreaView edges={['bottom']}>
           {activePhoto?.takenAt ? (
             <Text style={styles.dateText}>
-              {format(parseISO(activePhoto.takenAt), "d 'de' MMMM, HH:mm", { locale: es })}
+              {format(parseISO(activePhoto.takenAt), "d 'de' MMMM, HH:mm", { locale: dateLocale() })}
             </Text>
           ) : null}
 
@@ -221,7 +223,7 @@ export default function PhotoViewerScreen() {
               style={styles.captionInput}
               value={draftCaption}
               onChangeText={setDraftCaption}
-              placeholder="Añade una nota..."
+              placeholder={t('photo.captionPlaceholder')}
               placeholderTextColor="rgba(255,255,255,0.5)"
               autoFocus
               multiline
@@ -233,7 +235,7 @@ export default function PhotoViewerScreen() {
               <Text
                 style={[styles.captionText, !activePhoto?.caption && styles.captionPlaceholder]}
               >
-                {activePhoto?.caption || 'Añade una nota...'}
+                {activePhoto?.caption || t('photo.captionPlaceholder')}
               </Text>
             </Pressable>
           )}
@@ -245,7 +247,7 @@ export default function PhotoViewerScreen() {
               color="rgba(255,255,255,0.85)"
             />
             <Text style={styles.locationText}>
-              {activePhoto?.location ? 'Ubicación guardada' : 'Añadir ubicación'}
+              {activePhoto?.location ? t('photo.locationSaved') : t('photo.addLocation')}
             </Text>
             {savingLocation ? <ActivityIndicator size="small" color={colors.surfacePaper} /> : null}
           </Pressable>

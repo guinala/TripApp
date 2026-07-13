@@ -8,6 +8,7 @@ import {
   deleteExpense,
   type CreateExpenseInput,
 } from '@/services/expenses';
+import i18n from '@/i18n';
 
 type EditPatch = Partial<Omit<CreateExpenseInput, 'tripId'>>;
 
@@ -45,7 +46,7 @@ export const useExpenseStore = create<ExpenseState>((set, get) => ({
     } catch (err) {
       set((s) => ({
         loadingByTrip: { ...s.loadingByTrip, [tripId]: false },
-        error: err instanceof Error ? err.message : 'No se pudieron cargar los gastos',
+        error: err instanceof Error ? err.message : i18n.t('errors.loadExpenses'),
       }));
     }
   },
@@ -90,7 +91,7 @@ export const useExpenseStore = create<ExpenseState>((set, get) => ({
           ...s.byTrip,
           [tripId]: (s.byTrip[tripId] ?? []).filter((e) => e.id !== tempId),
         },
-        error: err instanceof Error ? err.message : 'No se pudo crear el gasto',
+        error: err instanceof Error ? err.message : i18n.t('errors.createExpense'),
       }));
       throw err;
     }
@@ -117,7 +118,7 @@ export const useExpenseStore = create<ExpenseState>((set, get) => ({
     } catch (err) {
       set((s) => ({
         byTrip: { ...s.byTrip, [tripId]: snapshot }, // Lista previa
-        error: err instanceof Error ? err.message : 'No se pudo actualizar el gasto',
+        error: err instanceof Error ? err.message : i18n.t('errors.updateExpense'),
       }));
       throw err;
     }
@@ -135,7 +136,7 @@ export const useExpenseStore = create<ExpenseState>((set, get) => ({
     } catch (err) {
       set((s) => ({
         byTrip: { ...s.byTrip, [tripId]: snapshot }, // Lista previa
-        error: err instanceof Error ? err.message : 'No se pudo eliminar el gasto',
+        error: err instanceof Error ? err.message : i18n.t('errors.deleteExpense'),
       }));
       throw err;
     }

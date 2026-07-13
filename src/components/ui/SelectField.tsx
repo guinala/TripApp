@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ChevronDown, Check } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 import { colors, fontSize, fonts, radius } from '@/constants/theme';
 
 export type SelectOption = { label: string; value: string };
@@ -14,6 +15,7 @@ type SelectFieldProps = {
 };
 
 export function SelectField({ label, value, options, onChange, placeholder }: SelectFieldProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const selected = options.find((o) => o.value === value);
 
@@ -23,7 +25,7 @@ export function SelectField({ label, value, options, onChange, placeholder }: Se
 
       <Pressable style={styles.box} onPress={() => setOpen(true)}>
         <Text style={[styles.value, !selected && styles.placeholder]}>
-          {selected ? selected.label : (placeholder ?? 'Selecciona…')}
+          {selected ? selected.label : (placeholder ?? t('common.select'))}
         </Text>
         <ChevronDown size={20} color={colors.textSecondary} />
       </Pressable>

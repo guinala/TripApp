@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -14,6 +15,8 @@ function getInitials(name: string): string {
 }
 
 export default function TopBar({ name, claim }: TopBarProps) {
+  const { t } = useTranslation();
+
   return (
     <View style={styles.container}>
       <View style={styles.avatar}>
@@ -21,7 +24,7 @@ export default function TopBar({ name, claim }: TopBarProps) {
       </View>
 
       <View style={styles.texts}>
-        <Text style={styles.greeting}>Hola, {name.split(' ')[0]}</Text>
+        <Text style={styles.greeting}>{t('home.greeting', { name: name.split(' ')[0] })}</Text>
         <View style={styles.claimRow}>
           <Text style={styles.claim} numberOfLines={1}>
             {claim}

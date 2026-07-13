@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +17,7 @@ import { useTripStore } from '@/store/tripStore';
 import { ensureNotificationPermissions, resyncNotifications } from '@/services/notifications';
 import { File, Paths } from 'expo-file-system';
 import { exportUserData } from '@/services/dataExport';
+import { syncLanguage } from '@/i18n';
 import { format } from 'date-fns';
 import * as Sharing from 'expo-sharing';
 import { supabase } from '@/services/supabase';
@@ -26,6 +28,7 @@ const LANGUAGES = [
 ];
 
 export default function SettingsScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const signOut = useAuthStore((s) => s.signOut);
@@ -48,7 +51,7 @@ export default function SettingsScreen() {
   const performDelete = useCallback(async () => {
     const { error } = await supabase.functions.invoke('delete-user');
     if (error) {
-      Alert.alert('Error', 'No se pudo eliminar la cuenta. Inténtalo de nuevo.');
+      Alert.alert(t('common.error'), t('settings.deleteAccount.error'));
       return;
     }
     clearProfile();
@@ -57,7 +60,7 @@ export default function SettingsScreen() {
     } catch {
       // esperable: el usuario ya no existe; el layout redirige igual al caer la sesión
     }
-  }, [clearProfile, signOut]);
+  }, [clearProfile, signOut, t]);
 
   const handleExport = useCallback(async () => {
     if (!user || exporting) return;
@@ -73,14 +76,14 @@ export default function SettingsScreen() {
       file.write(JSON.stringify(data, null, 2));
       await Sharing.shareAsync(file.uri, {
         mimeType: 'application/json',
-        dialogTitle: 'Exportar mis datos de TripMate',
+        dialogTitle: t('settings.export.dialogTitle'),
       });
     } catch {
-      Alert.alert('Error', 'No se pudieron exportar tus datos. Inténtalo de nuevo.');
+      Alert.alert(t('common.error'), t('settings.export.error'));
     } finally {
       setExporting(false);
     }
-  }, [user, exporting]);
+  }, [user, exporting, t]);
 
   const handleToggleNotif = useCallback(
     async (
@@ -90,14 +93,10 @@ export default function SettingsScreen() {
       if (value) {
         const ok = await ensureNotificationPermissions();
         if (!ok) {
-          Alert.alert(
-            'Permiso necesario',
-            'Activa las notificaciones de TripMate en los ajustes del sistema.',
-            [
-              { text: 'Cancelar', style: 'cancel' },
-              { text: 'Abrir ajustes', onPress: () => Linking.openSettings() },
-            ],
-          );
+          Alert.alert(t('common.permissionNeeded'), t('settings.notifications.permissionMessage'), [
+            { text: t('common.cancel'), style: 'cancel' },
+            { text: t('settings.notifications.openSettings'), onPress: () => Linking.openSettings() },
+          ]);
           return;
         }
       }
@@ -109,64 +108,63 @@ export default function SettingsScreen() {
         weeklyInspiration: s.notifWeeklyInspiration,
       });
     },
-    [trips, ui],
+    [trips, ui, t],
   );
 
   const handleDeleteAccount = useCallback(() => {
-    Alert.alert(
-      'Eliminar cuenta',
-      'Se borrarán permanentemente tus viajes, itinerarios, gastos, fotos y perfil. Esta acción no se puede deshacer.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Continuar',
-          style: 'destructive',
-          onPress: () =>
-            Alert.alert(
-              '¿Estás totalmente seguro?',
-              'Última oportunidad para conservar tus datos.',
-              [
-                { text: 'No, conservar mi cuenta', style: 'cancel' },
-                { text: 'Sí, eliminar todo', style: 'destructive', onPress: performDelete },
-              ],
-            ),
-        },
-      ],
-    );
-  }, [performDelete]);
+    Alert.alert(t('settings.deleteAccount.title'), t('settings.deleteAccount.warning'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('common.continue'),
+        style: 'destructive',
+        onPress: () =>
+          Alert.alert(
+            t('settings.deleteAccount.confirmTitle'),
+            t('settings.deleteAccount.confirmMessage'),
+            [
+              { text: t('settings.deleteAccount.keep'), style: 'cancel' },
+              {
+                text: t('settings.deleteAccount.confirm'),
+                style: 'destructive',
+                onPress: performDelete,
+              },
+            ],
+          ),
+      },
+    ]);
+  }, [performDelete, t]);
 
   const pickLanguage = useCallback(() => {
     if (!user) return;
-    Alert.alert('Idioma', 'Elige el idioma de la app', [
+    Alert.alert(t('settings.language.title'), t('settings.language.subtitle'), [
       ...LANGUAGES.map((l) => ({
         text: l.label,
         onPress: async () => {
           await updateProfile(user.id, { preferredLanguage: l.code });
-          ui.setLanguage(l.code); // caché local
-          // TODO(i18n): i18n.changeLanguage(l.code) cuando montemos la infra
+          syncLanguage(l.code);
         },
       })),
-      { text: 'Cancelar', style: 'cancel' as const },
+      { text: t('common.cancel'), style: 'cancel' as const },
     ]);
-  }, [user, updateProfile, ui]);
+  }, [user, updateProfile, t]);
 
   const pickCurrency = useCallback(() => {
     if (!user) return;
     const popular = CURRENCIES.slice(0, 6);
-    Alert.alert('Moneda por defecto', 'Se usará al crear viajes nuevos', [
+    Alert.alert(t('settings.currency.title'), t('settings.currency.subtitle'), [
       ...popular.map((c) => ({
         text: `${c.code} (${c.symbol})`,
         onPress: () => updateProfile(user.id, { defaultCurrency: c.code }),
       })),
-      { text: 'Cancelar', style: 'cancel' as const },
+      { text: t('common.cancel'), style: 'cancel' as const },
     ]);
-  }, [user, updateProfile]);
+  }, [user, updateProfile, t]);
 
   const confirmSignOut = useCallback(() => {
-    Alert.alert('Cerrar sesión', '¿Seguro que quieres salir?', [
-      { text: 'Cancelar', style: 'cancel' },
+    Alert.alert(t('settings.signOut.title'), t('settings.signOut.message'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Cerrar sesión',
+        text: t('settings.signOut.title'),
         style: 'destructive',
         onPress: async () => {
           clearProfile();
@@ -174,7 +172,7 @@ export default function SettingsScreen() {
         },
       },
     ]);
-  }, [signOut, clearProfile]);
+  }, [signOut, clearProfile, t]);
 
   const version = Constants.expoConfig?.version ?? '1.0.0';
 
@@ -184,30 +182,30 @@ export default function SettingsScreen() {
         <Pressable style={styles.backButton} onPress={() => router.back()} hitSlop={8}>
           <Ionicons name="arrow-back" size={20} color={colors.ink} />
         </Pressable>
-        <Text style={styles.headerTitle}>Ajustes</Text>
+        <Text style={styles.headerTitle}>{t('settings.title')}</Text>
         <View style={styles.backButton} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <SettingsSection label="Preferencias">
+        <SettingsSection label={t('settings.sections.preferences')}>
           <SettingsRow
-            title="Idioma"
+            title={t('settings.language.title')}
             value={languageLabel}
             variant="chevron"
             onPress={pickLanguage}
           />
           <SettingsRow
-            title="Moneda"
+            title={t('settings.currency.row')}
             value={currencyLabel}
             variant="chevron"
             onPress={pickCurrency}
           />
         </SettingsSection>
 
-        <SettingsSection label="Notificaciones">
+        <SettingsSection label={t('settings.sections.notifications')}>
           <SettingsRow
-            title="Recordatorios de viaje"
-            subtitle="24h antes del inicio"
+            title={t('settings.notifications.tripReminders')}
+            subtitle={t('settings.notifications.tripRemindersSubtitle')}
             right={
               <Toggle
                 value={ui.notifTripReminders}
@@ -216,8 +214,8 @@ export default function SettingsScreen() {
             }
           />
           <SettingsRow
-            title="Resumen de presupuesto"
-            subtitle="Cada lunes"
+            title={t('settings.notifications.budgetSummary')}
+            subtitle={t('settings.notifications.budgetSummarySubtitle')}
             right={
               <Toggle
                 value={ui.notifBudgetSummary}
@@ -226,7 +224,7 @@ export default function SettingsScreen() {
             }
           />
           <SettingsRow
-            title="Inspiración semanal"
+            title={t('settings.notifications.weeklyInspiration')}
             right={
               <Toggle
                 value={ui.notifWeeklyInspiration}
@@ -236,27 +234,27 @@ export default function SettingsScreen() {
           />
         </SettingsSection>
 
-        <SettingsSection label="Datos y privacidad">
+        <SettingsSection label={t('settings.sections.privacy')}>
           <SettingsRow
-            title="Exportar todos mis datos"
+            title={t('settings.export.row')}
             variant="external"
-            subtitle={exporting ? 'Preparando…' : undefined}
-            onPress={() => handleExport}
+            subtitle={exporting ? t('settings.export.preparing') : undefined}
+            onPress={handleExport}
           />
           <SettingsRow
-            title="Eliminar cuenta"
+            title={t('settings.deleteAccount.title')}
             variant="danger"
-            onPress={() => Alert.alert('Eliminar cuenta', 'Lo conectamos en el siguiente bloque')}
+            onPress={handleDeleteAccount}
           />
         </SettingsSection>
 
         <Pressable style={styles.signOutButton} onPress={confirmSignOut}>
-          <Text style={styles.signOutText}>Cerrar sesión</Text>
+          <Text style={styles.signOutText}>{t('settings.signOut.title')}</Text>
         </Pressable>
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>TripMate v{version}</Text>
-          <Text style={styles.footerText}>hecho con ♥ para viajeros</Text>
+          <Text style={styles.footerText}>{t('settings.footer')}</Text>
         </View>
       </ScrollView>
     </SafeAreaView>

@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, radius, spacing } from '@/constants/theme';
 
 export interface ReceiptAsset {
@@ -14,10 +15,11 @@ interface Props {
 }
 
 export function ReceiptPicker({ value, onChange }: Props) {
+  const { t } = useTranslation();
   async function pick() {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert('Permiso necesario', 'Concede acceso a tus fotos para adjuntar un recibo.');
+      Alert.alert(t('common.permissionNeeded'), t('budget.receipt.permissionMessage'));
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -35,7 +37,7 @@ export function ReceiptPicker({ value, onChange }: Props) {
       <View style={styles.preview}>
         <Image source={{ uri: value.uri }} style={styles.thumb} />
         <Text style={styles.previewText} numberOfLines={1}>
-          Recibo adjuntado
+          {t('budget.receipt.attached')}
         </Text>
         <Pressable onPress={() => onChange(null)} hitSlop={8}>
           <Ionicons name="close-circle" size={22} color={colors.secondary300} />
@@ -47,7 +49,7 @@ export function ReceiptPicker({ value, onChange }: Props) {
   return (
     <Pressable style={styles.button} onPress={pick}>
       <Ionicons name="camera-outline" size={20} color={colors.secondary} />
-      <Text style={styles.buttonText}>Adjuntar recibo (opcional)</Text>
+      <Text style={styles.buttonText}>{t('budget.receipt.attach')}</Text>
     </Pressable>
   );
 }

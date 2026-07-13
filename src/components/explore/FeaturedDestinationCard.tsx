@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, radius, spacing } from '@/constants/theme';
 import { DESTINATION_TYPE_LABELS } from '@/constants/destinations';
 import { useUnsplashCover } from '@/hooks/use-unsplash-photos';
@@ -14,8 +15,9 @@ type FeaturedDestinationCardProps = {
 };
 
 export function FeaturedDestinationCard({ destination, onPress }: FeaturedDestinationCardProps) {
+  const { t } = useTranslation();
   const { photo } = useUnsplashCover(destination.coverQuery);
-  const typesLabel = destination.types.map((t) => DESTINATION_TYPE_LABELS[t]).join(' · ');
+  const typesLabel = destination.types.map((type) => t(DESTINATION_TYPE_LABELS[type])).join(' · ');
 
   return (
     <Pressable onPress={onPress} style={styles.card}>
@@ -34,7 +36,7 @@ export function FeaturedDestinationCard({ destination, onPress }: FeaturedDestin
 
       <View style={styles.badge}>
         <Ionicons name="star" size={12} color={colors.secondary} />
-        <Text style={styles.badgeText}>Destacado</Text>
+        <Text style={styles.badgeText}>{t('explore.featured')}</Text>
       </View>
 
       <View style={styles.bottom}>

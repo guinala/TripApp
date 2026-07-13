@@ -12,7 +12,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { format, parseISO } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
+import { dateLocale } from '@/i18n/date';
 import { categoryColors, colors, fonts, fontSize, radius, spacing } from '@/constants/theme';
 import { usePlacesAutocomplete } from '@/hooks/use-places-autocomplete';
 import { useTripDetail } from '@/context/TripDetailContext';
@@ -20,14 +21,17 @@ import type { ActivityCategory } from '@/types/activity';
 import type { PlaceDetails } from '@/services/places';
 import { TimeField } from './TimeField';
 
-const CATEGORIES: { key: ActivityCategory; label: string; icon: keyof typeof Ionicons.glyphMap }[] =
-  [
-    { key: 'visit', label: 'Visita', icon: 'camera' },
-    { key: 'restaurant', label: 'Comida', icon: 'restaurant' },
-    { key: 'transport', label: 'Transporte', icon: 'airplane' },
-    { key: 'hotel', label: 'Estancia', icon: 'bed' },
-    { key: 'entertainment', label: 'Ocio', icon: 'musical-notes' },
-  ];
+const CATEGORIES: {
+  key: ActivityCategory;
+  labelKey: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}[] = [
+  { key: 'visit', labelKey: 'itinerary.categories.visit', icon: 'camera' },
+  { key: 'restaurant', labelKey: 'itinerary.categories.restaurant', icon: 'restaurant' },
+  { key: 'transport', labelKey: 'itinerary.categories.transport', icon: 'airplane' },
+  { key: 'hotel', labelKey: 'itinerary.categories.hotel', icon: 'bed' },
+  { key: 'entertainment', labelKey: 'itinerary.categories.entertainment', icon: 'musical-notes' },
+];
 
 type AddActivityModalProps = {
   dayId: string | null;
@@ -35,6 +39,7 @@ type AddActivityModalProps = {
 };
 
 export function AddActivityModal({ dayId, onClose }: AddActivityModalProps) {
+  const { t } = useTranslation();
   const { days, addActivity, trip } = useTripDetail();
   const { query, setQuery, suggestions, loading, selectPlace } = usePlacesAutocomplete();
 
@@ -82,7 +87,10 @@ export function AddActivityModal({ dayId, onClose }: AddActivityModalProps) {
   };
 
   const dayLabel = day
-    ? `Día ${day.dayNumber} · ${format(parseISO(day.date), 'EEE d MMM', { locale: es })}`
+    ? t('itinerary.dayShort', {
+        number: day.dayNumber,
+        date: format(parseISO(day.date), 'EEE d MMM', { locale: dateLocale() }),
+      })
     : '';
 
   return (
@@ -98,11 +106,11 @@ export function AddActivityModal({ dayId, onClose }: AddActivityModalProps) {
             <Ionicons name="chevron-back" size={24} color={colors.secondary} />
           </Pressable>
           <View style={styles.titleWrap}>
-            <Text style={styles.title}>Nueva actividad</Text>
+            <Text style={styles.title}>{t('itinerary.newActivity')}</Text>
             {dayLabel ? <Text style={styles.subtitle}>{dayLabel}</Text> : null}
           </View>
           <Pressable onPress={close} hitSlop={10}>
-            <Text style={styles.cancel}>Cancelar</Text>
+            <Text style={styles.cancel}>{t('common.cancel')}</Text>
           </Pressable>
         </View>
 
@@ -111,11 +119,11 @@ export function AddActivityModal({ dayId, onClose }: AddActivityModalProps) {
             <Ionicons name="search" size={16} color={colors.secondary300} />
             <TextInput
               style={styles.searchInput}
-              placeholder="Buscar lugar o nombre"
+              placeholder={t('itinerary.searchPlaceholder')}
               placeholderTextColor={colors.secondary300}
               value={query}
-              onChangeText={(t) => {
-                setQuery(t);
+              onChangeText={(text) => {
+                setQuery(text);
                 setPlace(null);
               }}
             />
@@ -148,11 +156,11 @@ export function AddActivityModal({ dayId, onClose }: AddActivityModalProps) {
 
           <View style={styles.row}>
             <View style={styles.half}>
-              <Text style={styles.label}>HORA</Text>
+              <Text style={styles.label}>{t('itinerary.time').toUpperCase()}</Text>
               <TimeField value={time || null} onChange={setTime} />
             </View>
             <View style={styles.half}>
-              <Text style={styles.label}>DURACIÓN</Text>
+              <Text style={styles.label}>{t('itinerary.duration').toUpperCase()}</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.s2 }}>
                 {[
                   { label: '30m', v: 30 },
@@ -160,7 +168,7 @@ export function AddActivityModal({ dayId, onClose }: AddActivityModalProps) {
                   { label: '1h30', v: 90 },
                   { label: '2h', v: 120 },
                   { label: '3h', v: 180 },
-                  { label: 'Medio día', v: 240 },
+                  { label: t('itinerary.halfDay'), v: 240 },
                 ].map((d) => {
                   const active = Math.round((parseFloat(hours) || 0) * 60) === d.v;
                   return (
@@ -190,7 +198,7 @@ export function AddActivityModal({ dayId, onClose }: AddActivityModalProps) {
             </View>
           </View>
 
-          <Text style={styles.label}>CATEGORÍA</Text>
+          <Text style={styles.label}>{t('itinerary.category').toUpperCase()}</Text>
           <View style={styles.categories}>
             {CATEGORIES.map((c) => {
               const active = category === c.key;
@@ -209,14 +217,14 @@ export function AddActivityModal({ dayId, onClose }: AddActivityModalProps) {
                     numberOfLines={1}
                     style={[styles.catLabel, { color: active ? tint : colors.secondary300 }]}
                   >
-                    {c.label}
+                    {t(c.labelKey)}
                   </Text>
                 </Pressable>
               );
             })}
           </View>
 
-          <Text style={styles.label}>COSTE ESTIMADO</Text>
+          <Text style={styles.label}>{t('itinerary.estimatedCost').toUpperCase()}</Text>
           <View style={styles.fieldRow}>
             <TextInput
               style={styles.fieldInput}
@@ -233,10 +241,10 @@ export function AddActivityModal({ dayId, onClose }: AddActivityModalProps) {
             ) : null}
           </View>
 
-          <Text style={styles.label}>NOTAS</Text>
+          <Text style={styles.label}>{t('itinerary.notes').toUpperCase()}</Text>
           <TextInput
             style={styles.notesInput}
-            placeholder="Añade una nota..."
+            placeholder={t('itinerary.notesPlaceholder')}
             placeholderTextColor={colors.secondary300}
             multiline
             value={notes}
@@ -254,7 +262,9 @@ export function AddActivityModal({ dayId, onClose }: AddActivityModalProps) {
               <ActivityIndicator color={colors.white} />
             ) : (
               <Text style={styles.submitText}>
-                Añadir al {day ? `día ${day.dayNumber}` : 'día'}
+                {day
+                  ? t('itinerary.addToDay', { number: day.dayNumber })
+                  : t('itinerary.addToDayGeneric')}
               </Text>
             )}
           </Pressable>

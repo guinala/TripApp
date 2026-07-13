@@ -2,11 +2,13 @@ import { ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { onboarding } from '@/constants/theme';
 
 const BG = require('../../../assets/images/welcome-bg.jpg');
 
 export default function WelcomeScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
 
   return (
@@ -23,12 +25,10 @@ export default function WelcomeScreen() {
 
           <View style={styles.hero}>
             <Text style={styles.title}>
-              Tu próximo{'\n'}viaje empieza{'\n'}
-              <Text style={styles.titleAccent}>hoy</Text>
+              {t('auth.welcome.titleStart')}
+              <Text style={styles.titleAccent}>{t('auth.welcome.titleAccent')}</Text>
             </Text>
-            <Text style={styles.subtitle}>
-              Planifica itinerarios, controla tu presupuesto y guarda los recuerdos en un solo lugar
-            </Text>
+            <Text style={styles.subtitle}>{t('auth.welcome.subtitle')}</Text>
           </View>
 
           {/* Empuja los botones a la zona baja */}
@@ -40,11 +40,11 @@ export default function WelcomeScreen() {
               activeOpacity={0.85}
               onPress={() => router.push('/register')}
             >
-              <Text style={styles.startText}>Empezar</Text>
+              <Text style={styles.startText}>{t('auth.welcome.start')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/login')}>
-              <Text style={styles.loginText}>Ya tengo una cuenta · Iniciar sesión</Text>
+              <Text style={styles.loginText}>{t('auth.welcome.haveAccount')}</Text>
             </TouchableOpacity>
           </View>
         </View>

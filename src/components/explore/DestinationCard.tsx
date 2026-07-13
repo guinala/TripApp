@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, fontSize, radius, spacing } from '@/constants/theme';
 import { PRICE_META } from '@/constants/destinations';
 import { useUnsplashCover } from '@/hooks/use-unsplash-photos';
+import i18n from '@/i18n';
 import type { Destination } from '@/types/destination';
 
 type DestinationCardProps = {
@@ -13,7 +14,8 @@ type DestinationCardProps = {
 };
 
 export function formatRating(rating: number): string {
-  return rating.toFixed(1).replace('.', ',');
+  const text = rating.toFixed(1);
+  return i18n.language === 'es' ? text.replace('.', ',') : text;
 }
 
 export function DestinationCard({ destination, onPress, style }: DestinationCardProps) {

@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { router } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { useTripDetail } from '@/context/TripDetailContext';
 import { useAuthStore } from '@/store/authStore';
@@ -39,6 +40,7 @@ function resolveDayId(days: Day[], takenAt: string | null): string | null {
 }
 
 export default function DiaryScreen() {
+  const { t } = useTranslation();
   const { trip, days } = useTripDetail();
   const userId = useAuthStore((s) => s.user?.id);
   const addPhoto = usePhotoStore((s) => s.addPhoto);
@@ -57,7 +59,10 @@ export default function DiaryScreen() {
     const useCamera = await new Promise<boolean | null>((resolve) => {
       if (Platform.OS === 'ios') {
         ActionSheetIOS.showActionSheetWithOptions(
-          { options: ['Cancelar', 'Tomar foto', 'Elegir de galería'], cancelButtonIndex: 0 },
+          {
+            options: [t('common.cancel'), t('diary.takePhoto'), t('diary.chooseFromGallery')],
+            cancelButtonIndex: 0,
+          },
           (index) => {
             if (index === 1) resolve(true);
             else if (index === 2) resolve(false);
@@ -65,10 +70,10 @@ export default function DiaryScreen() {
           },
         );
       } else {
-        Alert.alert('Añadir foto', undefined, [
-          { text: 'Cancelar', style: 'cancel', onPress: () => resolve(null) },
-          { text: 'Tomar foto', onPress: () => resolve(true) },
-          { text: 'Elegir de galería', onPress: () => resolve(false) },
+        Alert.alert(t('diary.addPhoto'), undefined, [
+          { text: t('common.cancel'), style: 'cancel', onPress: () => resolve(null) },
+          { text: t('diary.takePhoto'), onPress: () => resolve(true) },
+          { text: t('diary.chooseFromGallery'), onPress: () => resolve(false) },
         ]);
       }
     });
@@ -89,11 +94,11 @@ export default function DiaryScreen() {
         takenAt: picked.takenAt ?? undefined,
       });
     } catch {
-      Alert.alert('No se pudo añadir la foto', 'Inténtalo de nuevo.');
+      Alert.alert(t('diary.addPhotoError'), t('common.tryAgain'));
     } finally {
       setUploading(false);
     }
-  }, [userId, trip.id, days, addPhoto]);
+  }, [userId, trip.id, days, addPhoto, t]);
 
   const handlePressPhoto = useCallback(
     (photoId: string) => {
@@ -104,7 +109,7 @@ export default function DiaryScreen() {
 
   const handleExportPdf = useCallback(async () => {
     if (groups.length === 0) {
-      Alert.alert('Nada que exportar', 'Añade fotos a tu diario primero.');
+      Alert.alert(t('diary.nothingToExport'), t('diary.nothingToExportMessage'));
       return;
     }
     setExportingPdf(true);
@@ -119,11 +124,11 @@ export default function DiaryScreen() {
         groups,
       );
     } catch {
-      Alert.alert('No se pudo exportar', 'Inténtalo de nuevo.');
+      Alert.alert(t('diary.exportError'), t('common.tryAgain'));
     } finally {
       setExportingPdf(false);
     }
-  }, [groups, trip]);
+  }, [groups, trip, t]);
 
   if (loading && groups.length === 0) {
     return (
@@ -145,8 +150,8 @@ export default function DiaryScreen() {
 
         {groups.length === 0 ? (
           <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>Tu diario está vacío</Text>
-            <Text style={styles.emptyText}>Añade fotos de tu viaje con el botón de la cámara.</Text>
+            <Text style={styles.emptyTitle}>{t('diary.emptyTitle')}</Text>
+            <Text style={styles.emptyText}>{t('diary.emptyText')}</Text>
           </View>
         ) : view === 'grid' ? (
           <View style={styles.sections}>
@@ -198,10 +203,8 @@ export default function DiaryScreen() {
               />
             ) : (
               <View style={styles.empty}>
-                <Text style={styles.emptyTitle}>Sin ubicaciones</Text>
-                <Text style={styles.emptyText}>
-                  Ninguna de tus fotos tiene ubicación guardada todavía.
-                </Text>
+                <Text style={styles.emptyTitle}>{t('diary.noLocations')}</Text>
+                <Text style={styles.emptyText}>{t('diary.noLocationsText')}</Text>
               </View>
             )}
           </View>
@@ -211,7 +214,7 @@ export default function DiaryScreen() {
       <Fab
         onPress={uploading ? () => {} : handleAddPhoto}
         icon="camera"
-        accessibilityLabel="Añadir foto"
+        accessibilityLabel={t('diary.addPhoto')}
       />
     </View>
   );

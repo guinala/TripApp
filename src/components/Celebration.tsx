@@ -70,19 +70,25 @@ export function Celebration() {
   const { width, height } = useWindowDimensions();
   const [pieces, setPieces] = useState<PieceConfig[]>([]);
 
+  // setState diferido a un callback de rAF: la generación usa Math.random(),
+  // así que no puede derivarse en render (react-hooks/purity) ni asignarse
+  // síncronamente en el efecto (react-hooks/set-state-in-effect).
   useEffect(() => {
-    setPieces(
-      Array.from({ length: PIECES }, (_, i) => ({
-        startX: Math.random() * width,
-        color: COLORS[i % COLORS.length],
-        size: 6 + Math.random() * 6,
-        delay: Math.random() * 250,
-        duration: 1800 + Math.random() * 1200,
-        sway: (Math.random() - 0.5) * 120,
-        spin: 360 + Math.random() * 720,
-      })),
-    );
-  }, [width, height]);
+    const id = requestAnimationFrame(() => {
+      setPieces(
+        Array.from({ length: PIECES }, (_, i) => ({
+          startX: Math.random() * width,
+          color: COLORS[i % COLORS.length],
+          size: 6 + Math.random() * 6,
+          delay: Math.random() * 250,
+          duration: 1800 + Math.random() * 1200,
+          sway: (Math.random() - 0.5) * 120,
+          spin: 360 + Math.random() * 720,
+        })),
+      );
+    });
+    return () => cancelAnimationFrame(id);
+  }, [width]);
 
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>

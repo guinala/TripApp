@@ -1,5 +1,6 @@
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { Redirect, router, useLocalSearchParams, withLayoutContext } from 'expo-router';
 import { createMaterialTopTabNavigator } from 'expo-router/js-top-tabs';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
@@ -16,6 +17,7 @@ const { Navigator } = createMaterialTopTabNavigator();
 const MaterialTopTabs = withLayoutContext(Navigator);
 
 export default function TripDetailLayout() {
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const storeTrip = useTripStore((s) => s.trips.find((t) => t.id === id));
   const [mapOpen, setMapOpen] = useState(false);
@@ -49,21 +51,6 @@ export default function TripDetailLayout() {
     return <Redirect href="/(app)/(tabs)" />;
   }
 
-  // if (!trip) {
-  //   return (
-  //     <View
-  //       style={{
-  //         flex: 1,
-  //         alignItems: 'center',
-  //         justifyContent: 'center',
-  //         backgroundColor: colors.surfaceCream,
-  //       }}
-  //     >
-  //       <ActivityIndicator />
-  //     </View>
-  //   );
-  // }
-
   return (
     <TripDetailProvider trip={trip}>
       <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.surfaceCream }}>
@@ -76,7 +63,7 @@ export default function TripDetailLayout() {
                 color: colors.secondary,
               }}
             >
-              ‹ Volver
+              ‹ {t('common.back')}
             </Text>
           </Pressable>
           <Text
@@ -105,7 +92,7 @@ export default function TripDetailLayout() {
                 color: colors.primary,
               }}
             >
-              Ver mapa completo →
+              {t('tripDetail.viewFullMap')} →
             </Text>
           </Pressable>
         </View>
@@ -123,10 +110,16 @@ export default function TripDetailLayout() {
             tabBarStyle: { backgroundColor: colors.surfaceCream, elevation: 0, shadowOpacity: 0 },
           }}
         >
-          <MaterialTopTabs.Screen name="itinerary" options={{ title: 'Itinerario' }} />
-          <MaterialTopTabs.Screen name="budget" options={{ title: 'Presupuesto' }} />
-          <MaterialTopTabs.Screen name="packing" options={{ title: 'Equipaje' }} />
-          <MaterialTopTabs.Screen name="diary" options={{ title: 'Diario' }} />
+          <MaterialTopTabs.Screen
+            name="itinerary"
+            options={{ title: t('tripDetail.tabs.itinerary') }}
+          />
+          <MaterialTopTabs.Screen name="budget" options={{ title: t('tripDetail.tabs.budget') }} />
+          <MaterialTopTabs.Screen
+            name="packing"
+            options={{ title: t('tripDetail.tabs.packing') }}
+          />
+          <MaterialTopTabs.Screen name="diary" options={{ title: t('tripDetail.tabs.diary') }} />
         </MaterialTopTabs>
 
         <FullMapModal visible={mapOpen} onClose={() => setMapOpen(false)} />

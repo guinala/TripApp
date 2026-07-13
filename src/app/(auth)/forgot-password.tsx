@@ -12,11 +12,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 import { colors, fontSize, fonts, radius } from '@/constants/theme';
 import AuthTextField from '@/components/auth/AuthTextField';
 import { useAuthStore } from '@/store/authStore';
 
 export default function ForgotPasswordScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const resetPassword = useAuthStore((s) => s.resetPassword);
 
@@ -30,14 +32,14 @@ export default function ForgotPasswordScreen() {
   async function handleSend() {
     setError(null);
     const clean = email.trim();
-    if (!/^\S+@\S+\.\S+$/.test(clean)) return setError('Introduce un email válido.');
+    if (!/^\S+@\S+\.\S+$/.test(clean)) return setError(t('auth.register.errorEmail'));
 
     try {
       setLoading(true);
       await resetPassword(clean);
       setSent(true);
     } catch {
-      setError('No se pudo enviar el correo. Inténtalo de nuevo.');
+      setError(t('auth.forgot.errorSend'));
     } finally {
       setLoading(false);
     }
@@ -60,31 +62,26 @@ export default function ForgotPasswordScreen() {
 
           <View style={styles.header}>
             <Text style={styles.title}>
-              ¿Olvidaste tu{'\n'}
-              <Text style={styles.titleAccent}>contraseña?</Text>
+              {t('auth.forgot.titleStart')}
+              <Text style={styles.titleAccent}>{t('auth.forgot.titleAccent')}</Text>
             </Text>
-            <Text style={styles.subtitle}>
-              Escribe tu email y te enviaremos un enlace para restablecerla.
-            </Text>
+            <Text style={styles.subtitle}>{t('auth.forgot.subtitle')}</Text>
           </View>
 
           {sent ? (
             <View style={styles.notice}>
-              <Text style={styles.noticeText}>
-                Si existe una cuenta con ese email, recibirás un correo con el enlace en unos
-                minutos. Revisa también la carpeta de spam.
-              </Text>
+              <Text style={styles.noticeText}>{t('auth.forgot.sentNotice')}</Text>
             </View>
           ) : (
             <View style={styles.fields}>
               <AuthTextField
-                label="Email"
+                label={t('auth.email')}
                 value={email}
-                onChangeText={(t) => {
-                  setEmail(t);
+                onChangeText={(text) => {
+                  setEmail(text);
                   if (error) setError(null);
                 }}
-                placeholder="tu@email.com"
+                placeholder={t('auth.emailPlaceholder')}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -101,7 +98,7 @@ export default function ForgotPasswordScreen() {
                 {loading ? (
                   <ActivityIndicator color={colors.white} />
                 ) : (
-                  <Text style={styles.primaryText}>Enviar enlace</Text>
+                  <Text style={styles.primaryText}>{t('auth.forgot.submit')}</Text>
                 )}
               </TouchableOpacity>
             </View>

@@ -1,8 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { colors, expenseCategoryColors, fonts, fontSize, radius, spacing } from '@/constants/theme';
 import { EXPENSE_ICON } from '@/constants/expenseIcons';
 import { formatCurrency } from '@/utils/currency';
+import { dateLocale } from '@/i18n/date';
+import { format, parseISO } from 'date-fns';
 import type { Expense } from '@/types/expense';
 
 function withAlpha(hex: string, opacity: number): string {
@@ -12,13 +16,13 @@ function withAlpha(hex: string, opacity: number): string {
   return `${hex}${a}`;
 }
 
-function tripDayLabel(date: string, tripStart?: string): string {
+function tripDayLabel(date: string, t: TFunction, tripStart?: string): string {
   if (!tripStart) {
-    return new Date(date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+    return format(parseISO(date), 'd MMM', { locale: dateLocale() });
   }
   const MS = 86_400_000;
   const n = Math.floor((new Date(date).getTime() - new Date(tripStart).getTime()) / MS) + 1;
-  return `Día ${n}`;
+  return t('itinerary.dayNumber', { number: n });
 }
 
 type ExpenseListItemProps = {
@@ -28,11 +32,12 @@ type ExpenseListItemProps = {
 };
 
 export function ExpenseListItem({ expense, tripStart, onPress }: ExpenseListItemProps) {
+  const { t } = useTranslation();
   const tint = expenseCategoryColors[expense.category];
 
   return (
     <Pressable style={styles.card} onPress={onPress}>
-      <Text style={styles.day}>{tripDayLabel(expense.date, tripStart)}</Text>
+      <Text style={styles.day}>{tripDayLabel(expense.date, t, tripStart)}</Text>
 
       <View style={[styles.iconBox, { backgroundColor: withAlpha(tint, 0.15) }]}>
         <Ionicons name={EXPENSE_ICON[expense.category]} size={20} color={tint} />

@@ -9,7 +9,7 @@ import { ensureDays } from '@/services/days';
 import type { Activity } from '@/types/activity';
 import type { Day } from '@/types/day';
 import type { Trip } from '@/types/trip';
-import { reload } from 'expo-router/build/global-state/router';
+import i18n from '@/i18n';
 
 type TripDetailValue = {
   trip: Trip;
@@ -25,6 +25,10 @@ type TripDetailValue = {
 };
 
 const TripDetailContext = createContext<TripDetailValue | null>(null);
+
+function fetchTripData(trip: Trip): Promise<[Day[], Activity[]]> {
+  return Promise.all([ensureDays(trip), listActivitiesByTrip(trip.id)]);
+}
 
 export function TripDetailProvider({ trip, children }: { trip: Trip; children: React.ReactNode }) {
   const [days, setDays] = useState<Day[]>([]);
@@ -42,39 +46,55 @@ export function TripDetailProvider({ trip, children }: { trip: Trip; children: R
     [activities],
   );
 
-  const load = useCallback(async () => {
+  const reload = useCallback(async () => {
+    setLoading(true);
+    setError(null);
     try {
-      setLoading(true);
-      setError(null);
-      const [loadedDays, loadedActivities] = await Promise.all([
-        ensureDays(trip),
-        listActivitiesByTrip(trip.id),
-      ]);
+      const [loadedDays, loadedActivities] = await fetchTripData(trip);
       setDays(loadedDays);
       setActivities(loadedActivities);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error al cargar el itinerario');
+      setError(e instanceof Error ? e.message : i18n.t('errors.loadItinerary'));
     } finally {
       setLoading(false);
     }
   }, [trip]);
 
-  const reorder = useCallback(async (dayId: string, orderedIds: string[]) => {
-    setActivities((prev) => {
-      const byId = new Map(prev.map((a) => [a.id, a]));
-      const reordered = orderedIds.map((id, i) => ({ ...byId.get(id)!, orderIndex: i }));
-      return [...prev.filter((a) => a.dayId !== dayId), ...reordered];
-    });
-    try {
-      await reorderActivities(orderedIds);
-    } catch {
-      reload();
-    }
-  }, []);
+  const reorder = useCallback(
+    async (dayId: string, orderedIds: string[]) => {
+      setActivities((prev) => {
+        const byId = new Map(prev.map((a) => [a.id, a]));
+        const reordered = orderedIds.map((id, i) => ({ ...byId.get(id)!, orderIndex: i }));
+        return [...prev.filter((a) => a.dayId !== dayId), ...reordered];
+      });
+      try {
+        await reorderActivities(orderedIds);
+      } catch {
+        reload();
+      }
+    },
+    [reload],
+  );
 
   useEffect(() => {
-    load();
-  }, [load]);
+    let cancelled = false;
+    (async () => {
+      try {
+        const [loadedDays, loadedActivities] = await fetchTripData(trip);
+        if (cancelled) return;
+        setDays(loadedDays);
+        setActivities(loadedActivities);
+        setError(null);
+      } catch (e) {
+        if (!cancelled) setError(e instanceof Error ? e.message : i18n.t('errors.loadItinerary'));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [trip]);
 
   return (
     <TripDetailContext.Provider
@@ -84,7 +104,7 @@ export function TripDetailProvider({ trip, children }: { trip: Trip; children: R
         activities,
         loading,
         error,
-        reload: load,
+        reload,
         selectedDayId,
         setSelectedDayId,
         addActivity,

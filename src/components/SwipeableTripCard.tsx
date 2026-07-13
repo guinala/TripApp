@@ -1,19 +1,21 @@
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { Alert, Pressable, StyleSheet, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useTripStore } from '@/store/tripStore';
 import { TripCard } from './cards/TripCard';
 import { colors, fonts, fontSize, radius } from '@/constants/theme';
 import type { Trip } from '@/types/trip';
 
 export function SwipeableTripCard({ trip }: { trip: Trip }) {
+  const { t } = useTranslation();
   const removeTrip = useTripStore((s) => s.removeTrip);
 
   const confirm = () => {
-    Alert.alert('Eliminar viaje', '¿Seguro? Se borrará todo su contenido.', [
-      { text: 'Cancelar', style: 'cancel' },
+    Alert.alert(t('trips.delete.title'), t('trips.delete.message'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Eliminar',
+        text: t('common.delete'),
         style: 'destructive',
         onPress: () => removeTrip(trip.id).catch(() => {}),
       },
@@ -27,7 +29,7 @@ export function SwipeableTripCard({ trip }: { trip: Trip }) {
       renderRightActions={() => (
         <Pressable style={styles.action} onPress={confirm}>
           <Ionicons name="trash-outline" size={22} color={colors.surfacePaper} />
-          <Text style={styles.label}>Eliminar</Text>
+          <Text style={styles.label}>{t('common.delete')}</Text>
         </Pressable>
       )}
     >

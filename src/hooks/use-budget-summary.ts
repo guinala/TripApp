@@ -76,6 +76,20 @@ async function breakdownBy<K extends string>(
   return entries.map(([key], i) => ({ key, amount: amounts[i] }));
 }
 
+// Sin setState síncrono en el efecto (react-hooks/set-state-in-effect):
+// el efecto solo guarda el resultado junto a los inputs de su petición y
+// `loading` se deriva en el render comparando identidades.
+type BudgetResult = {
+  expenses: Expense[];
+  currency: string;
+  spent: number | null;
+  byCategory: CategoryBreakdown[];
+  byDay: DayBreakdown[];
+};
+
+const NO_CATEGORIES: CategoryBreakdown[] = [];
+const NO_DAYS: DayBreakdown[] = [];
+
 export function useBudgetSummary(
   tripId: string,
   budget: number,
@@ -85,23 +99,12 @@ export function useBudgetSummary(
 ): BudgetSummary {
   const expenses = useExpenseStore((s) => s.byTrip[tripId] ?? EMPTY);
 
-  const [loading, setLoading] = useState(false);
-  const [spent, setSpent] = useState<number | null>(null);
-  const [byCategory, setByCategory] = useState<CategoryBreakdown[]>([]);
-  const [byDay, setByDay] = useState<DayBreakdown[]>([]);
+  const [result, setResult] = useState<BudgetResult | null>(null);
 
   useEffect(() => {
-    if (expenses.length === 0) {
-      setSpent(0);
-      setByCategory([]);
-      setByDay([]);
-      setLoading(false);
-      return;
-    }
+    if (expenses.length === 0) return;
 
     let cancelled = false;
-    setLoading(true);
-
     (async () => {
       try {
         const [total, cats, days] = await Promise.all([
@@ -112,19 +115,28 @@ export function useBudgetSummary(
 
         if (cancelled) return;
 
-        setSpent(total);
-        setByCategory(
-          cats
+        setResult({
+          expenses,
+          currency: tripCurrency,
+          spent: total,
+          byCategory: cats
             .map((c) => ({ category: c.key as ExpenseCategory, amount: c.amount }))
             .sort((a, b) => b.amount - a.amount),
-        );
-        setByDay(
-          days
+          byDay: days
             .map((d) => ({ date: d.key, amount: d.amount }))
             .sort((a, b) => a.date.localeCompare(b.date)),
-        );
-      } finally {
-        if (!cancelled) setLoading(false);
+        });
+      } catch {
+        // Marca la petición como resuelta conservando los últimos valores.
+        if (!cancelled) {
+          setResult((prev) => ({
+            expenses,
+            currency: tripCurrency,
+            spent: prev?.spent ?? null,
+            byCategory: prev?.byCategory ?? NO_CATEGORIES,
+            byDay: prev?.byDay ?? NO_DAYS,
+          }));
+        }
       }
     })();
 
@@ -134,6 +146,14 @@ export function useBudgetSummary(
   }, [expenses, tripCurrency]);
 
   return useMemo(() => {
+    const isEmpty = expenses.length === 0;
+    const upToDate =
+      result !== null && result.expenses === expenses && result.currency === tripCurrency;
+    const loading = !isEmpty && !upToDate;
+    const spent = isEmpty ? 0 : (result?.spent ?? null);
+    const byCategory = isEmpty ? NO_CATEGORIES : (result?.byCategory ?? NO_CATEGORIES);
+    const byDay = isEmpty ? NO_DAYS : (result?.byDay ?? NO_DAYS);
+
     const percentage = spent !== null && budget > 0 ? (spent / budget) * 100 : null;
     const remaining = spent !== null ? budget - spent : null;
 
@@ -174,5 +194,5 @@ export function useBudgetSummary(
       donutSegments,
       byDay,
     };
-  }, [loading, spent, byCategory, byDay, budget, tripStart, tripEnd]);
+  }, [expenses, result, tripCurrency, budget, tripStart, tripEnd]);
 }

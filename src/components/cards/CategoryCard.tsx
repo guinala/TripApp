@@ -1,17 +1,18 @@
 // src/components/budget/CategoryCard.tsx
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import type { DonutSegment, DonutSegmentKey } from '@/hooks/use-budget-summary';
 import { colors, expenseCategoryColors, fonts, remainingColor } from '@/constants/theme';
 import { CategoryDonut } from '../budget/CategoryDonut';
 
-const SEGMENT_LABELS: Record<DonutSegmentKey, string> = {
-  stay: 'Aloj.',
-  transport: 'Transp.',
-  food: 'Comida',
-  leisure: 'Ocio',
-  other: 'Otros',
-  remaining: 'Restante',
+const SEGMENT_LABEL_KEYS: Record<DonutSegmentKey, string> = {
+  stay: 'budget.categories.stay',
+  transport: 'budget.categories.transport',
+  food: 'budget.categories.food',
+  leisure: 'budget.categories.leisure',
+  other: 'budget.categories.other',
+  remaining: 'budget.categories.remaining',
 };
 
 function colorFor(key: DonutSegmentKey): string {
@@ -23,11 +24,12 @@ type CategoryCardProps = {
 };
 
 export function CategoryCard({ segments }: CategoryCardProps) {
+  const { t } = useTranslation();
   const visible = segments.filter((s) => Math.round(s.percentage) >= 1);
 
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>POR CATEGORÍA</Text>
+      <Text style={styles.title}>{t('budget.byCategory').toUpperCase()}</Text>
 
       <View style={styles.chartWrap}>
         <CategoryDonut segments={segments} size={60} strokeWidth={12} />
@@ -39,7 +41,7 @@ export function CategoryCard({ segments }: CategoryCardProps) {
             <View style={styles.data}>
               <View style={[styles.swatch, { backgroundColor: colorFor(seg.key) }]} />
               <Text style={styles.name} numberOfLines={1}>
-                {SEGMENT_LABELS[seg.key]}
+                {t(SEGMENT_LABEL_KEYS[seg.key])}
               </Text>
             </View>
             <Text style={styles.percent}>{Math.round(seg.percentage)}%</Text>

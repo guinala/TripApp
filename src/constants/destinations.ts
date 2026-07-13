@@ -1,16 +1,18 @@
 import type { Continent, Destination, DestinationType, PriceRange } from '@/types/destination';
 
+// Claves i18n: renderiza con t(DESTINATION_TYPE_LABELS[type])
 export const DESTINATION_TYPE_LABELS: Record<DestinationType, string> = {
-  cultural: 'Cultural',
-  gastro: 'Gastronomía',
-  aventura: 'Aventura',
-  relax: 'Relax',
+  cultural: 'destination.types.cultural',
+  gastro: 'destination.types.gastro',
+  aventura: 'destination.types.aventura',
+  relax: 'destination.types.relax',
 };
 
-export const PRICE_META: Record<PriceRange, { symbol: string; label: string }> = {
-  low: { symbol: '€', label: 'Bajo' },
-  mid: { symbol: '€€', label: 'Medio' },
-  high: { symbol: '€€€', label: 'Alto' },
+// labelKey es clave i18n: renderiza con t(PRICE_META[range].labelKey)
+export const PRICE_META: Record<PriceRange, { symbol: string; labelKey: string }> = {
+  low: { symbol: '€', labelKey: 'destination.price.low' },
+  mid: { symbol: '€€', labelKey: 'destination.price.mid' },
+  high: { symbol: '€€€', labelKey: 'destination.price.high' },
 };
 
 export const CONTINENTS: Continent[] = ['Europa', 'Asia', 'América', 'África', 'Oceanía'];

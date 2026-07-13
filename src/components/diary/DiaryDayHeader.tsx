@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { format, parseISO } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
+import { dateLocale } from '@/i18n/date';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import type { Day } from '@/types/day';
 
@@ -11,12 +12,17 @@ type DiaryDayHeaderProps = {
 };
 
 export function DiaryDayHeader({ day, photoCount, destination }: DiaryDayHeaderProps) {
-  const dayLabel = day ? `DÍA ${day.dayNumber}` : 'SIN DÍA ASIGNADO';
-  const photoLabel = `${photoCount} ${photoCount === 1 ? 'foto' : 'fotos'}`;
+  const { t } = useTranslation();
+  const dayLabel = day
+    ? t('itinerary.dayNumber', { number: day.dayNumber }).toUpperCase()
+    : t('diary.noDayAssigned').toUpperCase();
+  const photoLabel = t('diary.photoCount', { count: photoCount });
 
   const title = day
-    ? [format(parseISO(day.date), 'd MMM', { locale: es }), destination].filter(Boolean).join(' · ')
-    : 'Fotos sueltas';
+    ? [format(parseISO(day.date), 'd MMM', { locale: dateLocale() }), destination]
+        .filter(Boolean)
+        .join(' · ')
+    : t('diary.looseNoDay');
 
   return (
     <View style={styles.wrapper}>

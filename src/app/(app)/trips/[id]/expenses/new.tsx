@@ -15,7 +15,8 @@ import { router, useLocalSearchParams } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { ChevronLeft, Calendar } from 'lucide-react-native';
 import { format, parseISO } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
+import { dateLocale } from '@/i18n/date';
 
 import { colors, fonts, fontSize, radius, spacing } from '@/constants/theme';
 import { CURRENCY_OPTIONS, CURRENCY_SYMBOL } from '@/constants/currencies';
@@ -38,6 +39,7 @@ function parseAmount(text: string): number {
 }
 
 export default function NewExpenseScreen() {
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const trip = useTripStore((s) => s.trips.find((t) => t.id === id));
   const userId = useAuthStore((s) => s.user?.id);
@@ -68,7 +70,7 @@ export default function NewExpenseScreen() {
   const conversion = useLiveConversion(amount, currency, tripCurrency, dateISO);
 
   const dayOptions: SelectOption[] = days.map((d) => ({
-    label: `Día ${d.dayNumber}`,
+    label: t('itinerary.dayNumber', { number: d.dayNumber }),
     value: d.id,
   }));
 
@@ -80,8 +82,8 @@ export default function NewExpenseScreen() {
 
   async function handleSave() {
     const value = parseAmount(amountText);
-    if (!value || value <= 0) return setError('Introduce un importe válido.');
-    if (!category) return setError('Elige una categoría.');
+    if (!value || value <= 0) return setError(t('expense.errorAmount'));
+    if (!category) return setError(t('expense.errorCategory'));
     setError(null);
     setSaving(true);
     try {
@@ -101,7 +103,7 @@ export default function NewExpenseScreen() {
       });
       router.back();
     } catch {
-      setError('No se pudo guardar el gasto. Inténtalo de nuevo.');
+      setError(t('expense.errorSave'));
       setSaving(false);
     }
   }
@@ -112,9 +114,9 @@ export default function NewExpenseScreen() {
         <Pressable onPress={() => router.back()} hitSlop={8}>
           <ChevronLeft size={26} color={colors.secondary} />
         </Pressable>
-        <Text style={styles.headerTitle}>Nuevo gasto</Text>
+        <Text style={styles.headerTitle}>{t('expense.title')}</Text>
         <Pressable onPress={handleSave} hitSlop={8} disabled={saving}>
-          <Text style={styles.headerSave}>Guardar</Text>
+          <Text style={styles.headerSave}>{t('common.save')}</Text>
         </Pressable>
       </View>
 
@@ -129,7 +131,7 @@ export default function NewExpenseScreen() {
         >
           {/* Card IMPORTE */}
           <View style={styles.amountCard}>
-            <Text style={styles.amountLabel}>IMPORTE</Text>
+            <Text style={styles.amountLabel}>{t('expense.amount').toUpperCase()}</Text>
             <View style={styles.amountRow}>
               <TextInput
                 style={styles.amountInput}
@@ -146,44 +148,48 @@ export default function NewExpenseScreen() {
               <Text style={styles.conversion}>
                 ≈ {formatCurrency(conversion.converted, tripCurrency)}
                 {conversion.rateDate
-                  ? ` · cambio del ${format(parseISO(conversion.rateDate), 'd MMM', { locale: es })}`
+                  ? ` · ${t('expense.rateOf', {
+                      date: format(parseISO(conversion.rateDate), 'd MMM', { locale: dateLocale() }),
+                    })}`
                   : ''}
               </Text>
             ) : null}
           </View>
 
           <AuthTextField
-            label="Descripción"
+            label={t('expense.description')}
             value={description}
             onChangeText={setDescription}
-            placeholder="Ej. Cena Ramen + Sake"
+            placeholder={t('expense.descriptionPlaceholder')}
           />
 
           <View style={styles.row}>
             <View style={styles.flex}>
               <SelectField
-                label="Moneda"
+                label={t('expense.currency')}
                 value={currency}
                 options={CURRENCY_OPTIONS}
                 onChange={setCurrency}
               />
             </View>
             <View style={styles.flex}>
-              <Text style={styles.fieldLabel}>FECHA</Text>
+              <Text style={styles.fieldLabel}>{t('expense.date').toUpperCase()}</Text>
               <Pressable style={styles.dateBox} onPress={() => setShowPicker(true)}>
                 <Calendar size={18} color={colors.textSecondary} />
-                <Text style={styles.dateText}>{format(date, 'd MMM yyyy', { locale: es })}</Text>
+                <Text style={styles.dateText}>
+                  {format(date, 'd MMM yyyy', { locale: dateLocale() })}
+                </Text>
               </Pressable>
             </View>
           </View>
 
           {dayOptions.length > 0 ? (
             <SelectField
-              label="Día del viaje"
+              label={t('expense.tripDay')}
               value={dayId ?? ''}
               options={dayOptions}
               onChange={handleDayChange}
-              placeholder="Selecciona un día"
+              placeholder={t('expense.selectDay')}
             />
           ) : null}
 
@@ -203,7 +209,7 @@ export default function NewExpenseScreen() {
             {saving ? (
               <ActivityIndicator color={colors.white} />
             ) : (
-              <Text style={styles.submitText}>Añadir gasto</Text>
+              <Text style={styles.submitText}>{t('budget.addExpense')}</Text>
             )}
           </Pressable>
         </View>

@@ -1,11 +1,13 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, radius, spacing } from '@/constants/theme';
 
 // react-native-maps no funciona en web => placeholder
 export default function TripMap() {
+  const { t } = useTranslation();
   return (
     <View style={styles.wrapper}>
-      <Text style={styles.text}>Mapa no disponible en web</Text>
+      <Text style={styles.text}>{t('map.unavailableWeb')}</Text>
     </View>
   );
 }

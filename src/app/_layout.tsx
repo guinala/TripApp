@@ -1,3 +1,4 @@
+import '@/i18n';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useEffect } from 'react';
 import { Stack, useRouter } from 'expo-router';
@@ -10,8 +11,10 @@ import { ActivityIndicator, View } from 'react-native';
 import { colors } from '@/constants/theme';
 import * as Linking from 'expo-linking';
 import * as QueryParams from 'expo-auth-session/build/QueryParams';
+import { initNotifications } from '@/services/notifications';
 
 SplashScreen.preventAutoHideAsync();
+initNotifications();
 
 export default function RootLayout() {
   const router = useRouter();

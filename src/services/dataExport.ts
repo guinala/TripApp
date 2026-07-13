@@ -10,20 +10,15 @@ export async function exportUserData(userId: string) {
   const trips = tripsRes.data ?? [];
   const tripIds = trips.map((t) => t.id);
 
-  const empty = { data: [] as unknown[], error: null };
-  const [daysRes, expensesRes, packingRes, photosRes] = tripIds.length
-    ? await Promise.all([
-        supabase.from('days').select('*').in('trip_id', tripIds),
-        supabase.from('expenses').select('*').in('trip_id', tripIds),
-        supabase.from('packing_items').select('*').in('trip_id', tripIds),
-        supabase.from('photos').select('*').in('trip_id', tripIds),
-      ])
-    : [empty, empty, empty, empty];
+  const [daysRes, expensesRes, packingRes, photosRes] = await Promise.all([
+    supabase.from('days').select('*').in('trip_id', tripIds),
+    supabase.from('expenses').select('*').in('trip_id', tripIds),
+    supabase.from('packing_items').select('*').in('trip_id', tripIds),
+    supabase.from('photos').select('*').in('trip_id', tripIds),
+  ]);
 
-  const dayIds = (daysRes.data ?? []).map((d: { id: string }) => d.id);
-  const activitiesRes = dayIds.length
-    ? await supabase.from('activities').select('*').in('day_id', dayIds)
-    : empty;
+  const dayIds = (daysRes.data ?? []).map((d) => d.id);
+  const activitiesRes = await supabase.from('activities').select('*').in('day_id', dayIds);
 
   return {
     exported_at: new Date().toISOString(),

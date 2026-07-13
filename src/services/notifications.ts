@@ -1,6 +1,7 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { parseISO, setHours, setMinutes, subDays } from 'date-fns';
+import i18n from '@/i18n';
 import type { Trip } from '@/types/trip';
 
 export type NotificationPrefs = {
@@ -55,8 +56,8 @@ export async function resyncNotifications(trips: Trip[], prefs: NotificationPref
     for (const trip of upcoming) {
       await Notifications.scheduleNotificationAsync({
         content: {
-          title: `¡Mañana empieza ${trip.title}! ✈️`,
-          body: `Revisa tu equipaje e itinerario para ${trip.destination}.`,
+          title: i18n.t('notifications.tripReminder.title', { title: trip.title }),
+          body: i18n.t('notifications.tripReminder.body', { destination: trip.destination }),
           data: { kind: 'trip-reminder', tripId: trip.id },
         },
         trigger: {
@@ -70,8 +71,8 @@ export async function resyncNotifications(trips: Trip[], prefs: NotificationPref
   if (prefs.budgetSummary) {
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: 'Tu semana viajera 📊',
-        body: 'Echa un vistazo a cómo van los presupuestos de tus viajes.',
+        title: i18n.t('notifications.budgetSummary.title'),
+        body: i18n.t('notifications.budgetSummary.body'),
         data: { kind: 'budget-summary' },
       },
       trigger: {
@@ -86,8 +87,8 @@ export async function resyncNotifications(trips: Trip[], prefs: NotificationPref
   if (prefs.weeklyInspiration) {
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: '¿Y si el próximo destino…? 🌍',
-        body: 'Descubre nuevos lugares en la pestaña Explorar.',
+        title: i18n.t('notifications.weeklyInspiration.title'),
+        body: i18n.t('notifications.weeklyInspiration.body'),
         data: { kind: 'weekly-inspiration' },
       },
       trigger: {

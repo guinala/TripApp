@@ -1,4 +1,5 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, radius, spacing } from '@/constants/theme';
 import { DIARY_VIEWS, type DiaryView } from '@/constants/diary';
 
@@ -15,10 +16,11 @@ export function DiaryViewSelector({
   onExportPdf,
   exportingPdf = false,
 }: DiaryViewSelectorProps) {
+  const { t } = useTranslation();
   return (
     <View style={styles.row}>
       <View style={styles.pills}>
-        {DIARY_VIEWS.map(({ key, label }) => {
+        {DIARY_VIEWS.map(({ key, labelKey }) => {
           const selected = active === key;
           return (
             <Pressable
@@ -27,7 +29,7 @@ export function DiaryViewSelector({
               style={[styles.pill, selected ? styles.pillActive : styles.pillInactive]}
             >
               <Text style={[styles.label, selected ? styles.labelActive : styles.labelInactive]}>
-                {label}
+                {t(labelKey)}
               </Text>
             </Pressable>
           );
@@ -40,7 +42,9 @@ export function DiaryViewSelector({
         style={styles.exportBtn}
       >
         {exportingPdf ? <ActivityIndicator size="small" color={colors.primary} /> : null}
-        <Text style={styles.exportText}>{exportingPdf ? 'Generando…' : 'Exportar a PDF'}</Text>
+        <Text style={styles.exportText}>
+          {exportingPdf ? t('diary.generating') : t('diary.exportPdf')}
+        </Text>
       </Pressable>
     </View>
   );

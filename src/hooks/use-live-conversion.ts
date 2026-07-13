@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { getRateOn } from '@/services/exchangeRates';
 
 type LiveConversion = {
@@ -7,6 +7,17 @@ type LiveConversion = {
   loading: boolean;
 };
 
+type ConversionResult = {
+  key: string;
+  converted: number;
+  rateDate: string | null;
+};
+
+// Sin setState síncrono en el efecto (react-hooks/set-state-in-effect):
+// el efecto solo guarda el resultado con la clave de su petición y
+// `loading` se deriva en el render comparando claves.
+const IDLE: LiveConversion = { converted: null, rateDate: null, loading: false };
+
 export function useLiveConversion(
   amount: number,
   fromCurrency: string,
@@ -14,32 +25,32 @@ export function useLiveConversion(
   date: string, // YYYY-MM-DD
   debounceMs = 400,
 ): LiveConversion {
-  const [state, setState] = useState<LiveConversion>({
-    converted: null,
-    rateDate: null,
-    loading: false,
-  });
+  const [result, setResult] = useState<ConversionResult | null>(null);
+
+  const idle = fromCurrency === targetCurrency || !amount || amount <= 0;
+  const key = idle ? null : `${amount}|${fromCurrency}|${targetCurrency}|${date}`;
 
   useEffect(() => {
-    if (fromCurrency === targetCurrency || !amount || amount <= 0) {
-      setState({ converted: null, rateDate: null, loading: false });
-      return;
-    }
+    if (key == null) return;
 
     let cancelled = false;
-    setState((s) => ({ ...s, loading: true }));
-
     const t = setTimeout(async () => {
       const { rate, rateDate } = await getRateOn(fromCurrency, targetCurrency, date);
       if (cancelled) return;
-      setState({ converted: amount * rate, rateDate, loading: false });
+      setResult({ key, converted: amount * rate, rateDate });
     }, debounceMs);
 
     return () => {
       cancelled = true;
       clearTimeout(t);
     };
-  }, [amount, fromCurrency, targetCurrency, date, debounceMs]);
+  }, [key, amount, fromCurrency, targetCurrency, date, debounceMs]);
 
-  return state;
+  return useMemo(() => {
+    if (key == null) return IDLE;
+    if (result == null || result.key !== key) {
+      return { converted: null, rateDate: null, loading: true };
+    }
+    return { converted: result.converted, rateDate: result.rateDate, loading: false };
+  }, [key, result]);
 }

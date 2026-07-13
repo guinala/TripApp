@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, FlatList, RefreshControl, Pressable } from 'react-native';
+import { View, Text, StyleSheet, FlatList, RefreshControl } from 'react-native';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,14 +7,15 @@ import { useTripStore } from '@/store/tripStore';
 import TripFilters, { TripFilter } from '@/components/TripFilters';
 import TopBar from '@/components/bars/TopBar';
 import { colors, fonts, fontSize } from '@/constants/theme';
-import { Ionicons } from '@expo/vector-icons';
 import TripsEmptyState from '@/components/TripsEmptyState';
 import { SwipeableTripCard } from '@/components/SwipeableTripCard';
 import { Fab } from '@/components/Fab';
 import { useUIStore } from '@/store/uiStore';
 import { resyncNotifications } from '@/services/notifications';
+import { useTranslation } from 'react-i18next';
 
 export default function TripsScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -27,7 +28,9 @@ export default function TripsScreen() {
 
   useEffect(() => {
     fetchTrips();
+  }, [fetchTrips]);
 
+  useEffect(() => {
     if (trips.length === 0) return;
     const s = useUIStore.getState();
     resyncNotifications(trips, {
@@ -35,24 +38,29 @@ export default function TripsScreen() {
       budgetSummary: s.notifBudgetSummary,
       weeklyInspiration: s.notifWeeklyInspiration,
     });
-  }, [trips, fetchTrips]);
+  }, [trips]);
 
   const displayName =
-    (user?.user_metadata?.display_name as string | undefined) ?? user?.email ?? 'nómada';
+    (user?.user_metadata?.display_name as string | undefined) ??
+    user?.email ??
+    t('home.defaultName');
   const visibleTrips = useMemo(
-    () => (filter === 'all' ? trips : trips.filter((t) => t.status === filter)),
+    () => (filter === 'all' ? trips : trips.filter((trip) => trip.status === filter)),
     [trips, filter],
   );
 
-  const nextTrip = trips.find((t) => t.status === 'planned');
-  const claim = nextTrip ? `¿Listos para ${nextTrip.destination}?` : '¿A dónde vamos?';
+  const nextTrip = trips.find((trip) => trip.status === 'planned');
+  const claim = nextTrip
+    ? t('home.claimNext', { destination: nextTrip.destination })
+    : t('home.claimIdle');
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
       <TopBar name={displayName} claim={claim} />
 
       <Text style={styles.heading}>
-        Mis <Text style={styles.headingAccent}>Viajes</Text>
+        {t('home.titleStart')}
+        <Text style={styles.headingAccent}>{t('home.titleAccent')}</Text>
       </Text>
 
       {trips.length > 0 && (
@@ -71,7 +79,7 @@ export default function TripsScreen() {
         ListEmptyComponent={loading ? null : <TripsEmptyState />}
       />
 
-      <Fab onPress={() => router.push('../trips/new')} accessibilityLabel="Nuevo viaje" />
+      <Fab onPress={() => router.push('../trips/new')} accessibilityLabel={t('home.newTrip')} />
     </View>
   );
 }

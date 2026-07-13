@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 import { colors, fontSize, fonts, radius } from '@/constants/theme';
 import AuthTextField from '@/components/auth/AuthTextField';
 import { PasswordStrengthMeter } from '@/components/auth/PasswordStrengthMeter';
@@ -36,6 +37,7 @@ const LANGUAGES: SelectOption[] = [
 ];
 
 export default function RegisterScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const signUp = useAuthStore((s) => s.signUp);
 
@@ -58,9 +60,9 @@ export default function RegisterScreen() {
     const cleanName = name.trim();
     const cleanEmail = email.trim();
 
-    if (!cleanName) return setError('Escribe tu nombre.');
-    if (!/^\S+@\S+\.\S+$/.test(cleanEmail)) return setError('Introduce un email válido.');
-    if (password.length < 6) return setError('La contraseña debe tener al menos 6 caracteres.');
+    if (!cleanName) return setError(t('auth.register.errorName'));
+    if (!/^\S+@\S+\.\S+$/.test(cleanEmail)) return setError(t('auth.register.errorEmail'));
+    if (password.length < 6) return setError(t('auth.register.errorPasswordMin'));
 
     try {
       setLoading(true);
@@ -71,9 +73,8 @@ export default function RegisterScreen() {
     } catch (e: any) {
       const m = e?.message ?? '';
       if (/already.*regist/i.test(m)) setEmailTaken(true);
-      else if (/Password should be at least/i.test(m))
-        setError('La contraseña debe tener al menos 6 caracteres.');
-      else setError('No se pudo crear la cuenta. Inténtalo de nuevo.');
+      else if (/Password should be at least/i.test(m)) setError(t('auth.register.errorPasswordMin'));
+      else setError(t('auth.register.errorGeneric'));
     } finally {
       setLoading(false);
     }
@@ -96,43 +97,44 @@ export default function RegisterScreen() {
 
           <View style={styles.header}>
             <Text style={styles.title}>
-              Crea <Text style={styles.titleAccent}>tu cuenta</Text>
+              {t('auth.register.titleStart')}
+              <Text style={styles.titleAccent}>{t('auth.register.titleAccent')}</Text>
             </Text>
-            <Text style={styles.subtitle}>Solo será un minuto</Text>
+            <Text style={styles.subtitle}>{t('auth.register.subtitle')}</Text>
           </View>
 
           <View style={styles.fields}>
             <AuthTextField
-              label="Nombre"
+              label={t('auth.register.name')}
               value={name}
               onChangeText={setName}
-              placeholder="Tu nombre"
+              placeholder={t('auth.register.namePlaceholder')}
               autoCapitalize="words"
               autoComplete="name"
             />
 
             <View>
               <AuthTextField
-                label="Email"
+                label={t('auth.email')}
                 value={email}
-                onChangeText={(t) => {
-                  setEmail(t);
+                onChangeText={(text) => {
+                  setEmail(text);
                   if (emailTaken) setEmailTaken(false);
                 }}
-                placeholder="tu@email.com"
+                placeholder={t('auth.emailPlaceholder')}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
                 autoComplete="email"
               />
               {emailTaken ? (
-                <Text style={styles.fieldError}>Este e-mail ya está registrado</Text>
+                <Text style={styles.fieldError}>{t('auth.register.emailTaken')}</Text>
               ) : null}
             </View>
 
             <View>
               <AuthTextField
-                label="Contraseña"
+                label={t('auth.password')}
                 value={password}
                 onChangeText={setPassword}
                 placeholder="••••••••"
@@ -141,7 +143,9 @@ export default function RegisterScreen() {
                 autoComplete="password-new"
                 rightSlot={
                   <TouchableOpacity onPress={() => setShowPassword((s) => !s)} hitSlop={8}>
-                    <Text style={styles.showText}>{showPassword ? 'Ocultar' : 'Mostrar'}</Text>
+                    <Text style={styles.showText}>
+                      {showPassword ? t('auth.hide') : t('auth.show')}
+                    </Text>
                   </TouchableOpacity>
                 }
               />
@@ -149,14 +153,14 @@ export default function RegisterScreen() {
             </View>
 
             <SelectField
-              label="Divisa"
+              label={t('auth.register.currency')}
               value={currency}
               options={CURRENCIES}
               onChange={setCurrency}
             />
 
             <SelectField
-              label="Idioma"
+              label={t('auth.register.language')}
               value={language}
               options={LANGUAGES}
               onChange={setLanguage}
@@ -174,7 +178,7 @@ export default function RegisterScreen() {
             {loading ? (
               <ActivityIndicator color={colors.white} />
             ) : (
-              <Text style={styles.primaryText}>Empezar</Text>
+              <Text style={styles.primaryText}>{t('auth.register.submit')}</Text>
             )}
           </TouchableOpacity>
         </ScrollView>

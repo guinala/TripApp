@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts } from '@/constants/theme';
 import { useAuthStore } from '@/store/authStore';
 import { useProfileStore } from '@/store/profileStore';
@@ -20,6 +21,7 @@ import { pickAvatarImage, uploadAvatar } from '@/services/avatars';
 import ProfileAvatar from '@/components/profile/ProfileAvatar';
 
 export default function EditProfileScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const profile = useProfileStore((s) => s.profile);
@@ -39,17 +41,17 @@ export default function EditProfileScreen() {
       const url = await uploadAvatar(user.id, uri);
       setAvatarUrl(url);
     } catch {
-      Alert.alert('Error', 'No se pudo actualizar la foto. Inténtalo de nuevo.');
+      Alert.alert(t('common.error'), t('profile.edit.errorPhoto'));
     } finally {
       setUploading(false);
     }
-  }, [user, setAvatarUrl]);
+  }, [user, setAvatarUrl, t]);
 
   const handleSave = useCallback(async () => {
     if (!user) return;
     const trimmed = name.trim();
     if (!trimmed) {
-      Alert.alert('Nombre vacío', 'Escribe cómo quieres que te llamemos.');
+      Alert.alert(t('profile.edit.nameEmptyTitle'), t('profile.edit.nameEmptyMessage'));
       return;
     }
     if (trimmed === profile?.displayName) {
@@ -61,11 +63,11 @@ export default function EditProfileScreen() {
       await updateProfile(user.id, { displayName: trimmed });
       router.back();
     } catch {
-      Alert.alert('Error', 'No se pudo guardar. Inténtalo de nuevo.');
+      Alert.alert(t('common.error'), t('profile.edit.errorSave'));
     } finally {
       setSaving(false);
     }
-  }, [user, name, profile, updateProfile, router]);
+  }, [user, name, profile, updateProfile, router, t]);
 
   const dirty = name.trim() !== (profile?.displayName ?? '');
 
@@ -75,7 +77,7 @@ export default function EditProfileScreen() {
         <Pressable style={styles.backButton} onPress={() => router.back()} hitSlop={8}>
           <Ionicons name="arrow-back" size={20} color={colors.ink} />
         </Pressable>
-        <Text style={styles.headerTitle}>Editar perfil</Text>
+        <Text style={styles.headerTitle}>{t('profile.edit.title')}</Text>
         <View style={styles.backButton} />
       </View>
 
@@ -86,7 +88,7 @@ export default function EditProfileScreen() {
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <View style={styles.avatarWrapper}>
             <ProfileAvatar
-              name={name || profile?.displayName || 'Viajero'}
+              name={name || profile?.displayName || t('profile.defaultName')}
               avatarUrl={profile?.avatarUrl ?? null}
               uploading={uploading}
               onPressEdit={handleChangeAvatar}
@@ -94,12 +96,12 @@ export default function EditProfileScreen() {
           </View>
 
           <View style={styles.field}>
-            <Text style={styles.label}>NOMBRE</Text>
+            <Text style={styles.label}>{t('profile.edit.nameLabel').toUpperCase()}</Text>
             <TextInput
               style={styles.input}
               value={name}
               onChangeText={setName}
-              placeholder="Tu nombre"
+              placeholder={t('auth.register.namePlaceholder')}
               placeholderTextColor={colors.secondary300}
               autoCapitalize="words"
               maxLength={40}
@@ -109,12 +111,12 @@ export default function EditProfileScreen() {
           </View>
 
           <View style={styles.field}>
-            <Text style={styles.label}>EMAIL</Text>
+            <Text style={styles.label}>{t('auth.email').toUpperCase()}</Text>
             <View style={[styles.input, styles.inputDisabled]}>
               <Text style={styles.disabledText}>{user?.email}</Text>
               <Ionicons name="lock-closed" size={14} color={colors.secondary300} />
             </View>
-            <Text style={styles.hint}>El email no se puede cambiar desde aquí.</Text>
+            <Text style={styles.hint}>{t('profile.edit.emailHint')}</Text>
           </View>
 
           <Pressable
@@ -122,7 +124,9 @@ export default function EditProfileScreen() {
             onPress={handleSave}
             disabled={!dirty || saving}
           >
-            <Text style={styles.saveText}>{saving ? 'Guardando…' : 'Guardar cambios'}</Text>
+            <Text style={styles.saveText}>
+              {saving ? t('common.saving') : t('profile.edit.save')}
+            </Text>
           </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>

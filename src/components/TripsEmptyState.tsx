@@ -1,10 +1,12 @@
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import React from 'react';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, radius } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function TripsEmptyState() {
+  const { t } = useTranslation();
   const router = useRouter();
 
   return (
@@ -14,20 +16,19 @@ export default function TripsEmptyState() {
       </View>
 
       <Text style={styles.title}>
-        Aún no tienes <Text style={styles.titleAccent}>viajes</Text>
+        {t('home.empty.titleStart')}
+        <Text style={styles.titleAccent}>{t('home.empty.titleAccent')}</Text>
       </Text>
-      <Text style={styles.subtitle}>
-        Crea tu primer itinerario e inspírate con los últimos destinos disponibles.
-      </Text>
+      <Text style={styles.subtitle}>{t('home.empty.subtitle')}</Text>
 
       <Pressable style={styles.primaryBtn} onPress={() => router.push('/trips/new')}>
         <Ionicons name="add" size={20} color={colors.surfacePaper} />
-        <Text style={styles.primaryLabel}>Crear primer viaje</Text>
+        <Text style={styles.primaryLabel}>{t('home.empty.createFirst')}</Text>
       </Pressable>
 
       <Pressable style={styles.secondaryBtn} onPress={() => router.push('/explore')}>
         <Ionicons name="compass-outline" size={20} color={colors.primary} />
-        <Text style={styles.secondaryLabel}>Explorar destinos</Text>
+        <Text style={styles.secondaryLabel}>{t('home.empty.explore')}</Text>
       </Pressable>
     </View>
   );

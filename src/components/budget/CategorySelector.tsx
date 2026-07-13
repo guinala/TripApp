@@ -1,16 +1,17 @@
 // src/components/budget/CategorySelector.tsx
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { colors, expenseCategoryColors, fonts, fontSize, radius, spacing } from '@/constants/theme';
 import { EXPENSE_ICON } from '@/constants/expenseIcons';
 import type { ExpenseCategory } from '@/types/expense';
 
-const CATEGORIES: { key: ExpenseCategory; label: string }[] = [
-  { key: 'food', label: 'Comida' },
-  { key: 'transport', label: 'Transporte' },
-  { key: 'stay', label: 'Estancia' },
-  { key: 'leisure', label: 'Ocio' },
-  { key: 'other', label: 'Otros' },
+const CATEGORIES: { key: ExpenseCategory; labelKey: string }[] = [
+  { key: 'food', labelKey: 'budget.categoriesFull.food' },
+  { key: 'transport', labelKey: 'budget.categoriesFull.transport' },
+  { key: 'stay', labelKey: 'budget.categoriesFull.stay' },
+  { key: 'leisure', labelKey: 'budget.categoriesFull.leisure' },
+  { key: 'other', labelKey: 'budget.categoriesFull.other' },
 ];
 
 interface Props {
@@ -19,9 +20,10 @@ interface Props {
 }
 
 export function CategorySelector({ value, onChange }: Props) {
+  const { t } = useTranslation();
   return (
     <View style={styles.wrapper}>
-      <Text style={styles.label}>CATEGORÍA</Text>
+      <Text style={styles.label}>{t('budget.category').toUpperCase()}</Text>
       <View style={styles.grid}>
         {CATEGORIES.map((c) => {
           const tint = expenseCategoryColors[c.key];
@@ -34,7 +36,7 @@ export function CategorySelector({ value, onChange }: Props) {
             >
               <Ionicons name={EXPENSE_ICON[c.key]} size={22} color={tint} />
               <Text style={[styles.itemLabel, active && { color: tint }]} numberOfLines={1}>
-                {c.label}
+                {t(c.labelKey)}
               </Text>
             </Pressable>
           );

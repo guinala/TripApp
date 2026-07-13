@@ -1,5 +1,5 @@
 import 'intl-pluralrules';
-import i18n from 'i18next';
+import { createInstance } from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import { getLocales } from 'expo-localization';
 import { useUIStore } from '@/store/uiStore';
@@ -15,12 +15,15 @@ function resolveInitialLanguage(): string {
   return SUPPORTED.includes(device) ? device : 'es';
 }
 
-i18n.use(initReactI18next).init({
+const i18n = createInstance({
   resources: { es: { translation: es }, en: { translation: en } },
   lng: resolveInitialLanguage(),
   fallbackLng: 'es',
   interpolation: { escapeValue: false }, // React ya escapa; sin esto verías &#39; en pantalla
 });
+
+i18n.use(initReactI18next);
+i18n.init();
 
 /** Único punto de cambio de idioma: i18next + caché local a la vez */
 export function syncLanguage(lang: string) {

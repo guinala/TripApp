@@ -1,6 +1,7 @@
 import { View, Text, Pressable, ActivityIndicator, Image, StyleSheet } from 'react-native';
 import React from 'react';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts } from '@/constants/theme';
 
 const SIZE = 110;
@@ -25,6 +26,7 @@ export default function ProfileAvatar({
   uploading = false,
   onPressEdit,
 }: ProfileAvatarProps) {
+  const { t } = useTranslation();
   return (
     <View style={styles.wrapper}>
       <View style={styles.circle}>
@@ -44,7 +46,7 @@ export default function ProfileAvatar({
         onPress={onPressEdit}
         disabled={uploading}
         hitSlop={8}
-        accessibilityLabel="Cambiar foto de perfil"
+        accessibilityLabel={t('profile.changePhoto')}
       >
         <Ionicons name="camera" size={15} color={colors.surfacePaper} />
       </Pressable>

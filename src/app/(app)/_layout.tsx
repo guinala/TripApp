@@ -1,11 +1,9 @@
-import { initNotifications } from '@/services/notifications';
 import { useAuthStore } from '@/store/authStore';
 import { Redirect, Stack } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
 
 export default function AppLayout() {
   const { session, loading } = useAuthStore();
-  initNotifications();
 
   if (loading) {
     return (

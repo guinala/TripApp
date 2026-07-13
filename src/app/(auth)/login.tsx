@@ -12,21 +12,24 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, radius } from '@/constants/theme';
 import { useAuthStore } from '@/store/authStore';
 import AuthTextField from '@/components/auth/AuthTextField';
+import i18n from '@/i18n';
 import * as WebBrowser from 'expo-web-browser';
 
 WebBrowser.maybeCompleteAuthSession();
 
 function mapAuthError(message?: string): string {
   const m = message ?? '';
-  if (m.includes('Invalid login credentials')) return 'Email o contraseña incorrectos.';
-  if (m.includes('Email not confirmed')) return 'Confirma tu email antes de iniciar sesión.';
-  return 'No se pudo iniciar sesión. Inténtalo de nuevo.';
+  if (m.includes('Invalid login credentials')) return i18n.t('auth.login.errorInvalidCredentials');
+  if (m.includes('Email not confirmed')) return i18n.t('auth.login.errorEmailNotConfirmed');
+  return i18n.t('auth.login.errorGeneric');
 }
 
 export default function LoginScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const signIn = useAuthStore((s) => s.signIn);
 
@@ -47,7 +50,7 @@ export default function LoginScreen() {
       setGoogleLoading(true);
       await signInWithGoogle();
     } catch {
-      setError('No se pudo continuar con Google. Inténtalo de nuevo.');
+      setError(t('auth.login.errorGoogle'));
     } finally {
       setGoogleLoading(false);
     }
@@ -58,7 +61,7 @@ export default function LoginScreen() {
 
     const cleanEmail = email.trim();
     if (!cleanEmail || !password) {
-      setError('Rellena email y contraseña.');
+      setError(t('auth.login.errorFillFields'));
       return;
     }
 
@@ -89,18 +92,18 @@ export default function LoginScreen() {
 
           <View style={styles.header}>
             <Text style={styles.title}>
-              Bienvenido{'\n'}
-              <Text style={styles.titleAccent}>de vuelta</Text>
+              {t('auth.login.titleStart')}
+              <Text style={styles.titleAccent}>{t('auth.login.titleAccent')}</Text>
             </Text>
-            <Text style={styles.subtitle}>Inicia sesión para continuar tu viaje</Text>
+            <Text style={styles.subtitle}>{t('auth.login.subtitle')}</Text>
           </View>
 
           <View style={styles.fields}>
             <AuthTextField
-              label="Email"
+              label={t('auth.email')}
               value={email}
               onChangeText={setEmail}
-              placeholder="tu@email.com"
+              placeholder={t('auth.emailPlaceholder')}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
@@ -109,7 +112,7 @@ export default function LoginScreen() {
 
             <View>
               <AuthTextField
-                label="Contraseña"
+                label={t('auth.password')}
                 value={password}
                 onChangeText={setPassword}
                 placeholder="••••••••"
@@ -118,7 +121,9 @@ export default function LoginScreen() {
                 autoComplete="password"
                 rightSlot={
                   <TouchableOpacity onPress={() => setShowPassword((s) => !s)} hitSlop={8}>
-                    <Text style={styles.showText}>{showPassword ? 'Ocultar' : 'Mostrar'}</Text>
+                    <Text style={styles.showText}>
+                      {showPassword ? t('auth.hide') : t('auth.show')}
+                    </Text>
                   </TouchableOpacity>
                 }
               />
@@ -127,7 +132,7 @@ export default function LoginScreen() {
                 onPress={() => router.push('./forgot-password')}
                 hitSlop={8}
               >
-                <Text style={styles.forgotText}>¿Olvidaste tu contraseña?</Text>
+                <Text style={styles.forgotText}>{t('auth.login.forgot')}</Text>
               </TouchableOpacity>
             </View>
 
@@ -147,11 +152,11 @@ export default function LoginScreen() {
               {loading ? (
                 <ActivityIndicator color={colors.white} />
               ) : (
-                <Text style={styles.primaryText}>Empezar</Text>
+                <Text style={styles.primaryText}>{t('auth.login.submit')}</Text>
               )}
             </TouchableOpacity>
 
-            <Text style={styles.divider}>o continúa con</Text>
+            <Text style={styles.divider}>{t('auth.login.divider')}</Text>
 
             <TouchableOpacity
               style={styles.googleButton}
@@ -170,9 +175,9 @@ export default function LoginScreen() {
             </TouchableOpacity>
 
             <View style={styles.signupRow}>
-              <Text style={styles.signupMuted}>¿No tienes cuenta? </Text>
+              <Text style={styles.signupMuted}>{t('auth.login.noAccount')} </Text>
               <TouchableOpacity onPress={() => router.push('/register')} hitSlop={8}>
-                <Text style={styles.signupLink}>Regístrate</Text>
+                <Text style={styles.signupLink}>{t('auth.login.signupLink')}</Text>
               </TouchableOpacity>
             </View>
           </View>

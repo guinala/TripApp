@@ -3,7 +3,8 @@ import {
   type RenderItemParams,
 } from 'react-native-reanimated-drag-list';
 import { format, parseISO } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
+import { dateLocale } from '@/i18n/date';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, fonts, fontSize, radius, spacing } from '@/constants/theme';
 import { ActivityCard } from '@/components/cards/ActivityCard';
@@ -19,7 +20,11 @@ type DaySectionProps = {
 };
 
 export function DaySection({ day, activities, onAddActivity, onReorder }: DaySectionProps) {
-  const label = `DÍA ${day.dayNumber} · ${format(parseISO(day.date), 'EEE d MMM', { locale: es }).toUpperCase()}`;
+  const { t } = useTranslation();
+  const label = t('itinerary.dayLabel', {
+    number: day.dayNumber,
+    date: format(parseISO(day.date), 'EEE d MMM', { locale: dateLocale() }),
+  }).toUpperCase();
   const count = activities.length;
 
   const renderItem = ({ item }: RenderItemParams<Activity>) => (
@@ -32,9 +37,7 @@ export function DaySection({ day, activities, onAddActivity, onReorder }: DaySec
     <View style={styles.section}>
       <Text style={styles.label}>{label}</Text>
       {day.title ? <Text style={styles.title}>{day.title}</Text> : null}
-      <Text style={styles.amount}>
-        {count} {count === 1 ? 'actividad' : 'actividades'}
-      </Text>
+      <Text style={styles.amount}>{t('itinerary.activitiesCount', { count })}</Text>
 
       <NestableDraggableFlatList
         data={activities}
@@ -51,7 +54,7 @@ export function DaySection({ day, activities, onAddActivity, onReorder }: DaySec
 
       <Pressable style={styles.addBtn} onPress={() => onAddActivity(day.id)}>
         <Ionicons name="add" size={18} color={colors.primary} />
-        <Text style={styles.addText}>Añadir actividad</Text>
+        <Text style={styles.addText}>{t('itinerary.addActivity')}</Text>
       </Pressable>
     </View>
   );

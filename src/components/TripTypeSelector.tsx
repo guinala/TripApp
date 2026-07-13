@@ -1,16 +1,17 @@
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, radius } from '@/constants/theme';
 import type { TripType } from '@/types/trip';
 
 type IconName = keyof typeof MaterialCommunityIcons.glyphMap;
 
-const TYPES: { key: TripType; label: string; icon: IconName }[] = [
-  { key: 'city', label: 'Ciudad', icon: 'city-variant-outline' },
-  { key: 'beach', label: 'Playa', icon: 'beach' },
-  { key: 'mountain', label: 'Montaña', icon: 'terrain' },
-  { key: 'road', label: 'Carretera', icon: 'car-outline' },
-  { key: 'business', label: 'Negocios', icon: 'briefcase-outline' },
+const TYPES: { key: TripType; labelKey: string; icon: IconName }[] = [
+  { key: 'city', labelKey: 'trips.types.city', icon: 'city-variant-outline' },
+  { key: 'beach', labelKey: 'trips.types.beach', icon: 'beach' },
+  { key: 'mountain', labelKey: 'trips.types.mountain', icon: 'terrain' },
+  { key: 'road', labelKey: 'trips.types.road', icon: 'car-outline' },
+  { key: 'business', labelKey: 'trips.types.business', icon: 'briefcase-outline' },
 ];
 
 type TripTypeSelectorProps = {
@@ -19,13 +20,15 @@ type TripTypeSelectorProps = {
 };
 
 export function TripTypeSelector({ value, onChange }: TripTypeSelectorProps) {
+  const { t } = useTranslation();
+
   return (
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={styles.row}
     >
-      {TYPES.map(({ key, label, icon }) => {
+      {TYPES.map(({ key, labelKey, icon }) => {
         const active = value === key;
         const tint = active ? colors.surfacePaper : colors.textSecondary;
         return (
@@ -35,7 +38,7 @@ export function TripTypeSelector({ value, onChange }: TripTypeSelectorProps) {
             style={[styles.pill, active ? styles.pillActive : styles.pillInactive]}
           >
             <MaterialCommunityIcons name={icon} size={16} color={tint} />
-            <Text style={[styles.label, { color: tint }]}>{label}</Text>
+            <Text style={[styles.label, { color: tint }]}>{t(labelKey)}</Text>
           </Pressable>
         );
       })}

@@ -1,0 +1,571 @@
+{
+  "common": {
+    "error": "Error",
+    "cancel": "Cancelar",
+    "continue": "Continuar",
+    "delete": "Eliminar",
+    "save": "Guardar",
+    "saveChanges": "Guardar cambios",
+    "saving": "Guardando…",
+    "choose": "Elegir",
+    "select": "Selecciona…",
+    "edit": "Editar",
+    "add": "Añadir",
+    "apply": "Aplicar",
+    "back": "Volver",
+    "tryAgain": "Inténtalo de nuevo.",
+    "saveError": "No se pudo guardar",
+    "permissionNeeded": "Permiso necesario"
+  },
+  "auth": {
+    "email": "Email",
+    "emailPlaceholder": "tu@email.com",
+    "password": "Contraseña",
+    "show": "Mostrar",
+    "hide": "Ocultar",
+    "welcome": {
+      "titleStart": "Tu próximo\nviaje empieza\n",
+      "titleAccent": "hoy",
+      "subtitle": "Planifica itinerarios, controla tu presupuesto y guarda los recuerdos en un solo lugar",
+      "start": "Empezar",
+      "haveAccount": "Ya tengo una cuenta · Iniciar sesión"
+    },
+    "login": {
+      "errorInvalidCredentials": "Email o contraseña incorrectos.",
+      "errorEmailNotConfirmed": "Confirma tu email antes de iniciar sesión.",
+      "errorGeneric": "No se pudo iniciar sesión. Inténtalo de nuevo.",
+      "errorGoogle": "No se pudo continuar con Google. Inténtalo de nuevo.",
+      "errorFillFields": "Rellena email y contraseña.",
+      "titleStart": "Bienvenido\n",
+      "titleAccent": "de vuelta",
+      "subtitle": "Inicia sesión para continuar tu viaje",
+      "forgot": "¿Olvidaste tu contraseña?",
+      "submit": "Empezar",
+      "divider": "o continúa con",
+      "noAccount": "¿No tienes cuenta?",
+      "signupLink": "Regístrate"
+    },
+    "register": {
+      "errorName": "Escribe tu nombre.",
+      "errorEmail": "Introduce un email válido.",
+      "errorPasswordMin": "La contraseña debe tener al menos 6 caracteres.",
+      "errorGeneric": "No se pudo crear la cuenta. Inténtalo de nuevo.",
+      "titleStart": "Crea ",
+      "titleAccent": "tu cuenta",
+      "subtitle": "Solo será un minuto",
+      "name": "Nombre",
+      "namePlaceholder": "Tu nombre",
+      "emailTaken": "Este e-mail ya está registrado",
+      "currency": "Divisa",
+      "language": "Idioma",
+      "submit": "Empezar"
+    },
+    "forgot": {
+      "errorSend": "No se pudo enviar el correo. Inténtalo de nuevo.",
+      "titleStart": "¿Olvidaste tu\n",
+      "titleAccent": "contraseña?",
+      "subtitle": "Escribe tu email y te enviaremos un enlace para restablecerla.",
+      "sentNotice": "Si existe una cuenta con ese email, recibirás un correo con el enlace en unos minutos. Revisa también la carpeta de spam.",
+      "submit": "Enviar enlace"
+    },
+    "reset": {
+      "errorMismatch": "Las contraseñas no coinciden.",
+      "errorInvalidLink": "El enlace no es válido. Solicita uno nuevo.",
+      "errorUpdate": "No se pudo cambiar la contraseña. El enlace puede haber caducado.",
+      "titleStart": "Nueva\n",
+      "titleAccent": "contraseña",
+      "subtitle": "Elige una contraseña nueva para tu cuenta.",
+      "confirmLabel": "Repite la contraseña",
+      "submit": "Guardar contraseña"
+    },
+    "strength": {
+      "title": "Fuerza:",
+      "weak": "débil",
+      "medium": "media",
+      "strong": "fuerte",
+      "veryStrong": "muy fuerte"
+    }
+  },
+  "home": {
+    "defaultName": "nómada",
+    "claimNext": "¿Listos para {{destination}}?",
+    "claimIdle": "¿A dónde vamos?",
+    "titleStart": "Mis ",
+    "titleAccent": "Viajes",
+    "greeting": "Hola, {{name}}",
+    "newTrip": "Nuevo viaje",
+    "empty": {
+      "titleStart": "Aún no tienes ",
+      "titleAccent": "viajes",
+      "subtitle": "Crea tu primer itinerario e inspírate con los últimos destinos disponibles.",
+      "createFirst": "Crear primer viaje",
+      "explore": "Explorar destinos"
+    }
+  },
+  "tabs": {
+    "trips": "Viajes",
+    "explore": "Explorar",
+    "profile": "Usuario"
+  },
+  "trips": {
+    "filters": {
+      "all": "Todos",
+      "planned": "Próximos",
+      "active": "En Curso",
+      "completed": "Pasados"
+    },
+    "delete": {
+      "title": "Eliminar viaje",
+      "message": "¿Seguro? Se borrará todo su contenido."
+    },
+    "badge": {
+      "active": "EN CURSO",
+      "completed": "COMPLETADO",
+      "today": "HOY",
+      "tomorrow": "MAÑANA",
+      "inDays_one": "EN {{count}} DÍA",
+      "inDays_other": "EN {{count}} DÍAS"
+    },
+    "types": {
+      "city": "Ciudad",
+      "beach": "Playa",
+      "mountain": "Montaña",
+      "road": "Carretera",
+      "business": "Negocios"
+    },
+    "form": {
+      "missingDestinationTitle": "Falta el destino",
+      "missingDestination": "Indica a dónde viajas.",
+      "missingDatesTitle": "Faltan fechas",
+      "missingDates": "Elige inicio y fin.",
+      "invalidDatesTitle": "Fechas inválidas",
+      "invalidDates": "El fin no puede ser antes del inicio.",
+      "invalidBudgetTitle": "Presupuesto inválido",
+      "invalidBudget": "Introduce un número válido.",
+      "defaultTitle": "Viaje a {{destination}}",
+      "saveError": "No se pudo guardar",
+      "editTitle": "Editar Viaje",
+      "newTitle": "Nuevo Viaje",
+      "name": "Nombre del viaje",
+      "namePlaceholder": "Ej. Japón en Octubre",
+      "destination": "Destino",
+      "destinationPlaceholder": "¿A dónde vas?",
+      "start": "Inicio",
+      "end": "Fin",
+      "daysHint_one": "+ {{count}} día · {{year}}",
+      "daysHint_other": "+ {{count}} días · {{year}}",
+      "currency": "Moneda",
+      "budget": "Presupuesto",
+      "type": "Tipo de viaje",
+      "create": "Crear viaje",
+      "changeCover": "Cambiar portada",
+      "addCover": "Añadir portada"
+    }
+  },
+  "explore": {
+    "titleStart": "¿A dónde quieres ",
+    "titleAccent": "ir?",
+    "searchPlaceholder": "Busca un lugar al que viajar...",
+    "sectionTitleStart": "Encuentra tu ",
+    "sectionTitleAccent": "próximo viaje",
+    "empty": "No hay destinos que coincidan con tu búsqueda.",
+    "featured": "Destacado",
+    "filters": {
+      "all": "Todos"
+    }
+  },
+  "destination": {
+    "types": {
+      "cultural": "Cultural",
+      "gastro": "Gastronomía",
+      "aventura": "Aventura",
+      "relax": "Relax"
+    },
+    "price": {
+      "low": "Bajo",
+      "mid": "Medio",
+      "high": "Alto"
+    },
+    "rating": {
+      "outstanding": "Sobresaliente",
+      "great": "Notable",
+      "good": "Bueno",
+      "ok": "Correcto"
+    },
+    "stats": {
+      "rating": "Nota",
+      "weather": "Clima",
+      "cost": "Coste",
+      "language": "Idioma",
+      "noData": "Sin datos"
+    },
+    "shareMessage": "Echa un vistazo a {{name}}, {{country}} ✈️",
+    "about": "Sobre",
+    "highlights": "Imprescindibles",
+    "addToTrip": "+ Añadir a un viaje"
+  },
+  "profile": {
+    "activeYears_one": "{{count}} año activo",
+    "activeYears_other": "{{count}} años activo",
+    "activeMonths_one": "{{count}} mes activo",
+    "activeMonths_other": "{{count}} meses activo",
+    "newTraveler": "nuevo viajero",
+    "defaultName": "Viajero",
+    "openSettings": "Abrir ajustes",
+    "changePhoto": "Cambiar foto de perfil",
+    "shareMessage": "Estoy planificando mis viajes con TripMate ✈️ ¡Pruébala!",
+    "mapTitleStart": "Mapa del ",
+    "mapTitleAccent": "mundo",
+    "stats": {
+      "trips": "Viajes",
+      "countries": "Países",
+      "kilometers": "Kilómetros"
+    },
+    "options": {
+      "packingTemplates": "Plantillas de Equipaje",
+      "packingTemplatesSubtitle": "Reutiliza listas de otros viajes",
+      "diaries": "Diarios de Viajes",
+      "diariesCount_one": "{{count}} diario",
+      "diariesCount_other": "{{count}} diarios",
+      "stats": "Consultar estadísticas",
+      "statsSubtitle_one": "Consultar {{count}} viaje",
+      "statsSubtitle_other": "Consultar {{count}} viajes",
+      "share": "Comparte TripMate",
+      "shareSubtitle": "Invita a un amigo"
+    },
+    "edit": {
+      "title": "Editar perfil",
+      "errorPhoto": "No se pudo actualizar la foto. Inténtalo de nuevo.",
+      "nameEmptyTitle": "Nombre vacío",
+      "nameEmptyMessage": "Escribe cómo quieres que te llamemos.",
+      "errorSave": "No se pudo guardar. Inténtalo de nuevo.",
+      "nameLabel": "Nombre",
+      "emailHint": "El email no se puede cambiar desde aquí.",
+      "save": "Guardar cambios"
+    }
+  },
+  "settings": {
+    "title": "Ajustes",
+    "sections": {
+      "preferences": "Preferencias",
+      "notifications": "Notificaciones",
+      "privacy": "Datos y privacidad"
+    },
+    "language": {
+      "title": "Idioma",
+      "subtitle": "Elige el idioma de la app"
+    },
+    "currency": {
+      "title": "Moneda por defecto",
+      "subtitle": "Se usará al crear viajes nuevos",
+      "row": "Moneda"
+    },
+    "notifications": {
+      "tripReminders": "Recordatorios de viaje",
+      "tripRemindersSubtitle": "24h antes del inicio",
+      "budgetSummary": "Resumen de presupuesto",
+      "budgetSummarySubtitle": "Cada lunes",
+      "weeklyInspiration": "Inspiración semanal",
+      "permissionMessage": "Activa las notificaciones de TripMate en los ajustes del sistema.",
+      "openSettings": "Abrir ajustes"
+    },
+    "export": {
+      "dialogTitle": "Exportar mis datos de TripMate",
+      "error": "No se pudieron exportar tus datos. Inténtalo de nuevo.",
+      "row": "Exportar todos mis datos",
+      "preparing": "Preparando…"
+    },
+    "deleteAccount": {
+      "error": "No se pudo eliminar la cuenta. Inténtalo de nuevo.",
+      "title": "Eliminar cuenta",
+      "warning": "Se borrarán permanentemente tus viajes, itinerarios, gastos, fotos y perfil. Esta acción no se puede deshacer.",
+      "confirmTitle": "¿Estás totalmente seguro?",
+      "confirmMessage": "Última oportunidad para conservar tus datos.",
+      "keep": "No, conservar mi cuenta",
+      "confirm": "Sí, eliminar todo"
+    },
+    "signOut": {
+      "title": "Cerrar sesión",
+      "message": "¿Seguro que quieres salir?"
+    },
+    "footer": "hecho con ♥ para viajeros"
+  },
+  "tripDetail": {
+    "viewFullMap": "Ver mapa completo",
+    "tabs": {
+      "itinerary": "Itinerario",
+      "budget": "Presupuesto",
+      "packing": "Equipaje",
+      "diary": "Diario"
+    }
+  },
+  "itinerary": {
+    "dayFilter": {
+      "all": "Todo",
+      "day": "D{{number}}"
+    },
+    "dayLabel": "Día {{number}} · {{date}}",
+    "dayShort": "Día {{number}} · {{date}}",
+    "dayNumber": "Día {{number}}",
+    "activitiesCount_one": "{{count}} actividad",
+    "activitiesCount_other": "{{count}} actividades",
+    "addActivity": "Añadir actividad",
+    "newActivity": "Nueva actividad",
+    "searchPlaceholder": "Buscar lugar o nombre",
+    "time": "Hora",
+    "duration": "Duración",
+    "halfDay": "Medio día",
+    "category": "Categoría",
+    "estimatedCost": "Coste estimado",
+    "notes": "Notas",
+    "notesPlaceholder": "Añade una nota...",
+    "addToDay": "Añadir al día {{number}}",
+    "addToDayGeneric": "Añadir al día",
+    "categories": {
+      "visit": "Visita",
+      "restaurant": "Comida",
+      "transport": "Transporte",
+      "hotel": "Estancia",
+      "entertainment": "Ocio"
+    }
+  },
+  "map": {
+    "wholeTrip": "Todo el viaje",
+    "viewList": "Ver lista",
+    "emptyDay": "Sin actividades este día.",
+    "emptyTrip": "Aún no hay actividades en este viaje.",
+    "unavailableWeb": "Mapa no disponible en web",
+    "locationUnavailableWeb": "Selección de ubicación no disponible en web"
+  },
+  "budget": {
+    "addExpense": "Añadir gasto",
+    "totalSpent": "Total gastado",
+    "exceeded": "Excedido",
+    "remaining": "Quedan",
+    "dailyAverage": "Promedio diario",
+    "byCategory": "Por categoría",
+    "byDay": "Por día",
+    "category": "Categoría",
+    "categories": {
+      "stay": "Aloj.",
+      "transport": "Transp.",
+      "food": "Comida",
+      "leisure": "Ocio",
+      "other": "Otros",
+      "remaining": "Restante"
+    },
+    "categoriesFull": {
+      "food": "Comida",
+      "transport": "Transporte",
+      "stay": "Estancia",
+      "leisure": "Ocio",
+      "other": "Otros"
+    },
+    "recent": {
+      "titleStart": "Últimos",
+      "titleAccent": "Gastos",
+      "viewAll": "Ver todos los gastos",
+      "addFirst": "Añade tu primer gasto"
+    },
+    "receipt": {
+      "permissionMessage": "Concede acceso a tus fotos para adjuntar un recibo.",
+      "attached": "Recibo adjuntado",
+      "attach": "Adjuntar recibo (opcional)"
+    },
+    "alert": {
+      "title": "Atención con el presupuesto",
+      "message": "Has gastado más del 80 % de tu presupuesto para este viaje."
+    }
+  },
+  "expense": {
+    "errorAmount": "Introduce un importe válido.",
+    "errorCategory": "Elige una categoría.",
+    "errorSave": "No se pudo guardar el gasto. Inténtalo de nuevo.",
+    "title": "Nuevo gasto",
+    "amount": "Importe",
+    "rateOf": "cambio del {{date}}",
+    "description": "Descripción",
+    "descriptionPlaceholder": "Ej. Cena Ramen + Sake",
+    "currency": "Moneda",
+    "date": "Fecha",
+    "tripDay": "Día del viaje",
+    "selectDay": "Selecciona un día"
+  },
+  "packing": {
+    "categories": {
+      "docs": "Documentos",
+      "clothes": "Ropa",
+      "tech": "Tecnología",
+      "hygiene": "Higiene",
+      "other": "Otros"
+    },
+    "daysLeft_one": "Queda {{count}} día para el viaje",
+    "daysLeft_other": "Quedan {{count}} días para el viaje",
+    "oneDayLeft": "Queda 1 día para el viaje",
+    "tripToday": "El viaje es hoy",
+    "tripOngoing": "Viaje en curso",
+    "addError": "No se pudo añadir",
+    "applyError": "No se pudo aplicar",
+    "replaceError": "No se pudo reemplazar",
+    "deleteError": "No se pudo eliminar",
+    "alreadyHaveTitle": "Ya tienes equipaje",
+    "alreadyHaveMessage": "¿Quieres añadirlo a tu lista o reemplazarla?",
+    "replace": "Reemplazar",
+    "emptyTitle": "Tu maleta está vacía",
+    "emptyText": "Empieza con una plantilla o añade lo que necesites llevar.",
+    "loadTemplate": "Cargar plantilla",
+    "doneOf": "{{done}} de {{total}}",
+    "prepared": "preparados",
+    "templates": "Plantillas",
+    "itemPlaceholder": "Nombre del ítem",
+    "addItem": "+ Añadir equipaje",
+    "templatesSheet": {
+      "subtitle": "Elige qué añadir a tu maleta",
+      "itemCount_one": "{{count}} ítem",
+      "itemCount_other": "{{count}} ítems"
+    },
+    "templatesData": {
+      "common": {
+        "name": "Básicos (siempre)",
+        "items": {
+          "id": "DNI / Pasaporte",
+          "card": "Tarjeta de crédito/débito",
+          "cash": "Dinero en efectivo",
+          "phoneCharger": "Cargador del móvil",
+          "powerBank": "Power bank",
+          "headphones": "Auriculares",
+          "toothbrush": "Cepillo y pasta de dientes",
+          "deodorant": "Desodorante",
+          "shampoo": "Gel y champú",
+          "underwear": "Ropa interior",
+          "socks": "Calcetines",
+          "pajamas": "Pijama",
+          "medication": "Medicación habitual",
+          "glasses": "Gafas / lentillas"
+        }
+      },
+      "beach": {
+        "name": "Playa",
+        "items": {
+          "swimsuit": "Bañador",
+          "flipFlops": "Chanclas",
+          "hat": "Sombrero o gorra",
+          "towel": "Toalla de playa",
+          "sunglasses": "Gafas de sol",
+          "sunscreen": "Crema solar",
+          "afterSun": "After sun"
+        }
+      },
+      "mountain": {
+        "name": "Montaña",
+        "items": {
+          "boots": "Botas de trekking",
+          "technicalSocks": "Calcetines técnicos",
+          "windbreaker": "Cortavientos / impermeable",
+          "fleece": "Forro polar",
+          "hatGloves": "Gorro y guantes",
+          "headlamp": "Linterna frontal",
+          "firstAid": "Botiquín básico",
+          "poles": "Bastones de senderismo",
+          "bottle": "Cantimplora / botella"
+        }
+      },
+      "city": {
+        "name": "Ciudad",
+        "items": {
+          "sneakers": "Zapatillas cómodas",
+          "backpack": "Mochila pequeña",
+          "powerBank": "Power bank",
+          "adapter": "Adaptador de enchufe",
+          "umbrella": "Paraguas plegable",
+          "bottle": "Botella reutilizable"
+        }
+      },
+      "business": {
+        "name": "Negocios",
+        "items": {
+          "suit": "Traje / blazer",
+          "shirts": "Camisas planchadas",
+          "dressShoes": "Zapatos de vestir",
+          "tie": "Corbata",
+          "laptop": "Portátil",
+          "laptopCharger": "Cargador del portátil",
+          "workDocs": "Documentos de trabajo",
+          "businessCards": "Tarjetas de visita",
+          "notebook": "Cuaderno y bolígrafo"
+        }
+      }
+    }
+  },
+  "diary": {
+    "views": {
+      "grid": "Grid",
+      "timeline": "Timeline",
+      "map": "Mapa"
+    },
+    "generating": "Generando…",
+    "exportPdf": "Exportar a PDF",
+    "noDayAssigned": "Sin día asignado",
+    "photoCount_one": "{{count}} foto",
+    "photoCount_other": "{{count}} fotos",
+    "looseNoDay": "Fotos sueltas",
+    "takePhoto": "Tomar foto",
+    "chooseFromGallery": "Elegir de galería",
+    "addPhoto": "Añadir foto",
+    "addPhotoError": "No se pudo añadir la foto",
+    "nothingToExport": "Nada que exportar",
+    "nothingToExportMessage": "Añade fotos a tu diario primero.",
+    "exportError": "No se pudo exportar",
+    "emptyTitle": "Tu diario está vacío",
+    "emptyText": "Añade fotos de tu viaje con el botón de la cámara.",
+    "noLocations": "Sin ubicaciones",
+    "noLocationsText": "Ninguna de tus fotos tiene ubicación guardada todavía.",
+    "locationPicker": {
+      "title": "Ubicación de la foto",
+      "permissionMessage": "Activa el acceso a tu ubicación para usar esta opción.",
+      "locationError": "No se pudo obtener tu ubicación",
+      "useCurrent": "Usar mi ubicación actual",
+      "hint": "O toca el mapa para colocar el pin manualmente",
+      "remove": "Quitar ubicación"
+    }
+  },
+  "photo": {
+    "locationSaveError": "No se pudo guardar la ubicación",
+    "unavailable": "No disponible",
+    "shareUnavailable": "Compartir no está disponible en este dispositivo.",
+    "deleteTitle": "Eliminar foto",
+    "deleteMessage": "Esta acción no se puede deshacer.",
+    "deleteError": "No se pudo eliminar",
+    "unavailablePhoto": "Esta foto ya no está disponible.",
+    "captionPlaceholder": "Añade una nota...",
+    "locationSaved": "Ubicación guardada",
+    "addLocation": "Añadir ubicación"
+  },
+  "notifications": {
+    "tripReminder": {
+      "title": "¡Mañana empieza {{title}}! ✈️",
+      "body": "Revisa tu equipaje e itinerario para {{destination}}."
+    },
+    "budgetSummary": {
+      "title": "Tu semana viajera 📊",
+      "body": "Echa un vistazo a cómo van los presupuestos de tus viajes."
+    },
+    "weeklyInspiration": {
+      "title": "¿Y si el próximo destino…? 🌍",
+      "body": "Descubre nuevos lugares en la pestaña Explorar."
+    }
+  },
+  "errors": {
+    "loadItinerary": "Error al cargar el itinerario",
+    "loadWeather": "No se pudo cargar el clima",
+    "loadPhotos": "No se pudieron cargar las fotos",
+    "loadExpenses": "No se pudieron cargar los gastos",
+    "createExpense": "No se pudo crear el gasto",
+    "updateExpense": "No se pudo actualizar el gasto",
+    "deleteExpense": "No se pudo eliminar el gasto",
+    "loadTripPhotos": "No se pudieron cargar las fotos",
+    "savePhoto": "No se pudo guardar la foto",
+    "updatePhoto": "No se pudo actualizar la foto",
+    "deletePhoto": "No se pudo eliminar la foto"
+  }
+}

@@ -3,16 +3,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { BottomTabBarProps } from 'expo-router/build/react-navigation/bottom-tabs';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
-const TAB_META: Record<string, { label: string; icon: IconName }> = {
-  index: { label: 'Viajes', icon: 'briefcase' },
-  explore: { label: 'Explorar', icon: 'compass' },
-  profile: { label: 'Usuario', icon: 'person' },
+const TAB_META: Record<string, { labelKey: string; icon: IconName }> = {
+  index: { labelKey: 'tabs.trips', icon: 'briefcase' },
+  explore: { labelKey: 'tabs.explore', icon: 'compass' },
+  profile: { labelKey: 'tabs.profile', icon: 'person' },
 };
 
 export default function TabBar({ state, navigation }: BottomTabBarProps) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
 
   return (
@@ -43,7 +45,7 @@ export default function TabBar({ state, navigation }: BottomTabBarProps) {
               style={[styles.tab, focused && styles.tabActive]}
             >
               <Ionicons name={meta.icon} size={20} color={tint} />
-              <Text style={[styles.label, { color: tint }]}>{meta.label}</Text>
+              <Text style={[styles.label, { color: tint }]}>{t(meta.labelKey)}</Text>
             </Pressable>
           );
         })}

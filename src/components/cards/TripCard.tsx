@@ -3,6 +3,8 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { differenceInCalendarDays, parseISO } from 'date-fns';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { colors, fonts, fontSize, radius } from '@/constants/theme';
 import type { Trip } from '@/types/trip';
 
@@ -10,18 +12,25 @@ type TripCardProps = {
   trip: Trip;
 };
 
-function getBadge(trip: Trip): { label: string; color: string } {
-  if (trip.status === 'active') return { label: 'EN CURSO', color: colors.success };
-  if (trip.status === 'completed') return { label: 'COMPLETADO', color: colors.textMetadata };
+function getBadge(trip: Trip, t: TFunction): { label: string; color: string } {
+  if (trip.status === 'active') return { label: t('trips.badge.active'), color: colors.success };
+  if (trip.status === 'completed')
+    return { label: t('trips.badge.completed'), color: colors.textMetadata };
 
   const days = differenceInCalendarDays(parseISO(trip.startDate), new Date());
-  const label = days <= 0 ? 'HOY' : days === 1 ? 'MAÑANA' : `EN ${days} DÍAS`;
+  const label =
+    days <= 0
+      ? t('trips.badge.today')
+      : days === 1
+        ? t('trips.badge.tomorrow')
+        : t('trips.badge.inDays', { count: days });
   return { label, color: colors.primary };
 }
 
 export function TripCard({ trip }: TripCardProps) {
+  const { t } = useTranslation();
   const router = useRouter();
-  const badge = getBadge(trip);
+  const badge = getBadge(trip, t);
 
   return (
     <Pressable style={styles.card} onPress={() => router.push(`/trips/${trip.id}`)}>

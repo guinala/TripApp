@@ -8,6 +8,7 @@ import {
   type CreatePhotoInput,
   type UpdatePhotoInput,
 } from '@/services/photos';
+import i18n from '@/i18n';
 
 type PhotoState = {
   byTrip: Record<string, Photo[]>;
@@ -42,7 +43,7 @@ export const usePhotoStore = create<PhotoState>((set, get) => ({
     } catch (err) {
       set((s) => ({
         loadingByTrip: { ...s.loadingByTrip, [tripId]: false },
-        error: err instanceof Error ? err.message : 'No se pudieron cargar las fotos',
+        error: err instanceof Error ? err.message : i18n.t('errors.loadTripPhotos'),
       }));
     }
   },
@@ -83,7 +84,7 @@ export const usePhotoStore = create<PhotoState>((set, get) => ({
           ...s.byTrip,
           [tripId]: (s.byTrip[tripId] ?? []).filter((p) => p.id !== tempId),
         },
-        error: err instanceof Error ? err.message : 'No se pudo guardar la foto',
+        error: err instanceof Error ? err.message : i18n.t('errors.savePhoto'),
       }));
       throw err;
     }
@@ -112,7 +113,7 @@ export const usePhotoStore = create<PhotoState>((set, get) => ({
     } catch (err) {
       set((s) => ({
         byTrip: { ...s.byTrip, [tripId]: snapshot },
-        error: err instanceof Error ? err.message : 'No se pudo actualizar la foto',
+        error: err instanceof Error ? err.message : i18n.t('errors.updatePhoto'),
       }));
       throw err;
     }
@@ -130,7 +131,7 @@ export const usePhotoStore = create<PhotoState>((set, get) => ({
     } catch (err) {
       set((s) => ({
         byTrip: { ...s.byTrip, [tripId]: snapshot },
-        error: err instanceof Error ? err.message : 'No se pudo eliminar la foto',
+        error: err instanceof Error ? err.message : i18n.t('errors.deletePhoto'),
       }));
       throw err;
     }

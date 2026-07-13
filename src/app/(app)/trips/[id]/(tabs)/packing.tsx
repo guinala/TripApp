@@ -9,6 +9,8 @@ import {
   View,
 } from 'react-native';
 import { differenceInCalendarDays, parseISO } from 'date-fns';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { colors, fonts, fontSize, radius } from '@/constants/theme';
 import { useTripDetail } from '@/context/TripDetailContext';
 import { usePackingStore, usePackingItems, usePackingLoading } from '@/store/packingStore';
@@ -20,23 +22,24 @@ import type { PackingCategory } from '@/types/packing';
 import { Celebration } from '@/components/Celebration';
 
 const CATEGORY_ORDER: PackingCategory[] = ['docs', 'clothes', 'tech', 'hygiene', 'other'];
-const CATEGORY_LABEL: Record<PackingCategory, string> = {
-  docs: 'Documentos',
-  clothes: 'Ropa',
-  tech: 'Tecnología',
-  hygiene: 'Higiene',
-  other: 'Otros',
+const CATEGORY_LABEL_KEY: Record<PackingCategory, string> = {
+  docs: 'packing.categories.docs',
+  clothes: 'packing.categories.clothes',
+  tech: 'packing.categories.tech',
+  hygiene: 'packing.categories.hygiene',
+  other: 'packing.categories.other',
 };
 
-function daysLabel(startISO: string): string {
+function daysLabel(startISO: string, t: TFunction): string {
   const diff = differenceInCalendarDays(parseISO(startISO), new Date());
-  if (diff > 1) return `Quedan ${diff} días para el viaje`;
-  if (diff === 1) return 'Queda 1 día para el viaje';
-  if (diff === 0) return 'El viaje es hoy';
-  return 'Viaje en curso';
+  if (diff > 1) return t('packing.daysLeft', { count: diff });
+  if (diff === 1) return t('packing.oneDayLeft');
+  if (diff === 0) return t('packing.tripToday');
+  return t('packing.tripOngoing');
 }
 
 export default function PackingScreen() {
+  const { t } = useTranslation();
   const { trip } = useTripDetail();
   const tripId = trip.id;
 
@@ -85,19 +88,19 @@ export default function PackingScreen() {
     () =>
       CATEGORY_ORDER.map((cat) => ({
         category: cat,
-        label: CATEGORY_LABEL[cat],
+        label: t(CATEGORY_LABEL_KEY[cat]),
         data: items.filter((i) => i.category === cat),
       })).filter((s) => s.data.length > 0),
-    [items],
+    [items, t],
   );
 
   const handleToggle = (id: string, next: boolean) => {
-    toggle(tripId, id, next).catch(() => Alert.alert('No se pudo guardar', 'Inténtalo de nuevo.'));
+    toggle(tripId, id, next).catch(() => Alert.alert(t('common.saveError'), t('common.tryAgain')));
   };
 
   const handleAdd = (category: PackingCategory, name: string) => {
     addItem(tripId, { name, category }).catch(() =>
-      Alert.alert('No se pudo añadir', 'Inténtalo de nuevo.'),
+      Alert.alert(t('packing.addError'), t('common.tryAgain')),
     );
   };
 
@@ -107,29 +110,29 @@ export default function PackingScreen() {
     if (seeds.length === 0) return;
 
     if (items.length === 0) {
-      addItems(tripId, seeds).catch(() => Alert.alert('No se pudo aplicar', 'Inténtalo de nuevo.'));
+      addItems(tripId, seeds).catch(() => Alert.alert(t('packing.applyError'), t('common.tryAgain')));
       return;
     }
 
-    Alert.alert('Ya tienes equipaje', '¿Quieres añadirlo a tu lista o reemplazarla?', [
-      { text: 'Cancelar', style: 'cancel' },
+    Alert.alert(t('packing.alreadyHaveTitle'), t('packing.alreadyHaveMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Añadir',
+        text: t('common.add'),
         onPress: () => {
           const existing = new Set(items.map((i) => i.name.trim().toLowerCase()));
           const fresh = seeds.filter((s) => !existing.has(s.name.trim().toLowerCase()));
           if (fresh.length === 0) return;
           addItems(tripId, fresh).catch(() =>
-            Alert.alert('No se pudo añadir', 'Inténtalo de nuevo.'),
+            Alert.alert(t('packing.addError'), t('common.tryAgain')),
           );
         },
       },
       {
-        text: 'Reemplazar',
+        text: t('packing.replace'),
         style: 'destructive',
         onPress: () =>
           replaceItems(tripId, seeds).catch(() =>
-            Alert.alert('No se pudo reemplazar', 'Inténtalo de nuevo.'),
+            Alert.alert(t('packing.replaceError'), t('common.tryAgain')),
           ),
       },
     ]);
@@ -137,23 +140,23 @@ export default function PackingScreen() {
 
   const handleLongPress = (item: { id: string; name: string }) => {
     Alert.alert(item.name, undefined, [
-      { text: 'Editar', onPress: () => setEditingId(item.id) },
+      { text: t('common.edit'), onPress: () => setEditingId(item.id) },
       {
-        text: 'Eliminar',
+        text: t('common.delete'),
         style: 'destructive',
         onPress: () =>
           removeItem(tripId, item.id).catch(() =>
-            Alert.alert('No se pudo eliminar', 'Inténtalo de nuevo.'),
+            Alert.alert(t('packing.deleteError'), t('common.tryAgain')),
           ),
       },
-      { text: 'Cancelar', style: 'cancel' },
+      { text: t('common.cancel'), style: 'cancel' },
     ]);
   };
 
   const handleSubmitEdit = (id: string, name: string) => {
     setEditingId(null);
     editItem(tripId, id, { name }).catch(() =>
-      Alert.alert('No se pudo guardar', 'Inténtalo de nuevo.'),
+      Alert.alert(t('common.saveError'), t('common.tryAgain')),
     );
   };
 
@@ -165,12 +168,10 @@ export default function PackingScreen() {
         </View>
       ) : items.length === 0 ? (
         <View style={styles.centered}>
-          <Text style={styles.emptyTitle}>Tu maleta está vacía</Text>
-          <Text style={styles.emptyText}>
-            Empieza con una plantilla o añade lo que necesites llevar.
-          </Text>
+          <Text style={styles.emptyTitle}>{t('packing.emptyTitle')}</Text>
+          <Text style={styles.emptyText}>{t('packing.emptyText')}</Text>
           <Pressable style={styles.emptyBtn} onPress={() => setTemplatesOpen(true)}>
-            <Text style={styles.emptyBtnText}>Cargar plantilla</Text>
+            <Text style={styles.emptyBtnText}>{t('packing.loadTemplate')}</Text>
           </Pressable>
         </View>
       ) : (
@@ -185,11 +186,11 @@ export default function PackingScreen() {
               <View style={styles.amount}>
                 <View style={styles.info}>
                   <Text style={styles.count}>
-                    {done} de {items.length}
+                    {t('packing.doneOf', { done, total: items.length })}
                   </Text>
-                  <Text style={styles.prepared}>preparados</Text>
+                  <Text style={styles.prepared}>{t('packing.prepared')}</Text>
                 </View>
-                <Text style={styles.daysText}>{daysLabel(trip.startDate)}</Text>
+                <Text style={styles.daysText}>{daysLabel(trip.startDate, t)}</Text>
               </View>
             </View>
 
@@ -198,7 +199,7 @@ export default function PackingScreen() {
               onPress={() => setTemplatesOpen(true)}
               hitSlop={8}
             >
-              <Text style={styles.templatesText}>Plantillas</Text>
+              <Text style={styles.templatesText}>{t('packing.templates')}</Text>
             </Pressable>
           </View>
 

@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, radius, spacing } from '@/constants/theme';
 import type { LatLng, MapRegion } from '@/utils/mapRegion';
 
@@ -18,21 +19,19 @@ type LocationPickerModalProps = {
 
 const DEFAULT_DELTA = 0.02;
 
-export function LocationPickerModal({
-  visible,
+// Contenido en componente aparte: se monta al abrir el modal, así
+// useState(initialLocation) inicializa el pin sin sincronizarlo con un efecto.
+function PickerContent({
   initialLocation,
   fallbackRegion,
   resetKey,
   onClose,
   onConfirm,
-}: LocationPickerModalProps) {
+}: Omit<LocationPickerModalProps, 'visible'>) {
+  const { t } = useTranslation();
   const mapRef = useRef<MapView>(null);
   const [picked, setPicked] = useState<LatLng | null>(initialLocation);
   const [locating, setLocating] = useState(false);
-
-  useEffect(() => {
-    if (visible) setPicked(initialLocation);
-  }, [visible, initialLocation]);
 
   const handleMapPress = useCallback(
     (e: { nativeEvent: { coordinate: { latitude: number; longitude: number } } }) => {
@@ -47,7 +46,7 @@ export function LocationPickerModal({
     try {
       const perm = await Location.requestForegroundPermissionsAsync();
       if (!perm.granted) {
-        Alert.alert('Permiso necesario', 'Activa el acceso a tu ubicación para usar esta opción.');
+        Alert.alert(t('common.permissionNeeded'), t('diary.locationPicker.permissionMessage'));
         return;
       }
       const pos = await Location.getCurrentPositionAsync({});
@@ -63,11 +62,11 @@ export function LocationPickerModal({
         500,
       );
     } catch {
-      Alert.alert('No se pudo obtener tu ubicación', 'Inténtalo de nuevo.');
+      Alert.alert(t('diary.locationPicker.locationError'), t('common.tryAgain'));
     } finally {
       setLocating(false);
     }
-  }, []);
+  }, [t]);
 
   const initialRegion: MapRegion | undefined = initialLocation
     ? {
@@ -79,67 +78,70 @@ export function LocationPickerModal({
     : fallbackRegion;
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View style={styles.container}>
-        <MapView
-          key={resetKey}
-          ref={mapRef}
-          style={StyleSheet.absoluteFill}
-          provider={PROVIDER_DEFAULT}
-          initialRegion={initialRegion}
-          onPress={handleMapPress}
+    <View style={styles.container}>
+      <MapView
+        key={resetKey}
+        ref={mapRef}
+        style={StyleSheet.absoluteFill}
+        provider={PROVIDER_DEFAULT}
+        initialRegion={initialRegion}
+        onPress={handleMapPress}
+      >
+        {picked ? (
+          <Marker
+            coordinate={{ latitude: picked.lat, longitude: picked.lng }}
+            pinColor={colors.primary}
+          />
+        ) : null}
+      </MapView>
+
+      <SafeAreaView style={styles.topBar} edges={['top']} pointerEvents="box-none">
+        <Pressable style={styles.iconBtn} onPress={onClose} hitSlop={10}>
+          <Ionicons name="close" size={22} color={colors.secondary} />
+        </Pressable>
+        <Text style={styles.title}>{t('diary.locationPicker.title')}</Text>
+        <View style={styles.iconBtnSpacer} />
+      </SafeAreaView>
+
+      <SafeAreaView style={styles.bottomBar} edges={['bottom']}>
+        <Pressable
+          style={styles.currentLocationBtn}
+          onPress={handleUseCurrentLocation}
+          disabled={locating}
         >
-          {picked ? (
-            <Marker
-              coordinate={{ latitude: picked.lat, longitude: picked.lng }}
-              pinColor={colors.primary}
-            />
-          ) : null}
-        </MapView>
+          {locating ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : (
+            <Ionicons name="locate" size={18} color={colors.primary} />
+          )}
+          <Text style={styles.currentLocationText}>{t('diary.locationPicker.useCurrent')}</Text>
+        </Pressable>
 
-        <SafeAreaView style={styles.topBar} edges={['top']} pointerEvents="box-none">
-          <Pressable style={styles.iconBtn} onPress={onClose} hitSlop={10}>
-            <Ionicons name="close" size={22} color={colors.secondary} />
-          </Pressable>
-          <Text style={styles.title}>Ubicación de la foto</Text>
-          <View style={styles.iconBtnSpacer} />
-        </SafeAreaView>
+        <Text style={styles.hint}>{t('diary.locationPicker.hint')}</Text>
 
-        <SafeAreaView style={styles.bottomBar} edges={['bottom']}>
-          <Pressable
-            style={styles.currentLocationBtn}
-            onPress={handleUseCurrentLocation}
-            disabled={locating}
-          >
-            {locating ? (
-              <ActivityIndicator size="small" color={colors.primary} />
-            ) : (
-              <Ionicons name="locate" size={18} color={colors.primary} />
-            )}
-            <Text style={styles.currentLocationText}>Usar mi ubicación actual</Text>
-          </Pressable>
-
-          <Text style={styles.hint}>O toca el mapa para colocar el pin manualmente</Text>
-
-          <View style={styles.actions}>
-            {initialLocation ? (
-              <Pressable
-                style={[styles.actionBtn, styles.removeBtn]}
-                onPress={() => onConfirm(null)}
-              >
-                <Text style={styles.removeText}>Quitar ubicación</Text>
-              </Pressable>
-            ) : null}
-            <Pressable
-              style={[styles.actionBtn, styles.confirmBtn, !picked && styles.confirmDisabled]}
-              onPress={() => picked && onConfirm(picked)}
-              disabled={!picked}
-            >
-              <Text style={styles.confirmText}>Guardar</Text>
+        <View style={styles.actions}>
+          {initialLocation ? (
+            <Pressable style={[styles.actionBtn, styles.removeBtn]} onPress={() => onConfirm(null)}>
+              <Text style={styles.removeText}>{t('diary.locationPicker.remove')}</Text>
             </Pressable>
-          </View>
-        </SafeAreaView>
-      </View>
+          ) : null}
+          <Pressable
+            style={[styles.actionBtn, styles.confirmBtn, !picked && styles.confirmDisabled]}
+            onPress={() => picked && onConfirm(picked)}
+            disabled={!picked}
+          >
+            <Text style={styles.confirmText}>{t('common.save')}</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    </View>
+  );
+}
+
+export function LocationPickerModal({ visible, ...contentProps }: LocationPickerModalProps) {
+  return (
+    <Modal visible={visible} animationType="slide" onRequestClose={contentProps.onClose}>
+      {visible ? <PickerContent {...contentProps} /> : null}
     </Modal>
   );
 }

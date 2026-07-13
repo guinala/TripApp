@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { getDestination } from '@/constants/destinations';
 import { DestinationStatsCard } from '@/components/explore/DestinationStatsCard';
@@ -14,6 +15,7 @@ const HERO_HEIGHT = 314;
 const STATS_OVERLAP = -59;
 
 export default function DestinationDetailScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -27,7 +29,10 @@ export default function DestinationDetailScreen() {
 
   const handleShare = () => {
     Share.share({
-      message: `Echa un vistazo a ${destination.name}, ${destination.country} ✈️`,
+      message: t('destination.shareMessage', {
+        name: destination.name,
+        country: destination.country,
+      }),
     });
   };
 
@@ -83,13 +88,16 @@ export default function DestinationDetailScreen() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
-            Sobre <Text style={styles.sectionTitleAccent}>{destination.name}</Text>
+            {t('destination.about')}{' '}
+            <Text style={styles.sectionTitleAccent}>{destination.name}</Text>
           </Text>
           <Text style={styles.description}>{destination.description}</Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, styles.sectionTitlePadded]}>Imprescindibles</Text>
+          <Text style={[styles.sectionTitle, styles.sectionTitlePadded]}>
+            {t('destination.highlights')}
+          </Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -104,7 +112,7 @@ export default function DestinationDetailScreen() {
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.s3 }]}>
         <Pressable style={styles.addButton} onPress={handleAddToTrip}>
-          <Text style={styles.addButtonText}>+ Añadir a un viaje</Text>
+          <Text style={styles.addButtonText}>{t('destination.addToTrip')}</Text>
         </Pressable>
       </View>
     </View>

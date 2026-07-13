@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { UnsplashPhoto, getCoverPhoto, searchPhotos } from '@/services/unsplash';
+import i18n from '@/i18n';
 
 type PhotosState = {
   photos: UnsplashPhoto[];
@@ -7,32 +8,36 @@ type PhotosState = {
   error: string | null;
 };
 
+type PhotosResult = {
+  key: string;
+  photos: UnsplashPhoto[];
+  error: string | null;
+};
+
+// Sin setState síncrono en el efecto (react-hooks/set-state-in-effect):
+// el efecto solo guarda el resultado con la clave de su petición y
+// `loading` se deriva en el render comparando claves.
+const IDLE_PHOTOS: PhotosState = { photos: [], loading: false, error: null };
+
 export function useUnsplashPhotos(query: string | null, perPage = 5): PhotosState {
-  const [state, setState] = useState<PhotosState>({
-    photos: [],
-    loading: query != null,
-    error: null,
-  });
+  const [result, setResult] = useState<PhotosResult | null>(null);
+
+  const key = query ? `${query}|${perPage}` : null;
 
   useEffect(() => {
-    if (!query) {
-      setState({ photos: [], loading: false, error: null });
-      return;
-    }
+    if (!key || !query) return;
 
     let cancelled = false;
-    setState((prev) => ({ ...prev, loading: true, error: null }));
-
     searchPhotos(query, perPage)
       .then((photos) => {
-        if (!cancelled) setState({ photos, loading: false, error: null });
+        if (!cancelled) setResult({ key, photos, error: null });
       })
       .catch((e: unknown) => {
         if (!cancelled) {
-          setState({
+          setResult({
+            key,
             photos: [],
-            loading: false,
-            error: e instanceof Error ? e.message : 'No se pudieron cargar las fotos',
+            error: e instanceof Error ? e.message : i18n.t('errors.loadPhotos'),
           });
         }
       });
@@ -40,9 +45,15 @@ export function useUnsplashPhotos(query: string | null, perPage = 5): PhotosStat
     return () => {
       cancelled = true;
     };
-  }, [query, perPage]);
+  }, [key, query, perPage]);
 
-  return state;
+  return useMemo(() => {
+    if (key == null) return IDLE_PHOTOS;
+    if (result == null || result.key !== key) {
+      return { photos: [], loading: true, error: null };
+    }
+    return { photos: result.photos, loading: false, error: result.error };
+  }, [key, result]);
 }
 
 type CoverState = {
@@ -50,24 +61,26 @@ type CoverState = {
   loading: boolean;
 };
 
+type CoverResult = {
+  key: string;
+  photo: UnsplashPhoto | null;
+};
+
+const IDLE_COVER: CoverState = { photo: null, loading: false };
+
 export function useUnsplashCover(query: string | null): CoverState {
-  const [state, setState] = useState<CoverState>({ photo: null, loading: query != null });
+  const [result, setResult] = useState<CoverResult | null>(null);
 
   useEffect(() => {
-    if (!query) {
-      setState({ photo: null, loading: false });
-      return;
-    }
+    if (!query) return;
 
     let cancelled = false;
-    setState({ photo: null, loading: true });
-
     getCoverPhoto(query)
       .then((photo) => {
-        if (!cancelled) setState({ photo, loading: false });
+        if (!cancelled) setResult({ key: query, photo });
       })
       .catch(() => {
-        if (!cancelled) setState({ photo: null, loading: false });
+        if (!cancelled) setResult({ key: query, photo: null });
       });
 
     return () => {
@@ -75,5 +88,9 @@ export function useUnsplashCover(query: string | null): CoverState {
     };
   }, [query]);
 
-  return state;
+  return useMemo(() => {
+    if (!query) return IDLE_COVER;
+    if (result == null || result.key !== query) return { photo: null, loading: true };
+    return { photo: result.photo, loading: false };
+  }, [query, result]);
 }

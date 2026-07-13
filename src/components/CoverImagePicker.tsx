@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, radius, spacing } from '@/constants/theme';
 
 type CoverImagePickerProps = {
@@ -10,6 +11,7 @@ type CoverImagePickerProps = {
 };
 
 export function CoverImagePicker({ currentUrl, onPick }: CoverImagePickerProps) {
+  const { t } = useTranslation();
   const [localUri, setLocalUri] = useState<string | null>(null);
 
   const pick = async () => {
@@ -42,7 +44,7 @@ export function CoverImagePicker({ currentUrl, onPick }: CoverImagePickerProps) 
       <View style={[styles.overlay, preview ? styles.overlayDim : null]}>
         <Ionicons name="camera" size={24} color={preview ? colors.white : colors.secondary300} />
         <Text style={[styles.text, preview ? { color: colors.white } : null]}>
-          {preview ? 'Cambiar portada' : 'Añadir portada'}
+          {preview ? t('trips.form.changeCover') : t('trips.form.addCover')}
         </Text>
       </View>
     </Pressable>

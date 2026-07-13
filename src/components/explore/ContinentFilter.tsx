@@ -1,4 +1,5 @@
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { CONTINENTS } from '@/constants/destinations';
 import type { Continent } from '@/types/destination';
@@ -9,8 +10,9 @@ type ContinentFilterProps = {
 };
 
 export function ContinentFilter({ value, onChange }: ContinentFilterProps) {
+  const { t } = useTranslation();
   const options: { key: string; label: string; continent: Continent | null }[] = [
-    { key: 'all', label: 'Todos', continent: null },
+    { key: 'all', label: t('explore.filters.all'), continent: null },
     ...CONTINENTS.map((c) => ({ key: c, label: c, continent: c as Continent | null })),
   ];
 

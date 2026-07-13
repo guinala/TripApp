@@ -1,9 +1,10 @@
 export type DiaryView = 'grid' | 'timeline' | 'map';
 
-export const DIARY_VIEWS: { key: DiaryView; label: string }[] = [
-  { key: 'grid', label: 'Grid' },
-  { key: 'timeline', label: 'Timeline' },
-  { key: 'map', label: 'Mapa' },
+// labelKey es clave i18n: renderiza con t(view.labelKey)
+export const DIARY_VIEWS: { key: DiaryView; labelKey: string }[] = [
+  { key: 'grid', labelKey: 'diary.views.grid' },
+  { key: 'timeline', labelKey: 'diary.views.timeline' },
+  { key: 'map', labelKey: 'diary.views.map' },
 ];
 
 export const DIARY_MOSAIC_COLUMNS = 3;

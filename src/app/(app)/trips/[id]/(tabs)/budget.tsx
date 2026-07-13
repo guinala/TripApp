@@ -2,6 +2,7 @@
 import { useCallback } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { colors, spacing } from '@/constants/theme';
 import { useTripDetail } from '@/context/TripDetailContext';
 import { useExpenseStore } from '@/store/expenseStore';
@@ -17,6 +18,7 @@ import { useBudgetAlert } from '@/hooks/use-budget-alert';
 const EMPTY: Expense[] = [];
 
 export default function BudgetScreen() {
+  const { t } = useTranslation();
   const { trip } = useTripDetail();
   const id = trip.id;
   const budget = trip.budget ?? 0;
@@ -78,7 +80,7 @@ export default function BudgetScreen() {
         />
       </ScrollView>
 
-      <Fab onPress={handleAddExpense} accessibilityLabel="Añadir gasto" />
+      <Fab onPress={handleAddExpense} accessibilityLabel={t('budget.addExpense')} />
     </View>
   );
 }

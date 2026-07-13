@@ -1,16 +1,9 @@
 import { useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, radius } from '@/constants/theme';
-
-export const CURRENCIES = [
-  { code: 'EUR', symbol: '€' },
-  { code: 'USD', symbol: '$' },
-  { code: 'GBP', symbol: '£' },
-  { code: 'JPY', symbol: '¥' },
-  { code: 'CHF', symbol: 'CHF' },
-  { code: 'MXN', symbol: '$' },
-];
+import { CURRENCIES } from '@/constants/currencies';
 
 interface CurrencySelectProps {
   value: string;
@@ -18,6 +11,7 @@ interface CurrencySelectProps {
 }
 
 export function CurrencySelect({ value, onChange }: CurrencySelectProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const selected = CURRENCIES.find((c) => c.code === value);
 
@@ -25,7 +19,7 @@ export function CurrencySelect({ value, onChange }: CurrencySelectProps) {
     <>
       <Pressable style={styles.box} onPress={() => setOpen(true)}>
         <Text style={styles.boxText}>
-          {selected ? `${selected.code} (${selected.symbol})` : 'Elegir'}
+          {selected ? `${selected.code} (${selected.symbol})` : t('common.choose')}
         </Text>
         <Ionicons name="chevron-down" size={18} color={colors.secondary300} />
       </Pressable>

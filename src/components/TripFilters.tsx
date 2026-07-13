@@ -1,14 +1,15 @@
-import { View, Text, ScrollView, StyleSheet, Pressable } from 'react-native';
+import { Text, ScrollView, StyleSheet, Pressable } from 'react-native';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, radius } from '@/constants/theme';
 
 export type TripFilter = 'all' | 'planned' | 'active' | 'completed';
 
-const FILTERS: { key: TripFilter; label: string }[] = [
-  { key: 'all', label: 'Todos' },
-  { key: 'planned', label: 'Próximos' },
-  { key: 'active', label: 'En Curso' },
-  { key: 'completed', label: 'Pasados' },
+const FILTERS: { key: TripFilter; labelKey: string }[] = [
+  { key: 'all', labelKey: 'trips.filters.all' },
+  { key: 'planned', labelKey: 'trips.filters.planned' },
+  { key: 'active', labelKey: 'trips.filters.active' },
+  { key: 'completed', labelKey: 'trips.filters.completed' },
 ];
 
 type TripFiltersProps = {
@@ -18,13 +19,15 @@ type TripFiltersProps = {
 };
 
 export default function TripFilters({ active, total, onChange }: TripFiltersProps) {
+  const { t } = useTranslation();
+
   return (
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={styles.row}
     >
-      {FILTERS.map(({ key, label }) => {
+      {FILTERS.map(({ key, labelKey }) => {
         const selected = active === key;
 
         return (
@@ -34,7 +37,7 @@ export default function TripFilters({ active, total, onChange }: TripFiltersProp
             style={[styles.pill, selected ? styles.pillActive : styles.pillInactive]}
           >
             <Text>
-              {label}
+              {t(labelKey)}
               {key === 'all' ? ` · ${total}` : ''}
             </Text>
           </Pressable>

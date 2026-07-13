@@ -4,7 +4,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import MapView, { Callout, Marker, Polyline, PROVIDER_DEFAULT, Region } from 'react-native-maps';
 import { format, parseISO } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
+import { dateLocale } from '@/i18n/date';
 import { categoryColors, colors, fonts, fontSize, radius, spacing } from '@/constants/theme';
 import { ACTIVITY_ICON } from '@/constants/activityIcons';
 import { useTripDetail } from '@/context/TripDetailContext';
@@ -39,6 +40,7 @@ function NumberedPin({ number, selected }: { number: number; selected: boolean }
 }
 
 export function FullMapModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { trip, days, activities, selectedDayId, setSelectedDayId } = useTripDetail();
 
@@ -114,15 +116,18 @@ export function FullMapModal({ visible, onClose }: { visible: boolean; onClose: 
   };
 
   const calloutMeta = (a: Activity): string => {
-    const parts = [`Día ${dayById.get(a.dayId)?.dayNumber ?? '?'}`];
+    const parts = [t('itinerary.dayNumber', { number: dayById.get(a.dayId)?.dayNumber ?? '?' })];
     if (a.time) parts.push(a.time);
     if (a.durationMinutes) parts.push(formatDuration(a.durationMinutes));
     return parts.join(' · ');
   };
 
   const sheetLabel = selectedDay
-    ? `DÍA ${selectedDay.dayNumber} · ${format(parseISO(selectedDay.date), 'd MMM', { locale: es }).toUpperCase()}`
-    : 'TODO EL VIAJE';
+    ? t('itinerary.dayLabel', {
+        number: selectedDay.dayNumber,
+        date: format(parseISO(selectedDay.date), 'd MMM', { locale: dateLocale() }),
+      }).toUpperCase()
+    : t('map.wholeTrip').toUpperCase();
   const sheetTitle = selectedDay?.title ?? trip.title;
 
   return (
@@ -186,7 +191,7 @@ export function FullMapModal({ visible, onClose }: { visible: boolean; onClose: 
               {trip.title}
             </Text>
             <Text style={styles.headerSubtitle}>
-              {located.length} {located.length === 1 ? 'actividad' : 'actividades'}
+              {t('itinerary.activitiesCount', { count: located.length })}
               {located.length > 1 ? ` · ${formatDistance(distanceKm)}` : ''}
             </Text>
           </View>
@@ -210,7 +215,7 @@ export function FullMapModal({ visible, onClose }: { visible: boolean; onClose: 
             onPress={() => selectDay(null)}
           >
             <Text style={[styles.chipText, selectedDayId === null && styles.chipTextActive]}>
-              Todo
+              {t('itinerary.dayFilter.all')}
             </Text>
           </Pressable>
           {days.map((d) => {
@@ -222,7 +227,7 @@ export function FullMapModal({ visible, onClose }: { visible: boolean; onClose: 
                 onPress={() => selectDay(d.id)}
               >
                 <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                  D{d.dayNumber}
+                  {t('itinerary.dayFilter.day', { number: d.dayNumber })}
                 </Text>
               </Pressable>
             );
@@ -252,13 +257,13 @@ export function FullMapModal({ visible, onClose }: { visible: boolean; onClose: 
               </Text>
             </View>
             <Pressable onPress={onClose} hitSlop={8}>
-              <Text style={styles.sheetLink}>Ver lista →</Text>
+              <Text style={styles.sheetLink}>{t('map.viewList')} →</Text>
             </Pressable>
           </View>
 
           {scoped.length === 0 ? (
             <Text style={styles.sheetEmpty}>
-              {selectedDay ? 'Sin actividades este día.' : 'Aún no hay actividades en este viaje.'}
+              {selectedDay ? t('map.emptyDay') : t('map.emptyTrip')}
             </Text>
           ) : (
             <ScrollView style={styles.sheetList} showsVerticalScrollIndicator={false}>

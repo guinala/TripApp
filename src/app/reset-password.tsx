@@ -11,12 +11,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { colors, fontSize, fonts, radius } from '@/constants/theme';
 import AuthTextField from '@/components/auth/AuthTextField';
 import { PasswordStrengthMeter } from '@/components/auth/PasswordStrengthMeter';
 import { supabase } from '@/services/supabase';
 
 export default function ResetPasswordScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { access_token, refresh_token } = useLocalSearchParams<{
     access_token?: string;
@@ -31,10 +33,10 @@ export default function ResetPasswordScreen() {
 
   async function handleUpdate() {
     setError(null);
-    if (password.length < 6) return setError('La contraseña debe tener al menos 6 caracteres.');
-    if (password !== confirm) return setError('Las contraseñas no coinciden.');
+    if (password.length < 6) return setError(t('auth.register.errorPasswordMin'));
+    if (password !== confirm) return setError(t('auth.reset.errorMismatch'));
     if (!access_token || !refresh_token) {
-      return setError('El enlace no es válido. Solicita uno nuevo.');
+      return setError(t('auth.reset.errorInvalidLink'));
     }
 
     try {
@@ -50,7 +52,7 @@ export default function ResetPasswordScreen() {
 
       router.replace('./(app)');
     } catch {
-      setError('No se pudo cambiar la contraseña. El enlace puede haber caducado.');
+      setError(t('auth.reset.errorUpdate'));
     } finally {
       setLoading(false);
     }
@@ -69,16 +71,16 @@ export default function ResetPasswordScreen() {
         >
           <View style={styles.header}>
             <Text style={styles.title}>
-              Nueva{'\n'}
-              <Text style={styles.titleAccent}>contraseña</Text>
+              {t('auth.reset.titleStart')}
+              <Text style={styles.titleAccent}>{t('auth.reset.titleAccent')}</Text>
             </Text>
-            <Text style={styles.subtitle}>Elige una contraseña nueva para tu cuenta.</Text>
+            <Text style={styles.subtitle}>{t('auth.reset.subtitle')}</Text>
           </View>
 
           <View style={styles.fields}>
             <View>
               <AuthTextField
-                label="Contraseña"
+                label={t('auth.password')}
                 value={password}
                 onChangeText={setPassword}
                 placeholder="••••••••"
@@ -87,7 +89,9 @@ export default function ResetPasswordScreen() {
                 autoComplete="password-new"
                 rightSlot={
                   <TouchableOpacity onPress={() => setShowPassword((s) => !s)} hitSlop={8}>
-                    <Text style={styles.showText}>{showPassword ? 'Ocultar' : 'Mostrar'}</Text>
+                    <Text style={styles.showText}>
+                      {showPassword ? t('auth.hide') : t('auth.show')}
+                    </Text>
                   </TouchableOpacity>
                 }
               />
@@ -95,7 +99,7 @@ export default function ResetPasswordScreen() {
             </View>
 
             <AuthTextField
-              label="Repite la contraseña"
+              label={t('auth.reset.confirmLabel')}
               value={confirm}
               onChangeText={setConfirm}
               placeholder="••••••••"
@@ -115,7 +119,7 @@ export default function ResetPasswordScreen() {
               {loading ? (
                 <ActivityIndicator color={colors.white} />
               ) : (
-                <Text style={styles.primaryText}>Guardar contraseña</Text>
+                <Text style={styles.primaryText}>{t('auth.reset.submit')}</Text>
               )}
             </TouchableOpacity>
           </View>

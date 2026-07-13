@@ -1,5 +1,6 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, radius, spacing } from '@/constants/theme';
 import { usePlacesAutocomplete } from '@/hooks/use-places-autocomplete';
 
@@ -11,6 +12,7 @@ type DestinationInputProps = {
 };
 
 export function DestinationInput({ value, onChange }: DestinationInputProps) {
+  const { t } = useTranslation();
   const { setQuery, suggestions, loading, selectPlace } = usePlacesAutocomplete(CITY_TYPES);
 
   return (
@@ -19,12 +21,12 @@ export function DestinationInput({ value, onChange }: DestinationInputProps) {
         <Ionicons name="location-outline" size={18} color={colors.secondary300} />
         <TextInput
           style={styles.input}
-          placeholder="¿A dónde vas?"
+          placeholder={t('trips.form.destinationPlaceholder')}
           placeholderTextColor={colors.secondary300}
           value={value}
-          onChangeText={(t) => {
-            onChange(t);
-            setQuery(t);
+          onChangeText={(text) => {
+            onChange(text);
+            setQuery(text);
           }}
         />
         {loading ? <ActivityIndicator size="small" /> : null}

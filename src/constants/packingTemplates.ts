@@ -1,13 +1,16 @@
 import type { PackingCategory } from '@/types/packing';
 import type { PackingSeed } from '@/services/packing';
+import i18n from '@/i18n';
 
 export type PackingTemplateItem = {
-  name: string;
+  // Clave i18n del nombre del ítem; se resuelve al idioma activo al aplicar.
+  nameKey: string;
   category: PackingCategory;
 };
 
 export type PackingTemplate = {
-  name: string;
+  // Clave i18n del nombre visible de la plantilla.
+  nameKey: string;
   items: PackingTemplateItem[];
 };
 
@@ -15,73 +18,73 @@ export type PackingTemplateKey = 'common' | 'beach' | 'mountain' | 'city' | 'bus
 
 export const PACKING_TEMPLATES: Record<PackingTemplateKey, PackingTemplate> = {
   common: {
-    name: 'Básicos (siempre)',
+    nameKey: 'packing.templatesData.common.name',
     items: [
-      { name: 'DNI / Pasaporte', category: 'docs' },
-      { name: 'Tarjeta de crédito/débito', category: 'docs' },
-      { name: 'Dinero en efectivo', category: 'docs' },
-      { name: 'Cargador del móvil', category: 'tech' },
-      { name: 'Power bank', category: 'tech' },
-      { name: 'Auriculares', category: 'tech' },
-      { name: 'Cepillo y pasta de dientes', category: 'hygiene' },
-      { name: 'Desodorante', category: 'hygiene' },
-      { name: 'Gel y champú', category: 'hygiene' },
-      { name: 'Ropa interior', category: 'clothes' },
-      { name: 'Calcetines', category: 'clothes' },
-      { name: 'Pijama', category: 'clothes' },
-      { name: 'Medicación habitual', category: 'other' },
-      { name: 'Gafas / lentillas', category: 'other' },
+      { nameKey: 'packing.templatesData.common.items.id', category: 'docs' },
+      { nameKey: 'packing.templatesData.common.items.card', category: 'docs' },
+      { nameKey: 'packing.templatesData.common.items.cash', category: 'docs' },
+      { nameKey: 'packing.templatesData.common.items.phoneCharger', category: 'tech' },
+      { nameKey: 'packing.templatesData.common.items.powerBank', category: 'tech' },
+      { nameKey: 'packing.templatesData.common.items.headphones', category: 'tech' },
+      { nameKey: 'packing.templatesData.common.items.toothbrush', category: 'hygiene' },
+      { nameKey: 'packing.templatesData.common.items.deodorant', category: 'hygiene' },
+      { nameKey: 'packing.templatesData.common.items.shampoo', category: 'hygiene' },
+      { nameKey: 'packing.templatesData.common.items.underwear', category: 'clothes' },
+      { nameKey: 'packing.templatesData.common.items.socks', category: 'clothes' },
+      { nameKey: 'packing.templatesData.common.items.pajamas', category: 'clothes' },
+      { nameKey: 'packing.templatesData.common.items.medication', category: 'other' },
+      { nameKey: 'packing.templatesData.common.items.glasses', category: 'other' },
     ],
   },
   beach: {
-    name: 'Playa',
+    nameKey: 'packing.templatesData.beach.name',
     items: [
-      { name: 'Bañador', category: 'clothes' },
-      { name: 'Chanclas', category: 'clothes' },
-      { name: 'Sombrero o gorra', category: 'clothes' },
-      { name: 'Toalla de playa', category: 'other' },
-      { name: 'Gafas de sol', category: 'other' },
-      { name: 'Crema solar', category: 'hygiene' },
-      { name: 'After sun', category: 'hygiene' },
+      { nameKey: 'packing.templatesData.beach.items.swimsuit', category: 'clothes' },
+      { nameKey: 'packing.templatesData.beach.items.flipFlops', category: 'clothes' },
+      { nameKey: 'packing.templatesData.beach.items.hat', category: 'clothes' },
+      { nameKey: 'packing.templatesData.beach.items.towel', category: 'other' },
+      { nameKey: 'packing.templatesData.beach.items.sunglasses', category: 'other' },
+      { nameKey: 'packing.templatesData.beach.items.sunscreen', category: 'hygiene' },
+      { nameKey: 'packing.templatesData.beach.items.afterSun', category: 'hygiene' },
     ],
   },
   mountain: {
-    name: 'Montaña',
+    nameKey: 'packing.templatesData.mountain.name',
     items: [
-      { name: 'Botas de trekking', category: 'clothes' },
-      { name: 'Calcetines técnicos', category: 'clothes' },
-      { name: 'Cortavientos / impermeable', category: 'clothes' },
-      { name: 'Forro polar', category: 'clothes' },
-      { name: 'Gorro y guantes', category: 'clothes' },
-      { name: 'Linterna frontal', category: 'tech' },
-      { name: 'Botiquín básico', category: 'other' },
-      { name: 'Bastones de senderismo', category: 'other' },
-      { name: 'Cantimplora / botella', category: 'other' },
+      { nameKey: 'packing.templatesData.mountain.items.boots', category: 'clothes' },
+      { nameKey: 'packing.templatesData.mountain.items.technicalSocks', category: 'clothes' },
+      { nameKey: 'packing.templatesData.mountain.items.windbreaker', category: 'clothes' },
+      { nameKey: 'packing.templatesData.mountain.items.fleece', category: 'clothes' },
+      { nameKey: 'packing.templatesData.mountain.items.hatGloves', category: 'clothes' },
+      { nameKey: 'packing.templatesData.mountain.items.headlamp', category: 'tech' },
+      { nameKey: 'packing.templatesData.mountain.items.firstAid', category: 'other' },
+      { nameKey: 'packing.templatesData.mountain.items.poles', category: 'other' },
+      { nameKey: 'packing.templatesData.mountain.items.bottle', category: 'other' },
     ],
   },
   city: {
-    name: 'Ciudad',
+    nameKey: 'packing.templatesData.city.name',
     items: [
-      { name: 'Zapatillas cómodas', category: 'clothes' },
-      { name: 'Mochila pequeña', category: 'other' },
-      { name: 'Power bank', category: 'tech' },
-      { name: 'Adaptador de enchufe', category: 'tech' },
-      { name: 'Paraguas plegable', category: 'other' },
-      { name: 'Botella reutilizable', category: 'other' },
+      { nameKey: 'packing.templatesData.city.items.sneakers', category: 'clothes' },
+      { nameKey: 'packing.templatesData.city.items.backpack', category: 'other' },
+      { nameKey: 'packing.templatesData.city.items.powerBank', category: 'tech' },
+      { nameKey: 'packing.templatesData.city.items.adapter', category: 'tech' },
+      { nameKey: 'packing.templatesData.city.items.umbrella', category: 'other' },
+      { nameKey: 'packing.templatesData.city.items.bottle', category: 'other' },
     ],
   },
   business: {
-    name: 'Negocios',
+    nameKey: 'packing.templatesData.business.name',
     items: [
-      { name: 'Traje / blazer', category: 'clothes' },
-      { name: 'Camisas planchadas', category: 'clothes' },
-      { name: 'Zapatos de vestir', category: 'clothes' },
-      { name: 'Corbata', category: 'clothes' },
-      { name: 'Portátil', category: 'tech' },
-      { name: 'Cargador del portátil', category: 'tech' },
-      { name: 'Documentos de trabajo', category: 'docs' },
-      { name: 'Tarjetas de visita', category: 'docs' },
-      { name: 'Cuaderno y bolígrafo', category: 'other' },
+      { nameKey: 'packing.templatesData.business.items.suit', category: 'clothes' },
+      { nameKey: 'packing.templatesData.business.items.shirts', category: 'clothes' },
+      { nameKey: 'packing.templatesData.business.items.dressShoes', category: 'clothes' },
+      { nameKey: 'packing.templatesData.business.items.tie', category: 'clothes' },
+      { nameKey: 'packing.templatesData.business.items.laptop', category: 'tech' },
+      { nameKey: 'packing.templatesData.business.items.laptopCharger', category: 'tech' },
+      { nameKey: 'packing.templatesData.business.items.workDocs', category: 'docs' },
+      { nameKey: 'packing.templatesData.business.items.businessCards', category: 'docs' },
+      { nameKey: 'packing.templatesData.business.items.notebook', category: 'other' },
     ],
   },
 };
@@ -92,10 +95,11 @@ export function buildSeedsFromTemplates(keys: PackingTemplateKey[]): PackingSeed
 
   for (const key of keys) {
     for (const item of PACKING_TEMPLATES[key].items) {
-      const norm = item.name.trim().toLowerCase();
+      const name = i18n.t(item.nameKey);
+      const norm = name.trim().toLowerCase();
       if (seen.has(norm)) continue;
       seen.add(norm);
-      seeds.push({ name: item.name, category: item.category });
+      seeds.push({ name, category: item.category });
     }
   }
 

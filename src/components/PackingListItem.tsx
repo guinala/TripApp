@@ -22,6 +22,39 @@ type PackingListItemProps = {
   onCancelEdit?: () => void;
 };
 
+// Componente aparte: al montarse cuando empieza la edición, useState(name)
+// inicializa el borrador sin necesidad de sincronizarlo con un efecto.
+function EditRow({
+  name,
+  showDivider,
+  onSubmitEdit,
+  onCancelEdit,
+}: Pick<PackingListItemProps, 'name' | 'showDivider' | 'onSubmitEdit' | 'onCancelEdit'>) {
+  const [draft, setDraft] = useState(name);
+
+  const submitEdit = () => {
+    const next = draft.trim();
+    if (next && next !== name) onSubmitEdit?.(next);
+    else onCancelEdit?.();
+  };
+
+  return (
+    <View style={[styles.row, showDivider && styles.divider]}>
+      <View style={styles.editCheckbox} />
+      <TextInput
+        style={styles.input}
+        value={draft}
+        onChangeText={setDraft}
+        autoFocus
+        returnKeyType="done"
+        onSubmitEditing={submitEdit}
+        onBlur={submitEdit}
+        placeholderTextColor={colors.secondary300}
+      />
+    </View>
+  );
+}
+
 function PackingListItemBase({
   name,
   checked,
@@ -35,16 +68,11 @@ function PackingListItemBase({
 }: PackingListItemProps) {
   const progress = useSharedValue(checked ? 1 : 0);
   const checkScale = useSharedValue(checked ? 1 : 0);
-  const [draft, setDraft] = useState(name);
 
   useEffect(() => {
     progress.value = withTiming(checked ? 1 : 0, { duration: 160 });
     checkScale.value = withSpring(checked ? 1 : 0, { damping: 12, stiffness: 180 });
   }, [checked, progress, checkScale]);
-
-  useEffect(() => {
-    if (editing) setDraft(name);
-  }, [editing, name]);
 
   const boxStyle = useAnimatedStyle(() => ({
     backgroundColor: interpolateColor(
@@ -60,27 +88,15 @@ function PackingListItemBase({
     transform: [{ scale: checkScale.value }],
   }));
 
-  const submitEdit = () => {
-    const next = draft.trim();
-    if (next && next !== name) onSubmitEdit?.(next);
-    else onCancelEdit?.();
-  };
-
   if (editing) {
     return (
-      <View style={[styles.row, showDivider && styles.divider]}>
-        <View style={styles.editCheckbox} />
-        <TextInput
-          style={styles.input}
-          value={draft}
-          onChangeText={setDraft}
-          autoFocus
-          returnKeyType="done"
-          onSubmitEditing={submitEdit}
-          onBlur={submitEdit}
-          placeholderTextColor={colors.secondary300}
-        />
-      </View>
+      <EditRow
+        key={name}
+        name={name}
+        showDivider={showDivider}
+        onSubmitEdit={onSubmitEdit}
+        onCancelEdit={onCancelEdit}
+      />
     );
   }
 

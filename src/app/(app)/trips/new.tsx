@@ -8,7 +8,8 @@ import { colors, fonts, fontSize, radius } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { ScrollView, TextInput } from 'react-native-gesture-handler';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { es } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
+import { dateLocale } from '@/i18n/date';
 import { TripType } from '@/types/trip';
 import { CurrencySelect } from '@/components/CurrencySelect';
 import { TripTypeSelector } from '@/components/TripTypeSelector';
@@ -24,6 +25,7 @@ function toISODate(d: Date): string {
 }
 
 export default function NewTripScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { id, destination: destinationParam } = useLocalSearchParams<{
@@ -78,20 +80,22 @@ export default function NewTripScreen() {
   };
 
   const handleSubmit = async () => {
-    if (!destination.trim()) return Alert.alert('Falta el destino', 'Indica a dónde viajas.');
-    if (!startDate || !endDate) return Alert.alert('Faltan fechas', 'Elige inicio y fin.');
+    if (!destination.trim())
+      return Alert.alert(t('trips.form.missingDestinationTitle'), t('trips.form.missingDestination'));
+    if (!startDate || !endDate)
+      return Alert.alert(t('trips.form.missingDatesTitle'), t('trips.form.missingDates'));
     if (endDate < startDate)
-      return Alert.alert('Fechas inválidas', 'El fin no puede ser antes del inicio.');
+      return Alert.alert(t('trips.form.invalidDatesTitle'), t('trips.form.invalidDates'));
 
     const budgetNum = budget ? Number(budget.replace(',', '.')) : null;
     if (budgetNum !== null && (Number.isNaN(budgetNum) || budgetNum < 0)) {
-      return Alert.alert('Presupuesto inválido', 'Introduce un número válido.');
+      return Alert.alert(t('trips.form.invalidBudgetTitle'), t('trips.form.invalidBudget'));
     }
 
     setSaving(true);
     try {
       const payload = {
-        title: title.trim() || `Viaje a ${destination.trim()}`,
+        title: title.trim() || t('trips.form.defaultTitle', { destination: destination.trim() }),
         destination: destination.trim(),
         startDate: toISODate(startDate),
         endDate: toISODate(endDate),
@@ -115,7 +119,7 @@ export default function NewTripScreen() {
 
       router.back();
     } catch (e) {
-      Alert.alert('No se pudo guardar', (e as Error).message);
+      Alert.alert(t('trips.form.saveError'), (e as Error).message);
       setSaving(false);
     }
   };
@@ -126,58 +130,60 @@ export default function NewTripScreen() {
         <Pressable style={styles.backBtn} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={20} color={colors.secondary} />
         </Pressable>
-        <Text style={styles.headerTitle}>{isEdit ? 'Editar Viaje' : 'Nuevo Viaje'}</Text>
+        <Text style={styles.headerTitle}>
+          {isEdit ? t('trips.form.editTitle') : t('trips.form.newTitle')}
+        </Text>
         <View style={{ width: 36 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
         <CoverImagePicker currentUrl={existing?.coverImage ?? null} onPick={setPickedCover} />
 
-        <Text style={styles.label}>NOMBRE DEL VIAJE</Text>
+        <Text style={styles.label}>{t('trips.form.name').toUpperCase()}</Text>
         <TextInput
           style={styles.input}
-          placeholder="Ej. Japón en Octubre"
+          placeholder={t('trips.form.namePlaceholder')}
           placeholderTextColor={colors.textMetadata}
           value={title}
           onChangeText={setTitle}
         />
 
-        <Text style={styles.label}>DESTINO</Text>
+        <Text style={styles.label}>{t('trips.form.destination').toUpperCase()}</Text>
         <DestinationInput value={destination} onChange={setDestination} />
 
         <View style={styles.row}>
           <View style={styles.col}>
-            <Text style={styles.label}>INICIO</Text>
+            <Text style={styles.label}>{t('trips.form.start').toUpperCase()}</Text>
             <Pressable style={styles.input} onPress={() => setPicker('start')}>
               <Ionicons name="calendar-outline" size={16} color={colors.secondary300} />
               <Text style={styles.dateText}>
-                {startDate ? format(startDate, 'd MMM', { locale: es }) : 'Elegir'}
+                {startDate ? format(startDate, 'd MMM', { locale: dateLocale() }) : t('common.choose')}
               </Text>
             </Pressable>
           </View>
           <View style={styles.col}>
-            <Text style={styles.label}>FIN</Text>
+            <Text style={styles.label}>{t('trips.form.end').toUpperCase()}</Text>
             <Pressable style={styles.input} onPress={() => setPicker('end')}>
               <Ionicons name="calendar-outline" size={16} color={colors.secondary300} />
               <Text style={styles.dateText}>
-                {endDate ? format(endDate, 'd MMM', { locale: es }) : 'Elegir'}
+                {endDate ? format(endDate, 'd MMM', { locale: dateLocale() }) : t('common.choose')}
               </Text>
             </Pressable>
           </View>
         </View>
         {nights > 0 && (
           <Text style={styles.hint}>
-            + {nights} días · {format(startDate!, 'yyyy')}
+            {t('trips.form.daysHint', { count: nights, year: format(startDate!, 'yyyy') })}
           </Text>
         )}
 
         <View style={styles.row}>
           <View style={styles.col}>
-            <Text style={styles.label}>MONEDA</Text>
+            <Text style={styles.label}>{t('trips.form.currency').toUpperCase()}</Text>
             <CurrencySelect value={currency} onChange={setCurrency} />
           </View>
           <View style={styles.col}>
-            <Text style={styles.label}>PRESUPUESTO</Text>
+            <Text style={styles.label}>{t('trips.form.budget').toUpperCase()}</Text>
             <TextInput
               style={styles.input}
               placeholder="0"
@@ -189,7 +195,7 @@ export default function NewTripScreen() {
           </View>
         </View>
 
-        <Text style={styles.label}>TIPO DE VIAJE</Text>
+        <Text style={styles.label}>{t('trips.form.type').toUpperCase()}</Text>
         <TripTypeSelector value={tripType} onChange={setTripType} />
       </ScrollView>
 
@@ -200,7 +206,11 @@ export default function NewTripScreen() {
       >
         <Ionicons name={isEdit ? 'checkmark' : 'add'} size={20} color={colors.surfacePaper} />
         <Text style={styles.submitLabel}>
-          {saving ? 'Guardando…' : isEdit ? 'Guardar cambios' : 'Crear viaje'}
+          {saving
+            ? t('common.saving')
+            : isEdit
+              ? t('common.saveChanges')
+              : t('trips.form.create')}
         </Text>
       </Pressable>
 

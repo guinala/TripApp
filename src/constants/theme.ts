@@ -30,6 +30,8 @@ export const colors = {
   danger: '#c84a2e',
   // Misc
   white: '#ffffff',
+  cardBorder: '#D9D9D9',
+  ink: '#1B2D4F',
 } as const;
 
 export const categoryColors = {
@@ -94,6 +96,7 @@ export const fonts = {
   sansExtraBold: 'PlusJakartaSans-ExtraBold', // 800
   serif: 'InstrumentSerif-Regular',
   serifItalic: 'InstrumentSerif-Italic',
+  mono: 'JetBrainsMono-Regular',
 } as const;
 
 export const onboarding = {

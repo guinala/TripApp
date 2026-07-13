@@ -3,6 +3,7 @@ import { FlatList, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, radius, spacing } from '@/constants/theme';
 import { ContinentFilter } from '@/components/explore/ContinentFilter';
 import { DestinationCard } from '@/components/explore/DestinationCard';
@@ -11,6 +12,7 @@ import { useDestinationFilter } from '@/hooks/use-destination-filter';
 import type { Continent } from '@/types/destination';
 
 export default function ExploreScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [continent, setContinent] = useState<Continent | null>(null);
@@ -24,7 +26,8 @@ export default function ExploreScreen() {
   const header = (
     <View style={styles.header}>
       <Text style={styles.title}>
-        ¿A dónde quieres <Text style={styles.titleAccent}>ir?</Text>
+        {t('explore.titleStart')}
+        <Text style={styles.titleAccent}>{t('explore.titleAccent')}</Text>
       </Text>
 
       <View style={styles.searchBox}>
@@ -33,7 +36,7 @@ export default function ExploreScreen() {
           style={styles.searchInput}
           value={query}
           onChangeText={setQuery}
-          placeholder="Busca un lugar al que viajar..."
+          placeholder={t('explore.searchPlaceholder')}
           placeholderTextColor={colors.secondary300}
           autoCorrect={false}
           returnKeyType="search"
@@ -50,7 +53,8 @@ export default function ExploreScreen() {
       )}
 
       <Text style={styles.sectionTitle}>
-        Encuentra tu <Text style={styles.titleAccent}>próximo viaje</Text>
+        {t('explore.sectionTitleStart')}
+        <Text style={styles.titleAccent}>{t('explore.sectionTitleAccent')}</Text>
       </Text>
     </View>
   );
@@ -69,9 +73,7 @@ export default function ExploreScreen() {
           />
         )}
         ListHeaderComponent={header}
-        ListEmptyComponent={
-          <Text style={styles.empty}>No hay destinos que coincidan con tu búsqueda.</Text>
-        }
+        ListEmptyComponent={<Text style={styles.empty}>{t('explore.empty')}</Text>}
         columnWrapperStyle={styles.column}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}

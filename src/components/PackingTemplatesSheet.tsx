@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Check } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, radius } from '@/constants/theme';
 import { PACKING_TEMPLATES, type PackingTemplateKey } from '@/constants/packingTemplates';
 
@@ -13,6 +14,7 @@ type PackingTemplatesSheetProps = {
 };
 
 export function PackingTemplatesSheet({ visible, onClose, onApply }: PackingTemplatesSheetProps) {
+  const { t } = useTranslation();
   const [selected, setSelected] = useState<PackingTemplateKey[]>([]);
 
   const toggle = (key: PackingTemplateKey) => {
@@ -35,8 +37,8 @@ export function PackingTemplatesSheet({ visible, onClose, onApply }: PackingTemp
       <Pressable style={styles.backdrop} onPress={close}>
         {/* onPress vacío: absorbe el toque para que no cierre al tocar la hoja */}
         <Pressable style={styles.sheet} onPress={() => {}}>
-          <Text style={styles.title}>Plantillas</Text>
-          <Text style={styles.subtitle}>Elige qué añadir a tu maleta</Text>
+          <Text style={styles.title}>{t('packing.templates')}</Text>
+          <Text style={styles.subtitle}>{t('packing.templatesSheet.subtitle')}</Text>
 
           <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
             {TEMPLATE_KEYS.map((key) => {
@@ -45,8 +47,10 @@ export function PackingTemplatesSheet({ visible, onClose, onApply }: PackingTemp
               return (
                 <Pressable key={key} style={styles.option} onPress={() => toggle(key)}>
                   <View style={styles.optionText}>
-                    <Text style={styles.optionName}>{tpl.name}</Text>
-                    <Text style={styles.optionCount}>{tpl.items.length} ítems</Text>
+                    <Text style={styles.optionName}>{t(tpl.nameKey)}</Text>
+                    <Text style={styles.optionCount}>
+                      {t('packing.templatesSheet.itemCount', { count: tpl.items.length })}
+                    </Text>
                   </View>
                   {isSelected ? <Check size={20} color={colors.primary} /> : null}
                 </Pressable>
@@ -60,7 +64,8 @@ export function PackingTemplatesSheet({ visible, onClose, onApply }: PackingTemp
             disabled={selected.length === 0}
           >
             <Text style={styles.applyText}>
-              Aplicar{selected.length > 0 ? ` (${selected.length})` : ''}
+              {t('common.apply')}
+              {selected.length > 0 ? ` (${selected.length})` : ''}
             </Text>
           </Pressable>
         </Pressable>

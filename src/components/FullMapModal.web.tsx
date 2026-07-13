@@ -1,12 +1,14 @@
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, spacing } from '@/constants/theme';
 
 export function FullMapModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const { t } = useTranslation();
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <View style={styles.container}>
-        <Text style={styles.text}>Mapa no disponible en web</Text>
+        <Text style={styles.text}>{t('map.unavailableWeb')}</Text>
         <Pressable style={styles.btn} onPress={onClose} hitSlop={10}>
           <Ionicons name="close" size={22} color={colors.secondary} />
         </Pressable>

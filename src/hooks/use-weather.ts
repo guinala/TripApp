@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CurrentWeather, getCurrentWeather } from '@/services/weather';
+import i18n from '@/i18n';
 
 type WeatherState = {
   weather: CurrentWeather | null;
@@ -7,32 +8,36 @@ type WeatherState = {
   error: string | null;
 };
 
+type WeatherResult = {
+  key: string;
+  weather: CurrentWeather | null;
+  error: string | null;
+};
+
+// Sin setState síncrono en el efecto (react-hooks/set-state-in-effect):
+// el efecto solo guarda el resultado con la clave de su petición y
+// `loading` se deriva en el render comparando claves.
+const IDLE: WeatherState = { weather: null, loading: false, error: null };
+
 export function useWeather(lat: number | null, lng: number | null): WeatherState {
-  const [state, setState] = useState<WeatherState>({
-    weather: null,
-    loading: lat != null && lng != null,
-    error: null,
-  });
+  const [result, setResult] = useState<WeatherResult | null>(null);
+
+  const key = lat != null && lng != null ? `${lat},${lng}` : null;
 
   useEffect(() => {
-    if (lat == null || lng == null) {
-      setState({ weather: null, loading: false, error: null });
-      return;
-    }
+    if (key == null || lat == null || lng == null) return;
 
     let cancelled = false;
-    setState({ weather: null, loading: true, error: null });
-
     getCurrentWeather(lat, lng)
       .then((weather) => {
-        if (!cancelled) setState({ weather, loading: false, error: null });
+        if (!cancelled) setResult({ key, weather, error: null });
       })
       .catch((e: unknown) => {
         if (!cancelled) {
-          setState({
+          setResult({
+            key,
             weather: null,
-            loading: false,
-            error: e instanceof Error ? e.message : 'No se pudo cargar el clima',
+            error: e instanceof Error ? e.message : i18n.t('errors.loadWeather'),
           });
         }
       });
@@ -40,7 +45,13 @@ export function useWeather(lat: number | null, lng: number | null): WeatherState
     return () => {
       cancelled = true;
     };
-  }, [lat, lng]);
+  }, [key, lat, lng]);
 
-  return state;
+  return useMemo(() => {
+    if (key == null) return IDLE;
+    if (result == null || result.key !== key) {
+      return { weather: null, loading: true, error: null };
+    }
+    return { weather: result.weather, loading: false, error: result.error };
+  }, [key, result]);
 }

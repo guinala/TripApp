@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import i18n from '@/i18n';
 
 const THRESHOLD = 80;
 
@@ -17,10 +18,7 @@ export function useBudgetAlert(tripId: string, percentage: number | null) {
       } catch {}
 
       if (percentage >= THRESHOLD && !alreadyNotified) {
-        Alert.alert(
-          'Atención con el presupuesto',
-          'Has gastado más del 80 % de tu presupuesto para este viaje.',
-        );
+        Alert.alert(i18n.t('budget.alert.title'), i18n.t('budget.alert.message'));
         try {
           await AsyncStorage.setItem(key, '1');
         } catch {}

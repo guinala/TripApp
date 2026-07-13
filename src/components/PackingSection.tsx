@@ -1,5 +1,6 @@
 import { memo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, radius } from '@/constants/theme';
 import type { PackingItem } from '@/types/packing';
 import { PackingListItem } from './PackingListItem';
@@ -25,6 +26,7 @@ function PackingSectionBase({
   onSubmitEdit,
   onCancelEdit,
 }: PackingSectionProps) {
+  const { t } = useTranslation();
   const [adding, setAdding] = useState(false);
   const [value, setValue] = useState('');
   const done = items.filter((i) => i.checked).length;
@@ -78,7 +80,7 @@ function PackingSectionBase({
               style={styles.input}
               value={value}
               onChangeText={setValue}
-              placeholder="Nombre del ítem"
+              placeholder={t('packing.itemPlaceholder')}
               placeholderTextColor={colors.secondary300}
               autoFocus
               returnKeyType="done"
@@ -89,7 +91,7 @@ function PackingSectionBase({
           </View>
         ) : (
           <Pressable style={styles.addRow} onPress={() => setAdding(true)}>
-            <Text style={styles.addText}>+ Añadir equipaje</Text>
+            <Text style={styles.addText}>{t('packing.addItem')}</Text>
           </Pressable>
         )}
       </View>

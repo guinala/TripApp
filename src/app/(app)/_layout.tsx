@@ -18,6 +18,8 @@ export default function AppLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="trips/new" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="settings" />
+      <Stack.Screen name="profile/edit" />
     </Stack>
   );
 }

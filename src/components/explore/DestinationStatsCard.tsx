@@ -1,4 +1,5 @@
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, radius } from '@/constants/theme';
 import { PRICE_META } from '@/constants/destinations';
 import { useWeather } from '@/hooks/use-weather';
@@ -9,14 +10,15 @@ type DestinationStatsCardProps = {
   destination: Destination;
 };
 
-function ratingLabel(rating: number): string {
-  if (rating >= 4.5) return 'Sobresaliente';
-  if (rating >= 4) return 'Notable';
-  if (rating >= 3.5) return 'Bueno';
-  return 'Correcto';
+function ratingLabelKey(rating: number): string {
+  if (rating >= 4.5) return 'destination.rating.outstanding';
+  if (rating >= 4) return 'destination.rating.great';
+  if (rating >= 3.5) return 'destination.rating.good';
+  return 'destination.rating.ok';
 }
 
 export function DestinationStatsCard({ destination }: DestinationStatsCardProps) {
+  const { t } = useTranslation();
   const { lat, lng } = destination.coordinates;
   const { weather, loading } = useWeather(lat, lng);
   const price = PRICE_META[destination.priceRange];
@@ -24,15 +26,15 @@ export function DestinationStatsCard({ destination }: DestinationStatsCardProps)
   return (
     <View style={styles.card}>
       <View style={styles.cell}>
-        <Text style={styles.label}>NOTA</Text>
+        <Text style={styles.label}>{t('destination.stats.rating').toUpperCase()}</Text>
         <Text style={[styles.value, styles.valuePrimary]}>{formatRating(destination.rating)}</Text>
         <Text style={styles.sublabel} numberOfLines={1}>
-          {ratingLabel(destination.rating)}
+          {t(ratingLabelKey(destination.rating))}
         </Text>
       </View>
 
       <View style={[styles.cell, styles.cellDivider]}>
-        <Text style={styles.label}>CLIMA</Text>
+        <Text style={styles.label}>{t('destination.stats.weather').toUpperCase()}</Text>
         {loading ? (
           <View style={styles.weatherLoading}>
             <ActivityIndicator size="small" color={colors.secondary300} />
@@ -41,22 +43,22 @@ export function DestinationStatsCard({ destination }: DestinationStatsCardProps)
           <>
             <Text style={styles.value}>{weather ? `${weather.temp}ºC` : '—'}</Text>
             <Text style={styles.sublabel} numberOfLines={1}>
-              {weather ? weather.description : 'Sin datos'}
+              {weather ? weather.description : t('destination.stats.noData')}
             </Text>
           </>
         )}
       </View>
 
       <View style={[styles.cell, styles.cellDivider]}>
-        <Text style={styles.label}>COSTE</Text>
+        <Text style={styles.label}>{t('destination.stats.cost').toUpperCase()}</Text>
         <Text style={styles.value}>{price.symbol}</Text>
         <Text style={styles.sublabel} numberOfLines={1}>
-          {price.label}
+          {t(price.labelKey)}
         </Text>
       </View>
 
       <View style={[styles.cell, styles.cellDivider]}>
-        <Text style={styles.label}>IDIOMA</Text>
+        <Text style={styles.label}>{t('destination.stats.language').toUpperCase()}</Text>
         <Text style={styles.value}>{destination.language.code}</Text>
         <Text style={styles.sublabel} numberOfLines={1}>
           {destination.language.label}

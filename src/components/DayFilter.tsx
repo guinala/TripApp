@@ -1,5 +1,6 @@
-import { View, Text, ScrollView, StyleSheet, Pressable } from 'react-native';
+import { Text, ScrollView, StyleSheet, Pressable } from 'react-native';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useTripDetail } from '@/context/TripDetailContext';
 import { colors, fonts, fontSize, radius, spacing } from '@/constants/theme';
 
@@ -23,6 +24,7 @@ function FilterButton({
 }
 
 export default function DayFilter() {
+  const { t } = useTranslation();
   const { days, selectedDayId, setSelectedDayId } = useTripDetail();
 
   return (
@@ -32,14 +34,14 @@ export default function DayFilter() {
       contentContainerStyle={styles.row}
     >
       <FilterButton
-        label="Todo"
+        label={t('itinerary.dayFilter.all')}
         active={selectedDayId === null}
         onPress={() => setSelectedDayId(null)}
       />
       {days.map((day) => (
         <FilterButton
           key={day.id}
-          label={`D${day.dayNumber}`}
+          label={t('itinerary.dayFilter.day', { number: day.dayNumber })}
           active={selectedDayId === day.id}
           onPress={() => setSelectedDayId(day.id)}
         />

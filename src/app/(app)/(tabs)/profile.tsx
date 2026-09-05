@@ -122,7 +122,7 @@ export default function ProfileScreen() {
             icon="briefcase-outline"
             title={t('profile.options.packingTemplates')}
             subtitle={t('profile.options.packingTemplatesSubtitle')}
-            onPress={() => router.push('/packing-templates')}
+            onPress={() => router.push('/settings')}
           />
           <ProfileOptionCard
             icon="book-outline"
@@ -134,7 +134,7 @@ export default function ProfileScreen() {
             icon="bar-chart-outline"
             title={t('profile.options.stats')}
             subtitle={t('profile.options.statsSubtitle', { count: stats?.tripCount ?? 0 })}
-            onPress={() => router.push('/stats')}
+            onPress={() => router.push('/profile/edit')}
           />
           <ProfileOptionCard
             icon="share-social-outline"

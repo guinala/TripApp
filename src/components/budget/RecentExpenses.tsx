@@ -49,7 +49,8 @@ export function RecentExpenses({
               key={e.id}
               expense={e}
               tripStart={tripStart}
-              onPress={() => onEditExpense?.(e)}
+              onPress={onEditExpense ? () => onEditExpense(e) : undefined}
+              showEditAction={Boolean(onEditExpense)}
             />
           ))}
         </View>

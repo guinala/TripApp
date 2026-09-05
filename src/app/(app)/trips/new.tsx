@@ -15,8 +15,8 @@ import { CurrencySelect } from '@/components/CurrencySelect';
 import { TripTypeSelector } from '@/components/TripTypeSelector';
 import { DestinationInput } from '@/components/DestinationInput';
 import { useAuthStore } from '@/store/authStore';
-import { CoverImagePicker } from '@/components/CoverImagePicker';
-import { uploadTripCover } from '@/services/storage';
+import { type PickedCover, CoverImagePicker } from '@/components/CoverImagePicker';
+import { deleteTripCover, uploadTripCover } from '@/services/storage';
 
 function toISODate(d: Date): string {
   const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -35,7 +35,8 @@ export default function NewTripScreen() {
   const isEdit = !!id;
 
   const userId = useAuthStore((s) => s.session?.user.id);
-  const [pickedCover, setPickedCover] = useState<{ uri: string; base64: string } | null>(null);
+  const [pickedCover, setPickedCover] = useState<PickedCover | null>(null);
+  const [coverRemoved, setCoverRemoved] = useState(false);
 
   const addTrip = useTripStore((s) => s.addTrip);
   const editTrip = useTripStore((s) => s.editTrip);
@@ -81,7 +82,10 @@ export default function NewTripScreen() {
 
   const handleSubmit = async () => {
     if (!destination.trim())
-      return Alert.alert(t('trips.form.missingDestinationTitle'), t('trips.form.missingDestination'));
+      return Alert.alert(
+        t('trips.form.missingDestinationTitle'),
+        t('trips.form.missingDestination'),
+      );
     if (!startDate || !endDate)
       return Alert.alert(t('trips.form.missingDatesTitle'), t('trips.form.missingDates'));
     if (endDate < startDate)
@@ -117,11 +121,40 @@ export default function NewTripScreen() {
         await editTrip(tripId, { coverImage: url });
       }
 
+      if (isEdit && id && coverRemoved) {
+        await editTrip(id, { coverImage: null });
+
+        if (userId) {
+          try {
+            await deleteTripCover(userId, id);
+          } catch (error) {
+            console.warn('Unable to remove trip cover from storage', error);
+          }
+        }
+      }
+
+      if (pickedCover && userId && tripId) {
+        const url = await uploadTripCover(userId, tripId, pickedCover.base64);
+        await editTrip(tripId, { coverImage: url });
+      }
+
       router.back();
     } catch (e) {
       Alert.alert(t('trips.form.saveError'), (e as Error).message);
       setSaving(false);
     }
+  };
+
+  const previewCover = pickedCover?.uri ?? (coverRemoved ? null : (existing?.coverImage ?? null));
+
+  const handlePickCover = (image: PickedCover) => {
+    setPickedCover(image);
+    setCoverRemoved(false);
+  };
+
+  const handleRemoveCover = () => {
+    setPickedCover(null);
+    setCoverRemoved(true);
   };
 
   return (
@@ -137,7 +170,12 @@ export default function NewTripScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
-        <CoverImagePicker currentUrl={existing?.coverImage ?? null} onPick={setPickedCover} />
+        <CoverImagePicker
+          previewUri={previewCover}
+          onPick={handlePickCover}
+          onRemove={previewCover ? handleRemoveCover : undefined}
+          disabled={saving}
+        />
 
         <Text style={styles.label}>{t('trips.form.name').toUpperCase()}</Text>
         <TextInput
@@ -157,7 +195,9 @@ export default function NewTripScreen() {
             <Pressable style={styles.input} onPress={() => setPicker('start')}>
               <Ionicons name="calendar-outline" size={16} color={colors.secondary300} />
               <Text style={styles.dateText}>
-                {startDate ? format(startDate, 'd MMM', { locale: dateLocale() }) : t('common.choose')}
+                {startDate
+                  ? format(startDate, 'd MMM', { locale: dateLocale() })
+                  : t('common.choose')}
               </Text>
             </Pressable>
           </View>
@@ -206,11 +246,7 @@ export default function NewTripScreen() {
       >
         <Ionicons name={isEdit ? 'checkmark' : 'add'} size={20} color={colors.surfacePaper} />
         <Text style={styles.submitLabel}>
-          {saving
-            ? t('common.saving')
-            : isEdit
-              ? t('common.saveChanges')
-              : t('trips.form.create')}
+          {saving ? t('common.saving') : isEdit ? t('common.saveChanges') : t('trips.form.create')}
         </Text>
       </Pressable>
 

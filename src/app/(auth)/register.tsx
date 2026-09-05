@@ -53,6 +53,9 @@ export default function RegisterScreen() {
 
   const goBack = () => (router.canGoBack() ? router.back() : router.replace('./welcome'));
 
+  const signInWithGoogle = useAuthStore((s) => s.signInWithGoogle);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
   async function handleRegister() {
     setError(null);
     setEmailTaken(false);
@@ -73,10 +76,23 @@ export default function RegisterScreen() {
     } catch (e: any) {
       const m = e?.message ?? '';
       if (/already.*regist/i.test(m)) setEmailTaken(true);
-      else if (/Password should be at least/i.test(m)) setError(t('auth.register.errorPasswordMin'));
+      else if (/Password should be at least/i.test(m))
+        setError(t('auth.register.errorPasswordMin'));
       else setError(t('auth.register.errorGeneric'));
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleGoogle() {
+    setError(null);
+    try {
+      setGoogleLoading(true);
+      await signInWithGoogle();
+    } catch {
+      setError(t('auth.login.errorGoogle'));
+    } finally {
+      setGoogleLoading(false);
     }
   }
 
@@ -169,7 +185,7 @@ export default function RegisterScreen() {
             {error ? <Text style={styles.error}>{error}</Text> : null}
           </View>
 
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={[styles.primaryButton, loading && styles.buttonDisabled]}
             onPress={handleRegister}
             activeOpacity={0.85}
@@ -180,7 +196,47 @@ export default function RegisterScreen() {
             ) : (
               <Text style={styles.primaryText}>{t('auth.register.submit')}</Text>
             )}
-          </TouchableOpacity>
+          </TouchableOpacity> */}
+          {/* Acciones */}
+          <View style={styles.actions}>
+            <TouchableOpacity
+              style={[styles.primaryButton, loading && styles.buttonDisabled]}
+              onPress={handleRegister}
+              activeOpacity={0.85}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color={colors.white} />
+              ) : (
+                <Text style={styles.primaryText}>{t('auth.login.submit')}</Text>
+              )}
+            </TouchableOpacity>
+
+            <Text style={styles.divider}>{t('auth.login.divider')}</Text>
+
+            <TouchableOpacity
+              style={styles.googleButton}
+              activeOpacity={0.85}
+              onPress={handleGoogle}
+              disabled={googleLoading}
+            >
+              {googleLoading ? (
+                <ActivityIndicator color={colors.textPrimary} />
+              ) : (
+                <>
+                  <Text style={styles.googleG}>G</Text>
+                  <Text style={styles.googleText}>Google</Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            <View style={styles.signupRow}>
+              <Text style={styles.signupMuted}>{t('auth.login.noAccount')} </Text>
+              <TouchableOpacity onPress={() => router.push('/register')} hitSlop={8}>
+                <Text style={styles.signupLink}>{t('auth.login.signupLink')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -188,6 +244,7 @@ export default function RegisterScreen() {
 }
 
 const styles = StyleSheet.create({
+  actions: { gap: 16 },
   screen: { flex: 1, backgroundColor: colors.surfaceCream },
   flex: { flex: 1 },
   scroll: { flexGrow: 1, paddingHorizontal: 25, paddingTop: 8, paddingBottom: 32 },
@@ -230,4 +287,42 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: { opacity: 0.6 },
   primaryText: { fontFamily: fonts.sansBold, fontSize: fontSize.base, color: colors.white },
+  divider: {
+    textAlign: 'center',
+    fontFamily: fonts.sansMedium,
+    fontSize: fontSize.sm,
+    color: colors.textMetadata,
+  },
+  googleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: colors.surfacePaper,
+    borderWidth: 1,
+    borderColor: '#ece2d4',
+    borderRadius: radius.md,
+    paddingVertical: 14,
+  },
+  googleG: {
+    fontFamily: fonts.sansBold,
+    fontSize: fontSize.input,
+    color: colors.textPrimary,
+  },
+  googleText: {
+    fontFamily: fonts.sansSemiBold,
+    fontSize: fontSize.base,
+    color: colors.textPrimary,
+  },
+  signupRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
+  signupMuted: {
+    fontFamily: fonts.sansMedium,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+  },
+  signupLink: {
+    fontFamily: fonts.sansBold,
+    fontSize: fontSize.sm,
+    color: colors.primary,
+  },
 });

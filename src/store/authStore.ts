@@ -4,6 +4,7 @@ import { supabase } from '@/services/supabase';
 import * as WebBrowser from 'expo-web-browser';
 import * as QueryParams from 'expo-auth-session/build/QueryParams';
 import * as Linking from 'expo-linking';
+import { GoogleSignin } from '@react-native-google-signin/google-signin'
 
 type AuthState = {
   session: Session | null;
@@ -22,6 +23,11 @@ type AuthState = {
   resetPassword: (email: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
 };
+
+GoogleSignin.configure({
+  webClientId: '1047320188759-3qgfgf8e2br33a35mfkfakotc6faf1nd.apps.googleusercontent.com', 
+  // iosClientId: 'TU_IOS_CLIENT_ID.apps.googleusercontent.com', // Android no hace falta
+})
 
 export const useAuthStore = create<AuthState>((set) => ({
   session: null,

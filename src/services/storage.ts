@@ -16,3 +16,16 @@ export async function uploadTripCover(
   const { data } = supabase.storage.from('trip-covers').getPublicUrl(path);
   return `${data.publicUrl}?t=${Date.now()}`;
 }
+
+export async function deleteTripCover(
+  userId: string,
+  tripId: string,
+): Promise<void> {
+  const path = userId + '/' + tripId + '.jpg';
+
+  const { error } = await supabase.storage
+    .from('trip-covers')
+    .remove([path]);
+
+  if (error) throw error;
+}

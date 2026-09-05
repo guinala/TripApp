@@ -33,13 +33,7 @@ export default function BudgetScreen() {
     }, [id, loadExpenses]),
   );
 
-  const summary = useBudgetSummary(
-    id,
-    budget,
-    trip.currency,
-    trip.startDate,
-    trip.endDate,
-  );
+  const summary = useBudgetSummary(id, budget, trip.currency, trip.startDate, trip.endDate);
   useBudgetAlert(id, summary.percentage);
 
   const handleAddExpense = () => router.push(`/trips/${id}/expenses/new`);

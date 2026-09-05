@@ -13,7 +13,7 @@
     "android": {
       "config": {
         "googleMaps": {
-          "apiKey": "TU_KEY_ANDROID"
+          "apiKey": "AIzaSyDxO37sUdi93ky2NVyPBc1WKhjAjOqXllo"
         }
       },
       "adaptiveIcon": {
@@ -46,7 +46,9 @@
       "expo-font",
       "expo-web-browser",
       "expo-sharing",
-      "expo-localization"
+      "expo-localization",
+      "@react-native-google-signin/google-signin",
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -57,6 +59,7 @@
       "eas": {
         "projectId": "1d166c3b-84fe-4444-bcb7-61fc1bafab67"
       }
-    }
+    },
+    "owner": "guill23"
   }
 }

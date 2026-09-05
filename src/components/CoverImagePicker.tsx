@@ -1,22 +1,35 @@
-import { useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, radius, spacing } from '@/constants/theme';
 
-type CoverImagePickerProps = {
-  currentUrl: string | null;
-  onPick: (image: { uri: string; base64: string }) => void;
+export type PickedCover = {
+  uri: string;
+  base64: string;
 };
 
-export function CoverImagePicker({ currentUrl, onPick }: CoverImagePickerProps) {
+type CoverImagePickerProps = {
+  previewUri: string | null;
+  onPick: (image: PickedCover) => void;
+  onRemove?: () => void;
+  disabled?: boolean;
+};
+
+export function CoverImagePicker({
+  previewUri,
+  onPick,
+  onRemove,
+  disabled = false,
+}: CoverImagePickerProps) {
   const { t } = useTranslation();
-  const [localUri, setLocalUri] = useState<string | null>(null);
 
   const pick = async () => {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) return;
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert(t('trips.form.coverPermissionTitle'), t('trips.form.coverPermissionMessage'));
+      return;
+    }
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
@@ -27,44 +40,92 @@ export function CoverImagePicker({ currentUrl, onPick }: CoverImagePickerProps) 
     });
 
     if (result.canceled) return;
-    const asset = result.assets[0];
-    if (!asset.base64) return;
 
-    setLocalUri(asset.uri);
+    const asset = result.assets[0];
+    if (!asset?.base64) {
+      Alert.alert(t('common.error'), t('trips.form.coverProcessError'));
+      return;
+    }
+
     onPick({ uri: asset.uri, base64: asset.base64 });
   };
 
-  const preview = localUri ?? currentUrl;
+  const hasPreview = Boolean(previewUri);
 
   return (
-    <Pressable style={styles.box} onPress={pick}>
-      {preview ? (
-        <Image source={{ uri: preview }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+    <View style={styles.wrapper}>
+      <Pressable
+        style={[styles.box, disabled && styles.disabled]}
+        onPress={pick}
+        disabled={disabled}
+        accessibilityRole="button"
+        accessibilityLabel={hasPreview ? t('trips.form.changeCover') : t('trips.form.addCover')}
+        accessibilityHint={t('trips.form.coverPickerHint')}
+      >
+        {previewUri ? (
+          <Image source={{ uri: previewUri }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+        ) : null}
+
+        <View pointerEvents="none" style={[styles.overlay, hasPreview && styles.overlayDim]}>
+          <Ionicons
+            name={hasPreview ? 'image-outline' : 'camera-outline'}
+            size={28}
+            color={hasPreview ? colors.white : colors.secondary}
+          />
+          <Text style={[styles.text, hasPreview && styles.textOnImage]}>
+            {hasPreview ? t('trips.form.changeCover') : t('trips.form.addCover')}
+          </Text>
+        </View>
+      </Pressable>
+
+      {hasPreview && onRemove ? (
+        <Pressable
+          style={styles.removeButton}
+          onPress={onRemove}
+          disabled={disabled}
+          accessibilityRole="button"
+          accessibilityLabel={t('trips.form.removeCover')}
+        >
+          <Ionicons name="trash-outline" size={18} color={colors.white} />
+        </Pressable>
       ) : null}
-      <View style={[styles.overlay, preview ? styles.overlayDim : null]}>
-        <Ionicons name="camera" size={24} color={preview ? colors.white : colors.secondary300} />
-        <Text style={[styles.text, preview ? { color: colors.white } : null]}>
-          {preview ? t('trips.form.changeCover') : t('trips.form.addCover')}
-        </Text>
-      </View>
-    </Pressable>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  wrapper: { position: 'relative' },
   box: {
-    height: 160,
-    borderRadius: radius.lg,
+    height: 180,
     overflow: 'hidden',
+    borderRadius: radius.lg,
     backgroundColor: colors.surfaceAlt,
     borderWidth: 1,
-    borderColor: colors.secondary100,
+    borderColor: colors.primary,
   },
   overlay: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.s2,
   },
-  overlayDim: { backgroundColor: 'rgba(0,0,0,0.25)' },
-  text: { fontFamily: fonts.sansSemiBold, fontSize: fontSize.sm, color: colors.secondary300 },
+  overlayDim: { backgroundColor: 'rgba(0,0,0,0.34)' },
+  text: {
+    fontFamily: fonts.sansSemiBold,
+    fontSize: fontSize.sm,
+    color: colors.secondary,
+  },
+  textOnImage: { color: colors.white },
+  removeButton: {
+    position: 'absolute',
+    top: spacing.s2,
+    right: spacing.s2,
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.58)',
+  },
+  disabled: { opacity: 0.55 },
 });

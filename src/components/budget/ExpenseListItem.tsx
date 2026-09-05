@@ -29,9 +29,15 @@ type ExpenseListItemProps = {
   expense: Expense;
   tripStart?: string;
   onPress?: () => void;
+  showEditAction?: boolean;
 };
 
-export function ExpenseListItem({ expense, tripStart, onPress }: ExpenseListItemProps) {
+export function ExpenseListItem({
+  expense,
+  tripStart,
+  onPress,
+  showEditAction,
+}: ExpenseListItemProps) {
   const { t } = useTranslation();
   const tint = expenseCategoryColors[expense.category];
 
@@ -52,7 +58,7 @@ export function ExpenseListItem({ expense, tripStart, onPress }: ExpenseListItem
         ) : null}
       </View>
 
-      <Ionicons name="pencil" size={18} color={colors.secondary300} />
+      {showEditAction && <Ionicons name="pencil" size={18} color={colors.secondary300} />}
     </Pressable>
   );
 }

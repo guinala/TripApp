@@ -11,7 +11,6 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import PagerView from 'react-native-pager-view';
 import { Ionicons } from '@expo/vector-icons';
 import * as Sharing from 'expo-sharing';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -25,12 +24,16 @@ import { useSignedUrls } from '@/hooks/use-signed-urls';
 import { LocationPickerModal } from '@/components/diary/LocationPickerModal';
 import { regionForPoints, type LatLng } from '@/utils/mapRegion';
 import type { Photo } from '@/types/photo';
+import { PhotoViewer } from '@/components/photo-viewer/PhotoViewer';
+
+const EMPTY_PHOTOS: Photo[] = [];
 
 export default function PhotoViewerScreen() {
   const { t } = useTranslation();
   const { id: tripId, photoId } = useLocalSearchParams<{ id: string; photoId: string }>();
 
-  const photos = usePhotoStore((s) => s.byTrip[tripId] ?? []);
+  const photos = usePhotoStore((s) => s.byTrip[tripId] ?? EMPTY_PHOTOS);
+
   const editPhoto = usePhotoStore((s) => s.editPhoto);
   const removePhoto = usePhotoStore((s) => s.removePhoto);
 
@@ -46,7 +49,6 @@ export default function PhotoViewerScreen() {
   const paths = useMemo(() => orderedPhotos.map((p) => p.uri), [orderedPhotos]);
   const { urls } = useSignedUrls(paths);
 
-  const pagerRef = useRef<PagerView>(null);
   const [activeIndex, setActiveIndex] = useState(initialIndex);
   const activePhoto = orderedPhotos[activeIndex] as Photo | undefined;
 
@@ -68,7 +70,12 @@ export default function PhotoViewerScreen() {
 
   const close = useCallback(() => {
     if (router.canGoBack()) router.back();
-    else router.replace(`/trips/${tripId}`);
+    else {
+      router.replace({
+        pathname: '/trips/[id]/diary',
+        params: { id: tripId },
+      });
+    }
   }, [tripId]);
 
   const handlePageSelected = useCallback(
@@ -164,33 +171,12 @@ export default function PhotoViewerScreen() {
 
   return (
     <View style={styles.screen}>
-      <PagerView
-        ref={pagerRef}
-        style={styles.pager}
-        initialPage={initialIndex}
-        onPageSelected={handlePageSelected}
-      >
-        {orderedPhotos.map((photo) => {
-          const url = urls.get(photo.uri);
-          return (
-            <View key={photo.id} style={styles.page}>
-              {url ? (
-                <ImageZoom
-                  uri={url}
-                  style={styles.image}
-                  minScale={1}
-                  maxScale={4}
-                  isDoubleTapEnabled
-                />
-              ) : (
-                <View style={styles.loadingPage}>
-                  <ActivityIndicator color={colors.surfacePaper} />
-                </View>
-              )}
-            </View>
-          );
-        })}
-      </PagerView>
+      <PhotoViewer
+        initialIndex={initialIndex}
+        orderedPhotos={orderedPhotos}
+        urls={urls}
+        handlePageSelected={handlePageSelected}
+      />
 
       <SafeAreaView style={styles.topBar} edges={['top']} pointerEvents="box-none">
         <Pressable style={styles.iconBtn} onPress={close} hitSlop={10}>
@@ -214,7 +200,9 @@ export default function PhotoViewerScreen() {
         <SafeAreaView edges={['bottom']}>
           {activePhoto?.takenAt ? (
             <Text style={styles.dateText}>
-              {format(parseISO(activePhoto.takenAt), "d 'de' MMMM, HH:mm", { locale: dateLocale() })}
+              {format(parseISO(activePhoto.takenAt), "d 'de' MMMM, HH:mm", {
+                locale: dateLocale(),
+              })}
             </Text>
           ) : null}
 

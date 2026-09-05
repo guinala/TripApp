@@ -33,7 +33,15 @@ export function TripCard({ trip }: TripCardProps) {
   const badge = getBadge(trip, t);
 
   return (
-    <Pressable style={styles.card} onPress={() => router.push(`/trips/${trip.id}`)}>
+    <Pressable
+      style={styles.card}
+      onPress={() =>
+        router.push({
+          pathname: '/trips/[id]/itinerary',
+          params: { id: trip.id },
+        })
+      }
+    >
       {trip.coverImage ? (
         <Image
           source={{ uri: trip.coverImage }}

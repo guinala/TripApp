@@ -4,7 +4,7 @@ import { Redirect, Stack } from 'expo-router';
 export default function AuthLayout() {
   const session = useAuthStore((s) => s.session);
 
-  if (session) return <Redirect href="./(app)" />;
+  if (session) return <Redirect href="/" />;
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
@@ -12,6 +12,7 @@ export default function AuthLayout() {
       <Stack.Screen name="login" />
       <Stack.Screen name="register" />
       <Stack.Screen name="forgot-password" />
+      <Stack.Screen name="verify-email" />
     </Stack>
   );
 }

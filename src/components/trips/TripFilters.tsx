@@ -24,6 +24,7 @@ export default function TripFilters({ active, total, onChange }: TripFiltersProp
   return (
     <ScrollView
       horizontal
+      style={styles.scroll}
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={styles.row}
     >
@@ -36,7 +37,10 @@ export default function TripFilters({ active, total, onChange }: TripFiltersProp
             onPress={() => onChange(key)}
             style={[styles.pill, selected ? styles.pillActive : styles.pillInactive]}
           >
-            <Text>
+            <Text
+              style={[styles.label, selected ? styles.labelActive : styles.labelInactive]}
+              numberOfLines={1}
+            >
               {t(labelKey)}
               {key === 'all' ? ` · ${total}` : ''}
             </Text>
@@ -48,15 +52,20 @@ export default function TripFilters({ active, total, onChange }: TripFiltersProp
 }
 
 const styles = StyleSheet.create({
-  row: { gap: 10, paddingVertical: 4 },
+  scroll: { flexGrow: 0, height: 48, overflow: 'visible' },
+  row: { gap: 10, paddingVertical: 4, paddingRight: 4 },
   pill: {
+    minHeight: 40,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   pillActive: { backgroundColor: colors.secondaryDark },
   pillInactive: { borderWidth: 1, borderColor: colors.secondary300 },
-  label: { fontFamily: fonts.sansBold, fontSize: fontSize.base },
+  label: { fontFamily: fonts.sansBold, fontSize: fontSize.sm, lineHeight: 18, flexShrink: 0 },
+  labelActive: { color: colors.surfacePaper },
+  labelInactive: { color: colors.secondary },
 });

@@ -16,10 +16,17 @@ type DaySectionProps = {
   day: Day;
   activities: Activity[];
   onAddActivity: (dayId: string) => void;
+  onEditActivity: (activity: Activity) => void;
   onReorder: (dayId: string, orderedIds: string[]) => void;
 };
 
-export function DaySection({ day, activities, onAddActivity, onReorder }: DaySectionProps) {
+export function DaySection({
+  day,
+  activities,
+  onAddActivity,
+  onEditActivity,
+  onReorder,
+}: DaySectionProps) {
   const { t } = useTranslation();
   const label = t('itinerary.dayLabel', {
     number: day.dayNumber,
@@ -29,7 +36,7 @@ export function DaySection({ day, activities, onAddActivity, onReorder }: DaySec
 
   const renderItem = ({ item }: RenderItemParams<Activity>) => (
     <View style={{ marginBottom: spacing.s2 }}>
-      <ActivityCard activity={item} />
+      <ActivityCard activity={item} onEdit={() => onEditActivity(item)} />
     </View>
   );
 

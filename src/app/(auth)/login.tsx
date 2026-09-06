@@ -49,6 +49,7 @@ export default function LoginScreen() {
     try {
       setGoogleLoading(true);
       await signInWithGoogle();
+      router.replace('/');
     } catch {
       setError(t('auth.login.errorGoogle'));
     } finally {
@@ -68,6 +69,7 @@ export default function LoginScreen() {
     try {
       setLoading(true);
       await signIn(cleanEmail, password);
+      router.replace('/');
     } catch (e: any) {
       setError(mapAuthError(e?.message));
     } finally {
@@ -152,7 +154,7 @@ export default function LoginScreen() {
               {loading ? (
                 <ActivityIndicator color={colors.white} />
               ) : (
-                <Text style={styles.primaryText}>{t('auth.login.submit')}</Text>
+                <Text style={styles.primaryText}>{t('auth.login.submitLogin')}</Text>
               )}
             </TouchableOpacity>
 

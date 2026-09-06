@@ -1,6 +1,6 @@
 import { View, Text, Alert, StyleSheet, Platform, Pressable } from 'react-native';
 import React, { useEffect, useRef, useState } from 'react';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTripStore } from '@/store/tripStore';
 import { differenceInCalendarDays, format, parseISO } from 'date-fns';
@@ -11,12 +11,14 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTranslation } from 'react-i18next';
 import { dateLocale } from '@/i18n/date';
 import { TripType } from '@/types/trip';
-import { CurrencySelect } from '@/components/CurrencySelect';
-import { TripTypeSelector } from '@/components/TripTypeSelector';
-import { DestinationInput } from '@/components/DestinationInput';
+import { CurrencySelect } from '@/components/trips/CurrencySelect';
+import { TripTypeSelector } from '@/components/trips/TripTypeSelector';
+import { DestinationInput } from '@/components/trips/DestinationInput';
 import { useAuthStore } from '@/store/authStore';
-import { type PickedCover, CoverImagePicker } from '@/components/CoverImagePicker';
+import { type PickedCover, CoverImagePicker } from '@/components/trips/CoverImagePicker';
 import { deleteTripCover, uploadTripCover } from '@/services/storage';
+import { useCoverPickerStore } from '@/store/coverPickerStore';
+import * as ImageManipulator from 'expo-image-manipulator';
 
 function toISODate(d: Date): string {
   const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -51,8 +53,27 @@ export default function NewTripScreen() {
   const [tripType, setTripType] = useState<TripType | null>(null);
   const [picker, setPicker] = useState<'start' | 'end' | null>(null);
   const [saving, setSaving] = useState(false);
+  const consumeCover = useCoverPickerStore((s) => s.consume);
 
   const loaded = useRef(false);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      const selected = consumeCover();
+      if (!selected) return undefined;
+      let cancelled = false;
+      ImageManipulator.manipulateAsync(selected.regularUrl, [{ resize: { width: 1600 } }], {
+        compress: 0.8,
+        format: ImageManipulator.SaveFormat.JPEG,
+        base64: true,
+      }).then((result) => {
+        if (!cancelled && result.base64) setPickedCover({ uri: result.uri, base64: result.base64 });
+      });
+      return () => {
+        cancelled = true;
+      };
+    }, [consumeCover]),
+  );
 
   useEffect(() => {
     if (loaded.current || !existing) return;
@@ -133,11 +154,6 @@ export default function NewTripScreen() {
         }
       }
 
-      if (pickedCover && userId && tripId) {
-        const url = await uploadTripCover(userId, tripId, pickedCover.base64);
-        await editTrip(tripId, { coverImage: url });
-      }
-
       router.back();
     } catch (e) {
       Alert.alert(t('trips.form.saveError'), (e as Error).message);
@@ -173,6 +189,9 @@ export default function NewTripScreen() {
         <CoverImagePicker
           previewUri={previewCover}
           onPick={handlePickCover}
+          onSearch={() =>
+            router.push({ pathname: '/trips/cover-search', params: { query: destination } })
+          }
           onRemove={previewCover ? handleRemoveCover : undefined}
           disabled={saving}
         />

@@ -14,12 +14,12 @@ import type { TFunction } from 'i18next';
 import { colors, fonts, fontSize, radius } from '@/constants/theme';
 import { useTripDetail } from '@/context/TripDetailContext';
 import { usePackingStore, usePackingItems, usePackingLoading } from '@/store/packingStore';
-import { PackingSection } from '@/components/PackingSection';
-import { PackingProgressRing } from '@/components/PackingProgressRing';
-import { PackingTemplatesSheet } from '@/components/PackingTemplatesSheet';
+import { PackingSection } from '@/components/packing/PackingSection';
+import { PackingProgressRing } from '@/components/packing/PackingProgressRing';
+import { PackingTemplatesSheet } from '@/components/packing/PackingTemplatesSheet';
 import { buildSeedsFromTemplates, type PackingTemplateKey } from '@/constants/packingTemplates';
 import type { PackingCategory } from '@/types/packing';
-import { Celebration } from '@/components/Celebration';
+import { Celebration } from '@/components/packing/Celebration';
 
 const CATEGORY_ORDER: PackingCategory[] = ['docs', 'clothes', 'tech', 'hygiene', 'other'];
 const CATEGORY_LABEL_KEY: Record<PackingCategory, string> = {
@@ -110,7 +110,9 @@ export default function PackingScreen() {
     if (seeds.length === 0) return;
 
     if (items.length === 0) {
-      addItems(tripId, seeds).catch(() => Alert.alert(t('packing.applyError'), t('common.tryAgain')));
+      addItems(tripId, seeds).catch(() =>
+        Alert.alert(t('packing.applyError'), t('common.tryAgain')),
+      );
       return;
     }
 

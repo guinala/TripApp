@@ -20,48 +20,59 @@ export function FeaturedDestinationCard({ destination, onPress }: FeaturedDestin
   const typesLabel = destination.types.map((type) => t(DESTINATION_TYPE_LABELS[type])).join(' · ');
 
   return (
-    <Pressable onPress={onPress} style={styles.card}>
-      {photo && (
-        <Image
-          source={{ uri: photo.regularUrl }}
+    <View style={styles.shadowWrapper}>
+      <Pressable onPress={onPress} style={styles.card}>
+        {photo && (
+          <Image
+            source={{ uri: photo.regularUrl }}
+            style={StyleSheet.absoluteFill}
+            contentFit="cover"
+            transition={250}
+          />
+        )}
+        <LinearGradient
+          colors={['transparent', 'rgba(0,0,0,0.33)', 'rgba(0,0,0,0.55)']}
           style={StyleSheet.absoluteFill}
-          contentFit="cover"
-          transition={250}
         />
-      )}
-      <LinearGradient
-        colors={['transparent', 'rgba(0,0,0,0.33)', 'rgba(0,0,0,0.55)']}
-        style={StyleSheet.absoluteFill}
-      />
 
-      <View style={styles.badge}>
-        <Ionicons name="star" size={12} color={colors.secondary} />
-        <Text style={styles.badgeText}>{t('explore.featured')}</Text>
-      </View>
-
-      <View style={styles.bottom}>
-        <Text style={styles.meta}>
-          {destination.continent} · {destination.country}
-        </Text>
-        <Text style={styles.name}>{destination.name}</Text>
-        <View style={styles.infoRow}>
-          <Ionicons name="star" size={12} color={colors.white} />
-          <Text style={styles.infoText}>{formatRating(destination.rating)}</Text>
-          <Text style={styles.infoText}>·</Text>
-          <Text style={styles.infoText} numberOfLines={1}>
-            {typesLabel}
-          </Text>
+        <View style={styles.badge}>
+          <Ionicons name="star" size={12} color={colors.secondary} />
+          <Text style={styles.badgeText}>{t('explore.featured')}</Text>
         </View>
-      </View>
-    </Pressable>
+
+        <View style={styles.bottom}>
+          <Text style={styles.meta}>
+            {destination.continent} · {destination.country}
+          </Text>
+          <Text style={styles.name}>{destination.name}</Text>
+          <View style={styles.infoRow}>
+            <Ionicons name="star" size={12} color={colors.white} />
+            <Text style={styles.infoText}>{formatRating(destination.rating)}</Text>
+            <Text style={styles.infoText}>·</Text>
+            <Text style={styles.infoText} numberOfLines={1}>
+              {typesLabel}
+            </Text>
+          </View>
+        </View>
+      </Pressable>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
+  shadowWrapper: {
     minHeight: 150,
     borderRadius: radius.lg,
     backgroundColor: colors.surfaceAlt,
+    shadowColor: colors.secondary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.14,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  card: {
+    minHeight: 150,
+    borderRadius: radius.lg,
     overflow: 'hidden',
     padding: 10,
     justifyContent: 'space-between',

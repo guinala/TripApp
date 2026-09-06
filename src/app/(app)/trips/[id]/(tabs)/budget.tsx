@@ -12,7 +12,7 @@ import { CategoryCard } from '@/components/cards/CategoryCard';
 import { DayBarChart } from '@/components/cards/DayBarChart';
 import { RecentExpenses } from '@/components/budget/RecentExpenses';
 import type { Expense } from '@/types/expense';
-import { Fab } from '@/components/Fab';
+import { Fab } from '@/components/ui/Fab';
 import { useBudgetAlert } from '@/hooks/use-budget-alert';
 
 const EMPTY: Expense[] = [];

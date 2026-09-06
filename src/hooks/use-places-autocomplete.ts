@@ -7,8 +7,11 @@ import {
   type PlaceSuggestion,
 } from '@/services/places';
 
-export function usePlacesAutocomplete(includedPrimaryTypes?: string[]) {
-  const [query, setQuery] = useState('');
+export function usePlacesAutocomplete(
+  includedPrimaryTypes?: string[],
+  initialQuery = '',
+) {
+  const [query, setQuery] = useState(initialQuery);
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
 

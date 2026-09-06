@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -13,11 +13,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Sharing from 'expo-sharing';
+import { File, Paths } from 'expo-file-system';
 import { router, useLocalSearchParams } from 'expo-router';
 import { format, parseISO } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import { dateLocale } from '@/i18n/date';
-import { ImageZoom } from '@likashefqet/react-native-image-zoom';
 import { colors, fonts, fontSize, radius, spacing } from '@/constants/theme';
 import { usePhotoStore } from '@/store/photoStore';
 import { useSignedUrls } from '@/hooks/use-signed-urls';
@@ -124,7 +124,10 @@ export default function PhotoViewerScreen() {
 
   const handleShare = useCallback(async () => {
     const url = activePhoto ? urls.get(activePhoto.uri) : null;
-    if (!url) return;
+    if (!url || !activePhoto) {
+      Alert.alert(t('photo.unavailable'), t('photo.unavailablePhoto'));
+      return;
+    }
 
     const available = await Sharing.isAvailableAsync();
     if (!available) {
@@ -132,7 +135,9 @@ export default function PhotoViewerScreen() {
       return;
     }
     try {
-      await Sharing.shareAsync(url);
+      const target = new File(Paths.cache, `tripmate-${activePhoto.id}.jpg`);
+      const downloaded = await File.downloadFileAsync(url, target, { idempotent: true });
+      await Sharing.shareAsync(downloaded.uri, { mimeType: 'image/jpeg' });
     } catch {
       // el usuario canceló el share sheet; no hace falta avisar
     }
@@ -207,17 +212,30 @@ export default function PhotoViewerScreen() {
           ) : null}
 
           {editingCaption ? (
-            <TextInput
-              style={styles.captionInput}
-              value={draftCaption}
-              onChangeText={setDraftCaption}
-              placeholder={t('photo.captionPlaceholder')}
-              placeholderTextColor="rgba(255,255,255,0.5)"
-              autoFocus
-              multiline
-              onBlur={handleSaveCaption}
-              onSubmitEditing={handleSaveCaption}
-            />
+            <View style={styles.captionEditor}>
+              <TextInput
+                style={styles.captionInput}
+                value={draftCaption}
+                onChangeText={setDraftCaption}
+                placeholder={t('photo.captionPlaceholder')}
+                placeholderTextColor="rgba(255,255,255,0.5)"
+                autoFocus
+                multiline
+              />
+              <View style={styles.captionActions}>
+                <Pressable
+                  onPress={() => {
+                    setDraftCaption(activePhoto?.caption ?? '');
+                    setEditingCaption(false);
+                  }}
+                >
+                  <Text style={styles.captionAction}>{t('common.cancel')}</Text>
+                </Pressable>
+                <Pressable onPress={handleSaveCaption} disabled={saving}>
+                  <Text style={styles.captionAction}>{t('common.save')}</Text>
+                </Pressable>
+              </View>
+            </View>
           ) : (
             <Pressable onPress={() => setEditingCaption(true)}>
               <Text
@@ -335,5 +353,17 @@ const styles = StyleSheet.create({
     color: colors.surfacePaper,
     paddingBottom: spacing.s4,
     minHeight: 40,
+  },
+  captionEditor: { gap: spacing.s2 },
+  captionActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: spacing.s5,
+    paddingBottom: spacing.s3,
+  },
+  captionAction: {
+    fontFamily: fonts.sansBold,
+    fontSize: fontSize.sm,
+    color: colors.primary100,
   },
 });

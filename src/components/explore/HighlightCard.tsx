@@ -12,34 +12,45 @@ export function HighlightCard({ highlight }: HighlightCardProps) {
   const { photo } = useUnsplashCover(highlight.query);
 
   return (
-    <View style={styles.card}>
-      <View style={styles.imageWrapper}>
-        {photo && (
-          <Image
-            source={{ uri: photo.smallUrl }}
-            style={StyleSheet.absoluteFill}
-            contentFit="cover"
-            transition={200}
-          />
-        )}
-      </View>
-      <View style={styles.info}>
-        <Text style={styles.name} numberOfLines={1}>
-          {highlight.name}
-        </Text>
-        <Text style={styles.tag} numberOfLines={1}>
-          {highlight.tag}
-        </Text>
+    <View style={styles.shadowWrapper}>
+      <View style={styles.card}>
+        <View style={styles.imageWrapper}>
+          {photo && (
+            <Image
+              source={{ uri: photo.smallUrl }}
+              style={StyleSheet.absoluteFill}
+              contentFit="cover"
+              transition={200}
+            />
+          )}
+        </View>
+        <View style={styles.info}>
+          <Text style={styles.name} numberOfLines={1}>
+            {highlight.name}
+          </Text>
+          <Text style={styles.tag} numberOfLines={1}>
+            {highlight.tag}
+          </Text>
+        </View>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
+  shadowWrapper: {
     width: 200,
     borderRadius: radius.lg,
     backgroundColor: colors.surfacePaper,
+    shadowColor: colors.secondary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  card: {
+    width: 200,
+    borderRadius: radius.lg,
     overflow: 'hidden',
   },
   imageWrapper: {

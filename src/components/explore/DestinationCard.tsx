@@ -23,44 +23,51 @@ export function DestinationCard({ destination, onPress, style }: DestinationCard
   const price = PRICE_META[destination.priceRange];
 
   return (
-    <Pressable onPress={onPress} style={[styles.card, style]}>
-      <View style={styles.imageWrapper}>
-        {photo && (
-          <Image
-            source={{ uri: photo.smallUrl }}
-            style={StyleSheet.absoluteFill}
-            contentFit="cover"
-            transition={200}
-          />
-        )}
-      </View>
-      <View style={styles.info}>
-        <View style={styles.titleRow}>
-          <Text style={styles.name} numberOfLines={1}>
-            {destination.name}
-          </Text>
-          <View style={styles.rating}>
-            <Ionicons name="star" size={12} color={colors.accent} />
-            <Text style={styles.ratingText}>{formatRating(destination.rating)}</Text>
+    <View style={[styles.shadowWrapper, style]}>
+      <Pressable onPress={onPress} style={styles.card}>
+        <View style={styles.imageWrapper}>
+          {photo && (
+            <Image
+              source={{ uri: photo.smallUrl }}
+              style={StyleSheet.absoluteFill}
+              contentFit="cover"
+              transition={200}
+            />
+          )}
+        </View>
+        <View style={styles.info}>
+          <View style={styles.titleRow}>
+            <Text style={styles.name} numberOfLines={1}>
+              {destination.name}
+            </Text>
+            <View style={styles.rating}>
+              <Ionicons name="star" size={12} color={colors.accent} />
+              <Text style={styles.ratingText}>{formatRating(destination.rating)}</Text>
+            </View>
+          </View>
+          <View style={styles.metaRow}>
+            <Text style={styles.meta} numberOfLines={1}>
+              {destination.country} · {destination.continent}
+            </Text>
+            <Text style={styles.price}>{price.symbol}</Text>
           </View>
         </View>
-        <View style={styles.metaRow}>
-          <Text style={styles.meta} numberOfLines={1}>
-            {destination.country} · {destination.continent}
-          </Text>
-          <Text style={styles.price}>{price.symbol}</Text>
-        </View>
-      </View>
-    </Pressable>
+      </Pressable>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
+  shadowWrapper: {
     borderRadius: radius.lg,
     backgroundColor: colors.surfacePaper,
-    overflow: 'hidden',
+    shadowColor: colors.secondary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 4,
   },
+  card: { borderRadius: radius.lg, overflow: 'hidden' },
   imageWrapper: {
     height: 120.5,
     backgroundColor: colors.surfaceAlt,

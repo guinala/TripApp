@@ -1,5 +1,5 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { categoryColors, colors, fonts, fontSize, radius, spacing } from '@/constants/theme';
 import type { Activity } from '@/types/activity';
 import { ACTIVITY_ICON } from '@/constants/activityIcons';
@@ -11,7 +11,7 @@ function withAlpha(hex: string, opacity: number): string {
   return `${hex}${a}`;
 }
 
-export function ActivityCard({ activity }: { activity: Activity }) {
+export function ActivityCard({ activity, onEdit }: { activity: Activity; onEdit?: () => void }) {
   const tint = categoryColors[activity.category];
   const subtitle = activity.notes ?? activity.address;
 
@@ -34,6 +34,11 @@ export function ActivityCard({ activity }: { activity: Activity }) {
         ) : null}
       </View>
 
+      {onEdit ? (
+        <Pressable onPress={onEdit} hitSlop={8} accessibilityRole="button">
+          <MaterialCommunityIcons name="pencil-outline" size={20} color={colors.primary} />
+        </Pressable>
+      ) : null}
       <MaterialCommunityIcons name="drag-vertical" size={20} color={colors.secondary300} />
     </View>
   );

@@ -15,7 +15,8 @@
     "back": "Volver",
     "tryAgain": "Inténtalo de nuevo.",
     "saveError": "No se pudo guardar",
-    "permissionNeeded": "Permiso necesario"
+    "permissionNeeded": "Permiso necesario",
+    "search": "Buscar"
   },
   "auth": {
     "email": "Email",
@@ -40,10 +41,13 @@
       "titleAccent": "de vuelta",
       "subtitle": "Inicia sesión para continuar tu viaje",
       "forgot": "¿Olvidaste tu contraseña?",
-      "submit": "Empezar",
+      "submitRegister": "Crear Cuenta",
+      "submitLogin": "Iniciar Sesión",
       "divider": "o continúa con",
+      "alreadyAccount": "¿Ya tienes cuenta?",
       "noAccount": "¿No tienes cuenta?",
-      "signupLink": "Regístrate"
+      "signupLink": "Regístrate",
+      "loginLink": "Inicia Sesión"
     },
     "register": {
       "errorName": "Escribe tu nombre.",
@@ -59,6 +63,18 @@
       "currency": "Divisa",
       "language": "Idioma",
       "submit": "Empezar"
+    },
+    "verifyEmail": {
+      "titleStart": "Confirma la verificación\n",
+      "titleAccent": "de email",
+      "subtitle": "Te hemos enviado un enlace de confirmación por correo electrónico.",
+      "sentNotice": "Para poder acceder a tu cuenta y empezar a planificar viajes, por favor abre el enlace que te hemos enviado a:",
+      "checkSpam": "Si no lo encuentras en unos minutos, revisa tu carpeta de spam o correo no deseado.",
+      "resend": "Reenviar correo de verificación",
+      "resending": "Reenviando…",
+      "resendSuccess": "Correo de verificación reenviado con éxito.",
+      "resendError": "No se pudo reenviar el correo. Inténtalo de nuevo.",
+      "backToLogin": "Volver a Iniciar Sesión"
     },
     "forgot": {
       "errorSend": "No se pudo enviar el correo. Inténtalo de nuevo.",
@@ -159,7 +175,13 @@
       "type": "Tipo de viaje",
       "create": "Crear viaje",
       "changeCover": "Cambiar portada",
-      "addCover": "Añadir portada"
+      "addCover": "Añadir portada",
+      "searchCover": "Buscar en Unsplash",
+      "searchCoverTitle": "Buscar portada",
+      "searchCoverPlaceholder": "Busca una ciudad o lugar",
+      "searchCoverError": "No se pudieron cargar las imágenes. Inténtalo de nuevo.",
+      "noCoverResults": "No encontramos imágenes para esa búsqueda.",
+      "photoBy": "Foto de {{name}}"
     }
   },
   "explore": {
@@ -311,6 +333,7 @@
     "activitiesCount_other": "{{count}} actividades",
     "addActivity": "Añadir actividad",
     "newActivity": "Nueva actividad",
+    "editActivity": "Editar actividad",
     "searchPlaceholder": "Buscar lugar o nombre",
     "time": "Hora",
     "duration": "Duración",
@@ -512,6 +535,10 @@
     "takePhoto": "Tomar foto",
     "chooseFromGallery": "Elegir de galería",
     "addPhoto": "Añadir foto",
+    "tripNotStartedTitle": "El viaje aún no ha empezado",
+    "tripNotStartedMessage": "Podrás añadir fotos cuando llegue la fecha de inicio del viaje.",
+    "chooseDayTitle": "Asignar foto a un día",
+    "chooseDayMessage": "Elige el día del viaje al que pertenece esta foto.",
     "addPhotoError": "No se pudo añadir la foto",
     "nothingToExport": "Nada que exportar",
     "nothingToExportMessage": "Añade fotos a tu diario primero.",

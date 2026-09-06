@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import { format, parseISO } from 'date-fns';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { useTripDetail } from '@/context/TripDetailContext';
 import { useAuthStore } from '@/store/authStore';
@@ -24,19 +25,14 @@ import { DiaryDayHeader } from '@/components/diary/DiaryDayHeader';
 import { PhotoMosaic, type MosaicPhoto } from '@/components/diary/PhotoMosaic';
 import { TimelinePhotoItem } from '@/components/diary/TimelinePhotoItem';
 import { DiaryMap } from '@/components/diary/DiaryMap';
-import { Fab } from '@/components/Fab';
+import { Fab } from '@/components/ui/Fab';
+import { dateLocale } from '@/i18n/date';
 import type { DiaryView } from '@/constants/diary';
-import type { Day } from '@/types/day';
 
 const SCREEN_PADDING = spacing.s5;
 
 function toMosaicPhoto(photo: DiaryPhoto, locationLabel?: string | null): MosaicPhoto {
-  return { id: photo.id, url: photo.uri, locationLabel };
-}
-
-function resolveDayId(days: Day[], takenAt: string | null): string | null {
-  const targetDate = (takenAt ?? new Date().toISOString()).slice(0, 10);
-  return days.find((d) => d.date === targetDate)?.id ?? null;
+  return { id: photo.id, url: photo.url, locationLabel };
 }
 
 export default function DiaryScreen() {
@@ -45,7 +41,7 @@ export default function DiaryScreen() {
   const userId = useAuthStore((s) => s.user?.id);
   const addPhoto = usePhotoStore((s) => s.addPhoto);
 
-  const { photos, groups, loading } = useDiaryPhotos(trip.id, days);
+  const { photos, groups, loading, urlsLoading } = useDiaryPhotos(trip.id, days);
   const [view, setView] = useState<DiaryView>('grid');
   const [uploading, setUploading] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
@@ -55,6 +51,12 @@ export default function DiaryScreen() {
 
   const handleAddPhoto = useCallback(async () => {
     if (!userId) return;
+
+    const today = format(new Date(), 'yyyy-MM-dd');
+    if (today < trip.startDate) {
+      Alert.alert(t('diary.tripNotStartedTitle'), t('diary.tripNotStartedMessage'));
+      return;
+    }
 
     const useCamera = await new Promise<boolean | null>((resolve) => {
       if (Platform.OS === 'ios') {
@@ -85,10 +87,43 @@ export default function DiaryScreen() {
       const picked = useCamera ? await takePhotoWithCamera() : await pickPhotoFromLibrary();
       if (!picked) return;
 
+      const availableDays = days.filter((day) => day.date <= today);
+      const selectedDayId = await new Promise<string | null>((resolve) => {
+        if (availableDays.length === 1) {
+          resolve(availableDays[0].id);
+          return;
+        }
+
+        const options = [
+          ...availableDays.map((day) =>
+            format(parseISO(day.date), 'EEE d MMM', { locale: dateLocale() }),
+          ),
+          t('common.cancel'),
+        ];
+        const cancelButtonIndex = options.length - 1;
+
+        if (Platform.OS === 'ios') {
+          ActionSheetIOS.showActionSheetWithOptions({ options, cancelButtonIndex }, (index) =>
+            resolve(index === cancelButtonIndex ? null : availableDays[index].id),
+          );
+          return;
+        }
+
+        Alert.alert(t('diary.chooseDayTitle'), t('diary.chooseDayMessage'), [
+          ...availableDays.map((day) => ({
+            text: format(parseISO(day.date), 'EEE d MMM', { locale: dateLocale() }),
+            onPress: () => resolve(day.id),
+          })),
+          { text: t('common.cancel'), style: 'cancel', onPress: () => resolve(null) },
+        ]);
+      });
+
+      if (!selectedDayId) return;
+
       const path = await uploadPhotoFile(userId, trip.id, picked.base64);
       await addPhoto({
         tripId: trip.id,
-        dayId: resolveDayId(days, picked.takenAt),
+        dayId: selectedDayId,
         uri: path,
         location: picked.location,
         takenAt: picked.takenAt ?? undefined,
@@ -98,7 +133,7 @@ export default function DiaryScreen() {
     } finally {
       setUploading(false);
     }
-  }, [userId, trip.id, days, addPhoto, t]);
+  }, [userId, trip.id, trip.startDate, days, addPhoto, t]);
 
   const handlePressPhoto = useCallback(
     (photoId: string) => {
@@ -130,7 +165,7 @@ export default function DiaryScreen() {
     }
   }, [groups, trip, t]);
 
-  if (loading && groups.length === 0) {
+  if ((loading || urlsLoading) && groups.length === 0) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator color={colors.primary} />

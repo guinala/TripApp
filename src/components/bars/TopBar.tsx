@@ -11,7 +11,7 @@ type TopBarProps = {
 
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/);
-  return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase();
+  return (parts[0]?.[0] ?? '').toUpperCase();
 }
 
 export default function TopBar({ name, claim }: TopBarProps) {
@@ -43,14 +43,23 @@ export default function TopBar({ name, claim }: TopBarProps) {
 const styles = StyleSheet.create({
   container: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   avatar: {
-    backgroundColor: colors.primary100,
     width: 50,
     height: 50,
     borderRadius: 25,
+    aspectRatio: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: colors.primary100,
   },
-  initials: { fontFamily: fonts.sansExtraBold, fontSize: 16, color: colors.primary },
+  initials: {
+    fontFamily: fonts.sansExtraBold,
+    fontSize: 16,
+    lineHeight: 20,
+    color: colors.primary,
+    textAlign: 'center',
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+  },
   texts: { flex: 1, gap: 3 },
   greeting: { fontFamily: fonts.sansRegular, fontSize: fontSize.nano, color: colors.secondary300 },
   claimRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },

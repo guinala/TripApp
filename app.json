@@ -47,6 +47,7 @@
       "expo-web-browser",
       "expo-sharing",
       "expo-localization",
+      ["expo-navigation-bar", { "hidden": true, "style": "light", "enforceContrast": false }],
       "@react-native-google-signin/google-signin",
       "expo-secure-store"
     ],

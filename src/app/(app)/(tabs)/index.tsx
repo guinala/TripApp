@@ -4,12 +4,12 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/store/authStore';
 import { useTripStore } from '@/store/tripStore';
-import TripFilters, { TripFilter } from '@/components/TripFilters';
+import TripFilters, { TripFilter } from '@/components/trips/TripFilters';
 import TopBar from '@/components/bars/TopBar';
 import { colors, fonts, fontSize } from '@/constants/theme';
-import TripsEmptyState from '@/components/TripsEmptyState';
-import { SwipeableTripCard } from '@/components/SwipeableTripCard';
-import { Fab } from '@/components/Fab';
+import TripsEmptyState from '@/components/trips/TripsEmptyState';
+import { SwipeableTripCard } from '@/components/trips/SwipeableTripCard';
+import { Fab } from '@/components/ui/Fab';
 import { useUIStore } from '@/store/uiStore';
 import { resyncNotifications } from '@/services/notifications';
 import { useTranslation } from 'react-i18next';
@@ -79,7 +79,11 @@ export default function TripsScreen() {
         ListEmptyComponent={loading ? null : <TripsEmptyState />}
       />
 
-      <Fab onPress={() => router.push('../trips/new')} accessibilityLabel={t('home.newTrip')} />
+      <Fab
+        onPress={() => router.push('../trips/new')}
+        bottomOffset={76}
+        accessibilityLabel={t('home.newTrip')}
+      />
     </View>
   );
 }

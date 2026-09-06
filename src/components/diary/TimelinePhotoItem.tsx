@@ -26,8 +26,8 @@ export function TimelinePhotoItem({ photo, onPress }: TimelinePhotoItemProps) {
 
       <View style={styles.card}>
         <Pressable onPress={onPress}>
-          {photo.uri ? (
-            <Image source={{ uri: photo.uri }} style={styles.image} contentFit="cover" />
+          {photo.url ? (
+            <Image source={{ uri: photo.url }} style={styles.image} contentFit="cover" />
           ) : (
             <View style={[styles.image, styles.placeholder]} />
           )}

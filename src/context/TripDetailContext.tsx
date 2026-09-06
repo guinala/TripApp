@@ -4,6 +4,7 @@ import {
   createActivity,
   listActivitiesByTrip,
   reorderActivities,
+  updateActivity as saveActivity,
 } from '@/services/activities';
 import { ensureDays } from '@/services/days';
 import type { Activity } from '@/types/activity';
@@ -20,6 +21,7 @@ type TripDetailValue = {
   reload: () => Promise<void>;
   selectedDayId: string | null;
   addActivity: (input: Omit<ActivityInput, 'orderIndex'>) => Promise<void>;
+  updateActivity: (id: string, input: Omit<ActivityInput, 'orderIndex'>) => Promise<void>;
   setSelectedDayId: (id: string | null) => void;
   reorder: (dayId: string, orderedIds: string[]) => Promise<void>;
 };
@@ -44,6 +46,14 @@ export function TripDetailProvider({ trip, children }: { trip: Trip; children: R
       setActivities((prev) => [...prev, created]);
     },
     [activities],
+  );
+
+  const updateActivity = useCallback(
+    async (id: string, input: Omit<ActivityInput, 'orderIndex'>) => {
+      const updated = await saveActivity(id, input);
+      setActivities((prev) => prev.map((item) => (item.id === id ? updated : item)));
+    },
+    [],
   );
 
   const reload = useCallback(async () => {
@@ -108,6 +118,7 @@ export function TripDetailProvider({ trip, children }: { trip: Trip; children: R
         selectedDayId,
         setSelectedDayId,
         addActivity,
+        updateActivity,
         reorder,
       }}
     >

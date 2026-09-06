@@ -1,15 +1,16 @@
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Redirect, router, useLocalSearchParams, withLayoutContext } from 'expo-router';
 import { createMaterialTopTabNavigator } from 'expo-router/js-top-tabs';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { TripDetailProvider } from '@/context/TripDetailContext';
 import { useTripStore } from '@/store/tripStore';
-import TripMap from '@/components/TripMap';
-import DayFilter from '@/components/DayFilter';
+import TripMap from '@/components/maps/TripMap';
+import DayFilter from '@/components/trips/DayFilter';
 import { useEffect, useState } from 'react';
-import { FullMapModal } from '@/components/FullMapModal';
+import { FullMapModal } from '@/components/maps/FullMapModal';
 import { Trip } from '@/types/trip';
 import { getTripById } from '@/services/trips';
 
@@ -20,9 +21,28 @@ export default function TripDetailLayout() {
   const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const storeTrip = useTripStore((s) => s.trips.find((t) => t.id === id));
+  const removeTrip = useTripStore((s) => s.removeTrip);
   const [mapOpen, setMapOpen] = useState(false);
   const [fetched, setFetched] = useState<Trip | null | undefined>(undefined);
   const trip = storeTrip ?? fetched ?? null;
+
+  const handleDeleteTrip = () => {
+    Alert.alert(t('trips.delete.title'), t('trips.delete.message'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('common.delete'),
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await removeTrip(id);
+            router.replace('/(app)/(tabs)');
+          } catch {
+            Alert.alert(t('common.error'), t('common.tryAgain'));
+          }
+        },
+      },
+    ]);
+  };
 
   useEffect(() => {
     if (storeTrip || !id) return;
@@ -55,17 +75,27 @@ export default function TripDetailLayout() {
     <TripDetailProvider trip={trip}>
       <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.surfaceCream }}>
         <View style={{ paddingHorizontal: spacing.s5, paddingVertical: spacing.s3 }}>
-          <Pressable onPress={() => router.back()}>
-            <Text
-              style={{
-                fontFamily: fonts.sansRegular,
-                fontSize: fontSize.input,
-                color: colors.secondary,
-              }}
+          <View style={styles.detailHeader}>
+            <Pressable onPress={() => router.back()}>
+              <Text
+                style={{
+                  fontFamily: fonts.sansRegular,
+                  fontSize: fontSize.input,
+                  color: colors.secondary,
+                }}
+              >
+                ‹ {t('common.back')}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={handleDeleteTrip}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={t('common.delete')}
             >
-              ‹ {t('common.back')}
-            </Text>
-          </Pressable>
+              <Ionicons name="trash-outline" size={22} color={colors.danger} />
+            </Pressable>
+          </View>
           <Text
             style={{
               fontFamily: fonts.serifItalic,
@@ -122,8 +152,16 @@ export default function TripDetailLayout() {
           <MaterialTopTabs.Screen name="diary" options={{ title: t('tripDetail.tabs.diary') }} />
         </MaterialTopTabs>
 
-        <FullMapModal visible={mapOpen} onClose={() => setMapOpen(false)} />
+        {mapOpen ? <FullMapModal visible onClose={() => setMapOpen(false)} /> : null}
       </SafeAreaView>
     </TripDetailProvider>
   );
 }
+
+const styles = {
+  detailHeader: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+  },
+};

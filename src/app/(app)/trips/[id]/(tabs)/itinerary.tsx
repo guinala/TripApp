@@ -3,12 +3,14 @@ import { colors, fonts, fontSize, spacing } from '@/constants/theme';
 import { DaySection } from '@/components/sections/DaySection';
 import { useTripDetail } from '@/context/TripDetailContext';
 import { useState } from 'react';
-import { AddActivityModal } from '@/components/AddActivityModal';
+import { AddActivityModal } from '@/components/itinerary/AddActivityModal';
 import { NestableScrollContainer } from 'react-native-reanimated-drag-list';
+import type { Activity } from '@/types/activity';
 
 export default function ItineraryScreen() {
   const { days, activities, selectedDayId, loading, error, reorder } = useTripDetail();
   const [targetDayId, setTargetDayId] = useState<string | null>(null);
+  const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
 
   if (loading)
     return (
@@ -34,11 +36,23 @@ export default function ItineraryScreen() {
             day={day}
             activities={activities.filter((a) => a.dayId === day.id)}
             onAddActivity={setTargetDayId}
+            onEditActivity={(activity) => {
+              setEditingActivity(activity);
+              setTargetDayId(activity.dayId);
+            }}
             onReorder={reorder}
           />
         ))}
       </NestableScrollContainer>
-      <AddActivityModal dayId={targetDayId} onClose={() => setTargetDayId(null)} />
+      <AddActivityModal
+        key={`${editingActivity?.id ?? 'new'}-${targetDayId ?? 'closed'}`}
+        dayId={targetDayId}
+        activity={editingActivity}
+        onClose={() => {
+          setTargetDayId(null);
+          setEditingActivity(null);
+        }}
+      />
     </View>
   );
 }

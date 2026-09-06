@@ -17,7 +17,7 @@ import { dateLocale } from '@/i18n/date';
 import { categoryColors, colors, fonts, fontSize, radius, spacing } from '@/constants/theme';
 import { usePlacesAutocomplete } from '@/hooks/use-places-autocomplete';
 import { useTripDetail } from '@/context/TripDetailContext';
-import type { ActivityCategory } from '@/types/activity';
+import type { Activity, ActivityCategory } from '@/types/activity';
 import type { PlaceDetails } from '@/services/places';
 import { TimeField } from './TimeField';
 
@@ -35,20 +35,28 @@ const CATEGORIES: {
 
 type AddActivityModalProps = {
   dayId: string | null;
+  activity?: Activity | null;
   onClose: () => void;
 };
 
-export function AddActivityModal({ dayId, onClose }: AddActivityModalProps) {
+export function AddActivityModal({ dayId, activity = null, onClose }: AddActivityModalProps) {
   const { t } = useTranslation();
-  const { days, addActivity, trip } = useTripDetail();
-  const { query, setQuery, suggestions, loading, selectPlace } = usePlacesAutocomplete();
+  const { days, addActivity, updateActivity, trip } = useTripDetail();
+  const { query, setQuery, suggestions, loading, selectPlace } = usePlacesAutocomplete(
+    undefined,
+    activity?.title ?? '',
+  );
 
   const [place, setPlace] = useState<PlaceDetails | null>(null);
-  const [time, setTime] = useState('');
-  const [hours, setHours] = useState('');
-  const [category, setCategory] = useState<ActivityCategory>('visit');
-  const [cost, setCost] = useState('');
-  const [notes, setNotes] = useState('');
+  const [time, setTime] = useState(activity?.time ?? '');
+  const [hours, setHours] = useState(
+    activity?.durationMinutes ? String(activity.durationMinutes / 60) : '',
+  );
+  const [category, setCategory] = useState<ActivityCategory>(activity?.category ?? 'visit');
+  const [cost, setCost] = useState(
+    activity?.estimatedCost != null ? String(activity.estimatedCost) : '',
+  );
+  const [notes, setNotes] = useState(activity?.notes ?? '');
   const [saving, setSaving] = useState(false);
 
   const day = days.find((d) => d.id === dayId);
@@ -68,18 +76,20 @@ export function AddActivityModal({ dayId, onClose }: AddActivityModalProps) {
     if (!dayId || !query.trim()) return;
     setSaving(true);
     try {
-      await addActivity({
+      const input = {
         dayId,
         title: query.trim(),
         time: time.trim() || null,
         durationMinutes: hours ? Math.round(parseFloat(hours) * 60) : null,
-        location: place?.location ?? null,
-        address: place?.address ?? null,
-        placeId: place?.placeId ?? null,
+        location: place?.location ?? activity?.location ?? null,
+        address: place?.address ?? activity?.address ?? null,
+        placeId: place?.placeId ?? activity?.placeId ?? null,
         category,
         estimatedCost: cost ? parseFloat(cost) : null,
         notes: notes.trim() || null,
-      });
+      };
+      if (activity) await updateActivity(activity.id, input);
+      else await addActivity(input);
       close();
     } catch {
       setSaving(false);
@@ -106,7 +116,9 @@ export function AddActivityModal({ dayId, onClose }: AddActivityModalProps) {
             <Ionicons name="chevron-back" size={24} color={colors.secondary} />
           </Pressable>
           <View style={styles.titleWrap}>
-            <Text style={styles.title}>{t('itinerary.newActivity')}</Text>
+            <Text style={styles.title}>
+              {t(activity ? 'itinerary.editActivity' : 'itinerary.newActivity')}
+            </Text>
             {dayLabel ? <Text style={styles.subtitle}>{dayLabel}</Text> : null}
           </View>
           <Pressable onPress={close} hitSlop={10}>
@@ -262,9 +274,11 @@ export function AddActivityModal({ dayId, onClose }: AddActivityModalProps) {
               <ActivityIndicator color={colors.white} />
             ) : (
               <Text style={styles.submitText}>
-                {day
-                  ? t('itinerary.addToDay', { number: day.dayNumber })
-                  : t('itinerary.addToDayGeneric')}
+                {activity
+                  ? t('common.save')
+                  : day
+                    ? t('itinerary.addToDay', { number: day.dayNumber })
+                    : t('itinerary.addToDayGeneric')}
               </Text>
             )}
           </Pressable>

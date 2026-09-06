@@ -12,6 +12,7 @@ export type PickedCover = {
 type CoverImagePickerProps = {
   previewUri: string | null;
   onPick: (image: PickedCover) => void;
+  onSearch: () => void;
   onRemove?: () => void;
   disabled?: boolean;
 };
@@ -19,6 +20,7 @@ type CoverImagePickerProps = {
 export function CoverImagePicker({
   previewUri,
   onPick,
+  onSearch,
   onRemove,
   disabled = false,
 }: CoverImagePickerProps) {
@@ -89,6 +91,17 @@ export function CoverImagePicker({
           <Ionicons name="trash-outline" size={18} color={colors.white} />
         </Pressable>
       ) : null}
+
+      <Pressable
+        style={styles.searchButton}
+        onPress={onSearch}
+        disabled={disabled}
+        accessibilityRole="button"
+        accessibilityLabel={t('trips.form.searchCover')}
+      >
+        <Ionicons name="globe-outline" size={18} color={colors.primary} />
+        <Text style={styles.searchText}>{t('trips.form.searchCover')}</Text>
+      </Pressable>
     </View>
   );
 }
@@ -128,4 +141,16 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.58)',
   },
   disabled: { opacity: 0.55 },
+  searchButton: {
+    marginTop: spacing.s2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.s2,
+    paddingVertical: spacing.s3,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  searchText: { fontFamily: fonts.sansSemiBold, fontSize: fontSize.sm, color: colors.primary },
 });

@@ -51,7 +51,25 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   signInWithGoogle: async () => {
-    const redirectTo = Linking.createURL('/');
+    try {
+      // 1. Intentar inicio de sesión nativo con Google Play Services (Nativo Android)
+      await GoogleSignin.hasPlayServices();
+      const response = await GoogleSignin.signIn();
+      if (response.data?.idToken) {
+        const { error } = await supabase.auth.signInWithIdToken({
+          provider: 'google',
+          token: response.data.idToken,
+        });
+        if (error) throw error;
+        return;
+      }
+    } catch (nativeError: any) {
+      console.warn('[GoogleSignin] Fallback a navegador OAuth:', nativeError?.message ?? nativeError);
+    }
+
+    // 2. Fallback mediante navegador WebBrowser usando el esquema 'tripmate' (evita redirigir a localhost)
+    const { makeRedirectUri } = require('expo-auth-session');
+    const redirectTo = makeRedirectUri({ scheme: 'tripmate' });
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -79,10 +97,12 @@ export const useAuthStore = create<AuthState>((set) => ({
     currency: string;
     language: string;
   }) => {
+    const emailRedirectTo = Linking.createURL('/verify-email');
     const { error } = await supabase.auth.signUp({
       email: params.email,
       password: params.password,
       options: {
+        emailRedirectTo,
         data: {
           display_name: params.displayName,
           default_currency: params.currency,

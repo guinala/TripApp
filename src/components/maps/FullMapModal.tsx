@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import MapView, { Callout, Marker, Polyline, PROVIDER_DEFAULT, Region } from 'react-native-maps';
+import MapView, { Marker, Polyline, PROVIDER_DEFAULT, Region } from 'react-native-maps';
 import { format, parseISO } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import { dateLocale } from '@/i18n/date';
@@ -10,22 +10,14 @@ import { categoryColors, colors, fonts, fontSize, radius, spacing } from '@/cons
 import { ACTIVITY_ICON } from '@/constants/activityIcons';
 import { useTripDetail } from '@/context/TripDetailContext';
 import { formatDistance, routeDistanceKm } from '@/utils/routedDistance';
+import { destinationCoordinates, isValidCoordinate, regionForPoints } from '@/utils/mapRegion';
 import type { Activity } from '@/types/activity';
-
-const EDGE_PADDING = { top: 190, right: 60, bottom: 330, left: 60 };
 
 function withAlpha(hex: string, opacity: number): string {
   const a = Math.round(opacity * 255)
     .toString(16)
     .padStart(2, '0');
   return `${hex}${a}`;
-}
-
-function formatDuration(min: number): string {
-  if (min < 60) return `${min}min`;
-  const h = Math.floor(min / 60);
-  const rest = min % 60;
-  return rest === 0 ? `${h}h` : `${h}h ${rest}min`;
 }
 
 function NumberedPin({ number, selected }: { number: number; selected: boolean }) {
@@ -49,6 +41,10 @@ export function FullMapModal({ visible, onClose }: { visible: boolean; onClose: 
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
   const [mapType, setMapType] = useState<'standard' | 'satellite'>('standard');
 
+  const destinationLocation = useMemo(() => {
+    return destinationCoordinates(trip.destination) ?? { lat: 40.416775, lng: -3.70379 };
+  }, [trip.destination]);
+
   const dayById = useMemo(() => new Map(days.map((d) => [d.id, d])), [days]);
   const selectedDay = selectedDayId ? (dayById.get(selectedDayId) ?? null) : null;
 
@@ -62,25 +58,48 @@ export function FullMapModal({ visible, onClose }: { visible: boolean; onClose: 
     });
   }, [activities, selectedDayId, dayById]);
 
-  const located = useMemo(() => scoped.filter((a) => a.location != null), [scoped]);
+  const located = useMemo(() => scoped.filter((a) => isValidCoordinate(a.location)), [scoped]);
 
   const routePoints = useMemo(
     () => located.map((a) => ({ latitude: a.location!.lat, longitude: a.location!.lng })),
     [located],
   );
 
+  const initialRegion = useMemo(() => {
+    if (routePoints.length > 1) {
+      const region = regionForPoints(
+        routePoints.map((point) => ({ lat: point.latitude, lng: point.longitude })),
+        1.4,
+      );
+      if (region) return region;
+    }
+
+    const point = routePoints[0] ?? {
+      latitude: destinationLocation.lat,
+      longitude: destinationLocation.lng,
+    };
+    return {
+      ...point,
+      latitudeDelta: 0.08,
+      longitudeDelta: 0.08,
+    };
+  }, [destinationLocation, routePoints]);
+
   const distanceKm = useMemo(() => routeDistanceKm(located.map((a) => a.location!)), [located]);
 
   useEffect(() => {
-    if (!visible || routePoints.length === 0) return;
-    const t = setTimeout(() => {
-      mapRef.current?.fitToCoordinates(routePoints, {
-        edgePadding: EDGE_PADDING,
-        animated: true,
-      });
+    if (!visible) return;
+
+    const timeout = setTimeout(() => {
+      if (routePoints.length === 1) {
+        mapRef.current?.animateCamera({ center: routePoints[0], zoom: 14 }, { duration: 300 });
+        return;
+      }
+      mapRef.current?.animateToRegion(initialRegion, 300);
     }, 350);
-    return () => clearTimeout(t);
-  }, [visible, routePoints]);
+
+    return () => clearTimeout(timeout);
+  }, [initialRegion, routePoints, visible]);
 
   const selectDay = (dayId: string | null) => {
     setSelectedDayId(dayId);
@@ -111,15 +130,15 @@ export function FullMapModal({ visible, onClose }: { visible: boolean; onClose: 
   };
 
   const recenter = () => {
-    if (routePoints.length === 0) return;
-    mapRef.current?.fitToCoordinates(routePoints, { edgePadding: EDGE_PADDING, animated: true });
-  };
-
-  const calloutMeta = (a: Activity): string => {
-    const parts = [t('itinerary.dayNumber', { number: dayById.get(a.dayId)?.dayNumber ?? '?' })];
-    if (a.time) parts.push(a.time);
-    if (a.durationMinutes) parts.push(formatDuration(a.durationMinutes));
-    return parts.join(' · ');
+    if (routePoints.length === 0) {
+      mapRef.current?.animateToRegion(initialRegion, 300);
+      return;
+    }
+    if (routePoints.length === 1) {
+      mapRef.current?.animateCamera({ center: routePoints[0], zoom: 14 }, { duration: 300 });
+      return;
+    }
+    mapRef.current?.animateToRegion(initialRegion, 300);
   };
 
   const sheetLabel = selectedDay
@@ -138,6 +157,7 @@ export function FullMapModal({ visible, onClose }: { visible: boolean; onClose: 
           style={StyleSheet.absoluteFill}
           provider={PROVIDER_DEFAULT}
           mapType={mapType}
+          initialRegion={initialRegion}
           onRegionChangeComplete={(r) => {
             regionRef.current = r;
           }}
@@ -147,7 +167,7 @@ export function FullMapModal({ visible, onClose }: { visible: boolean; onClose: 
               coordinates={routePoints}
               strokeColor={colors.primary}
               strokeWidth={3}
-              lineDashPattern={[1, 10]}
+              geodesic
             />
           )}
 
@@ -164,19 +184,6 @@ export function FullMapModal({ visible, onClose }: { visible: boolean; onClose: 
                 zIndex={isSelected ? 10 : 1}
               >
                 <NumberedPin number={index + 1} selected={isSelected} />
-                <Callout tooltip>
-                  <View style={styles.callout}>
-                    <View style={styles.calloutIcon}>
-                      <Ionicons name="location" size={16} color={colors.primary} />
-                    </View>
-                    <View style={styles.calloutInfo}>
-                      <Text style={styles.calloutTitle} numberOfLines={1}>
-                        {a.title}
-                      </Text>
-                      <Text style={styles.calloutMeta}>{calloutMeta(a)}</Text>
-                    </View>
-                  </View>
-                </Callout>
               </Marker>
             );
           })}

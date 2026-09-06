@@ -15,7 +15,8 @@
     "back": "Back",
     "tryAgain": "Please try again.",
     "saveError": "Couldn't save",
-    "permissionNeeded": "Permission needed"
+    "permissionNeeded": "Permission needed",
+    "search": "Search"
   },
   "auth": {
     "email": "Email",
@@ -59,6 +60,18 @@
       "currency": "Currency",
       "language": "Language",
       "submit": "Get started"
+    },
+    "verifyEmail": {
+      "titleStart": "Confirm email\n",
+      "titleAccent": "verification",
+      "subtitle": "We've sent a confirmation link to your email address.",
+      "sentNotice": "To access your account and start planning trips, please open the link sent to:",
+      "checkSpam": "If you can't find it in a few minutes, check your spam or junk folder.",
+      "resend": "Resend verification email",
+      "resending": "Resending…",
+      "resendSuccess": "Verification email resent successfully.",
+      "resendError": "Couldn't resend email. Please try again.",
+      "backToLogin": "Back to Login"
     },
     "forgot": {
       "errorSend": "Couldn't send the email. Please try again.",
@@ -159,7 +172,13 @@
       "type": "Trip type",
       "create": "Create trip",
       "changeCover": "Change cover",
-      "addCover": "Add cover"
+      "addCover": "Add cover",
+      "searchCover": "Search Unsplash",
+      "searchCoverTitle": "Search cover",
+      "searchCoverPlaceholder": "Search for a city or place",
+      "searchCoverError": "Couldn't load images. Please try again.",
+      "noCoverResults": "No images found for that search.",
+      "photoBy": "Photo by {{name}}"
     }
   },
   "explore": {
@@ -311,6 +330,7 @@
     "activitiesCount_other": "{{count}} activities",
     "addActivity": "Add activity",
     "newActivity": "New activity",
+    "editActivity": "Edit activity",
     "searchPlaceholder": "Search place or name",
     "time": "Time",
     "duration": "Duration",
@@ -512,6 +532,10 @@
     "takePhoto": "Take photo",
     "chooseFromGallery": "Choose from gallery",
     "addPhoto": "Add photo",
+    "tripNotStartedTitle": "The trip has not started yet",
+    "tripNotStartedMessage": "You can add photos once the trip start date arrives.",
+    "chooseDayTitle": "Assign photo to a day",
+    "chooseDayMessage": "Choose the trip day this photo belongs to.",
     "addPhotoError": "Couldn't add the photo",
     "nothingToExport": "Nothing to export",
     "nothingToExportMessage": "Add photos to your diary first.",

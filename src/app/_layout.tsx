@@ -1,17 +1,19 @@
 import '@/i18n';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useEffect } from 'react';
+import { ActivityIndicator, Platform, View } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { NavigationBar } from 'expo-navigation-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useAuthStore } from '@/store/authStore';
 import { useFonts } from 'expo-font';
-import { ActivityIndicator, View } from 'react-native';
 import { colors } from '@/constants/theme';
 import * as Linking from 'expo-linking';
 import * as QueryParams from 'expo-auth-session/build/QueryParams';
 import { initNotifications } from '@/services/notifications';
+import { supabase } from '@/services/supabase';
 
 SplashScreen.preventAutoHideAsync();
 initNotifications();
@@ -37,6 +39,13 @@ export default function RootLayout() {
   }, [initialize]);
 
   useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    //NavigationBar.setVisibilityAsync('hidden');
+    NavigationBar.setHidden(true);
+    //NavigationBar.setBehaviorAsync('overlay-swipe');
+  }, []);
+
+  useEffect(() => {
     if (fontsLoaded) SplashScreen.hideAsync();
   }, [fontsLoaded]);
 
@@ -51,6 +60,17 @@ export default function RootLayout() {
           refresh_token: params.refresh_token,
         },
       });
+    } else if (params?.access_token && params?.refresh_token) {
+      supabase.auth
+        .setSession({
+          access_token: params.access_token,
+          refresh_token: params.refresh_token,
+        })
+        .then(({ error }: any) => {
+          if (!error) {
+            router.replace('/');
+          }
+        });
     }
   }, [router, url]);
 

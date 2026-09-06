@@ -6,16 +6,16 @@ import type { Day } from '@/types/day';
 
 const EMPTY_PHOTOS: Photo[] = [];
 
+export type DiaryPhoto = Photo & { url: string | null };
+
 export type DiaryDayGroup = {
   day: Day | null;
-  photos: Photo[];
+  photos: DiaryPhoto[];
 };
 
-export type DiaryPhoto = Photo & { uri: string | null };
-
-function groupByDay(photos: Photo[], days: Day[]): DiaryDayGroup[] {
-  const byDayId = new Map<string, Photo[]>();
-  const unassigned: Photo[] = [];
+function groupByDay(photos: DiaryPhoto[], days: Day[]): DiaryDayGroup[] {
+  const byDayId = new Map<string, DiaryPhoto[]>();
+  const unassigned: DiaryPhoto[] = [];
 
   for (const photo of photos) {
     if (!photo.dayId) {

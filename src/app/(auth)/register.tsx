@@ -19,7 +19,7 @@ import { PasswordStrengthMeter } from '@/components/auth/PasswordStrengthMeter';
 import { SelectField, SelectOption } from '@/components/ui/SelectField';
 import { useAuthStore } from '@/store/authStore';
 
-// Candidatos a vivir en un módulo compartido (Perfil/Ajustes los reusará)
+// Candidatos a vivir en un módulo compartido
 const CURRENCIES: SelectOption[] = [
   { label: 'EUR (€)', value: 'EUR' },
   { label: 'USD ($)', value: 'USD' },
@@ -70,9 +70,10 @@ export default function RegisterScreen() {
     try {
       setLoading(true);
       await signUp({ email: cleanEmail, password, displayName: cleanName, currency, language });
-      // Si NO tienes confirmación de email activada en Supabase, aquí ya hay
-      // sesión y el gate de (auth)/_layout redirige solo. Si la tienes activada,
-      // no habrá sesión todavía (ver nota abajo).
+      router.push({
+        pathname: '/verify-email',
+        params: { email: cleanEmail },
+      });
     } catch (e: any) {
       const m = e?.message ?? '';
       if (/already.*regist/i.test(m)) setEmailTaken(true);
@@ -89,6 +90,7 @@ export default function RegisterScreen() {
     try {
       setGoogleLoading(true);
       await signInWithGoogle();
+      router.replace('/');
     } catch {
       setError(t('auth.login.errorGoogle'));
     } finally {
@@ -208,7 +210,7 @@ export default function RegisterScreen() {
               {loading ? (
                 <ActivityIndicator color={colors.white} />
               ) : (
-                <Text style={styles.primaryText}>{t('auth.login.submit')}</Text>
+                <Text style={styles.primaryText}>{t('auth.login.submitRegister')}</Text>
               )}
             </TouchableOpacity>
 
@@ -231,9 +233,9 @@ export default function RegisterScreen() {
             </TouchableOpacity>
 
             <View style={styles.signupRow}>
-              <Text style={styles.signupMuted}>{t('auth.login.noAccount')} </Text>
-              <TouchableOpacity onPress={() => router.push('/register')} hitSlop={8}>
-                <Text style={styles.signupLink}>{t('auth.login.signupLink')}</Text>
+              <Text style={styles.signupMuted}>{t('auth.login.alreadyAccount')} </Text>
+              <TouchableOpacity onPress={() => router.push('/login')} hitSlop={8}>
+                <Text style={styles.signupLink}>{t('auth.login.loginLink')}</Text>
               </TouchableOpacity>
             </View>
           </View>

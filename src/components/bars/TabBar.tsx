@@ -31,6 +31,7 @@ export default function TabBar({ state, navigation }: BottomTabBarProps) {
               target: route.key,
               canPreventDefault: true,
             });
+
             if (!focused && !event.defaultPrevented) {
               navigation.navigate(route.name);
             }
@@ -59,7 +60,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingTop: 8,
-    backgroundColor: 'transparent',
+    backgroundColor: colors.surfacePaper,
   },
   bar: {
     flexDirection: 'row',

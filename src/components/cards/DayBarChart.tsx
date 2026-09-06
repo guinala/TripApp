@@ -25,7 +25,7 @@ export function DayBarChart({ byDay, tripStart }: Props) {
 
   const lastIdx = byDay.length - 1;
   const midIdx = Math.floor(lastIdx / 2);
-  const labelIdxs = [...new Set([0, midIdx, lastIdx])].filter((i) => i >= 0);
+  const labelIdxs = [...new Set([0, midIdx, lastIdx])].filter((i) => i >= 0 && i < byDay.length);
 
   return (
     <View style={styles.card}>

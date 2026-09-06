@@ -1,5 +1,5 @@
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
-import { Alert, Pressable, StyleSheet, Text } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTripStore } from '@/store/tripStore';
@@ -23,22 +23,35 @@ export function SwipeableTripCard({ trip }: { trip: Trip }) {
   };
 
   return (
-    <ReanimatedSwipeable
-      friction={2}
-      rightThreshold={40}
-      renderRightActions={() => (
-        <Pressable style={styles.action} onPress={confirm}>
-          <Ionicons name="trash-outline" size={22} color={colors.surfacePaper} />
-          <Text style={styles.label}>{t('common.delete')}</Text>
-        </Pressable>
-      )}
-    >
-      <TripCard trip={trip} />
-    </ReanimatedSwipeable>
+    <View style={styles.shadowWrapper}>
+      <ReanimatedSwipeable
+        friction={2}
+        rightThreshold={40}
+        containerStyle={styles.swipeableContainer}
+        renderRightActions={() => (
+          <Pressable style={styles.action} onPress={confirm}>
+            <Ionicons name="trash-outline" size={22} color={colors.surfacePaper} />
+            <Text style={styles.label}>{t('common.delete')}</Text>
+          </Pressable>
+        )}
+      >
+        <TripCard trip={trip} />
+      </ReanimatedSwipeable>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  shadowWrapper: {
+    borderRadius: radius.lg,
+    //backgroundColor: colors.surfacePaper,
+    shadowColor: colors.secondary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.16,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  swipeableContainer: { borderRadius: radius.lg },
   action: {
     width: 90,
     marginLeft: 8,

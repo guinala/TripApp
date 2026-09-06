@@ -33,56 +33,54 @@ export function TripCard({ trip }: TripCardProps) {
   const badge = getBadge(trip, t);
 
   return (
-    <View style={styles.shadowWrapper}>
-      <Pressable
-        style={styles.card}
-        onPress={() =>
-          router.push({
-            pathname: '/trips/[id]/itinerary',
-            params: { id: trip.id },
-          })
-        }
-      >
-        {trip.coverImage ? (
-          <Image
-            source={{ uri: trip.coverImage }}
-            style={StyleSheet.absoluteFill}
-            contentFit="cover"
-          />
-        ) : (
-          <View style={[StyleSheet.absoluteFill, styles.placeholder]} />
-        )}
+    <Pressable
+      style={styles.card}
+      onPress={() =>
+        router.push({
+          pathname: '/trips/[id]/itinerary',
+          params: { id: trip.id },
+        })
+      }
+    >
+      {trip.coverImage ? (
+        <Image
+          source={{ uri: trip.coverImage }}
+          style={StyleSheet.absoluteFill}
+          contentFit="cover"
+        />
+      ) : (
+        <View style={[StyleSheet.absoluteFill, styles.placeholder]} />
+      )}
 
-        <View style={styles.badge}>
-          <Ionicons name="time-outline" size={10} color={badge.color} />
-          <Text style={[styles.badgeText, { color: badge.color }]}>{badge.label}</Text>
-        </View>
+      <View style={styles.badge}>
+        <Ionicons name="time-outline" size={10} color={badge.color} />
+        <Text style={[styles.badgeText, { color: badge.color }]}>{badge.label}</Text>
+      </View>
 
-        <View style={styles.titleWrap}>
-          <Text style={styles.title}>{trip.destination}</Text>
-        </View>
-      </Pressable>
-    </View>
+      <View style={styles.titleWrap}>
+        <Text style={styles.title}>{trip.destination}</Text>
+      </View>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  shadowWrapper: {
-    borderRadius: radius.lg,
-    backgroundColor: 'transparent',
-    shadowColor: colors.secondary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.16,
-    shadowRadius: 8,
-    elevation: 5,
-  },
+  // shadowWrapper: {
+  //   borderRadius: radius.lg,
+  //   shadowColor: colors.secondary,
+  //   shadowOffset: { width: 0, height: 4 },
+  //   shadowOpacity: 0.12,
+  //   shadowRadius: 8,
+  //   elevation: 4,
+  // },
   card: {
     height: 130,
     borderRadius: radius.lg,
     overflow: 'hidden',
-    backgroundColor: colors.surfacePaper,
+    backgroundColor: 'transparent',
     padding: 10,
     justifyContent: 'space-between',
+    marginBottom: 5,
   },
   placeholder: { backgroundColor: colors.surfaceCream },
   badge: {

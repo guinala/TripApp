@@ -19,7 +19,7 @@ const i18n = createInstance({
   resources: { es: { translation: es }, en: { translation: en } },
   lng: resolveInitialLanguage(),
   fallbackLng: 'es',
-  interpolation: { escapeValue: false }, // React ya escapa; sin esto verías &#39; en pantalla
+  interpolation: { escapeValue: false }, 
 });
 
 i18n.use(initReactI18next);

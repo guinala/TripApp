@@ -18,7 +18,7 @@ export default function TabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.wrapper, { paddingBottom: insets.bottom || 12 }]}>
+    <View style={[styles.wrapper, { paddingBottom: insets.bottom + 16 }]}>
       <View style={styles.bar}>
         {state.routes.map((route, index) => {
           const meta = TAB_META[route.name];
@@ -69,12 +69,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfacePaper,
     borderRadius: radius.xl2,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 18,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.13,
     shadowRadius: 2,
-    elevation: 4, // sombra en Android
+    elevation: 4,
   },
   tab: {
     alignItems: 'center',

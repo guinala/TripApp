@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -12,27 +12,19 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, Mail, RefreshCw } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { colors, fontSize, fonts, radius } from '@/constants/theme';
-import { useAuthStore } from '@/store/authStore';
 import { supabase } from '@/services/supabase';
+import { getAuthCallbackUrl } from '@/constants/auth';
 
 export default function VerifyEmailScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { email } = useLocalSearchParams<{ email?: string }>();
-  const session = useAuthStore((s) => s.session);
 
   const [resending, setResending] = useState(false);
   const [resendStatus, setResendStatus] = useState<{
     type: 'success' | 'error';
     message: string;
   } | null>(null);
-
-  // Redirigir a la página principal si se detecta que ya hay sesión
-  useEffect(() => {
-    if (session) {
-      router.replace('/');
-    }
-  }, [session, router]);
 
   async function handleResend() {
     if (!email) return;
@@ -42,6 +34,9 @@ export default function VerifyEmailScreen() {
       const { error } = await supabase.auth.resend({
         type: 'signup',
         email,
+        options: {
+          emailRedirectTo: getAuthCallbackUrl(),
+        },
       });
       if (error) throw error;
       setResendStatus({
@@ -62,10 +57,7 @@ export default function VerifyEmailScreen() {
 
   return (
     <SafeAreaView style={styles.screen}>
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <TouchableOpacity style={styles.backButton} onPress={goBack} activeOpacity={0.7}>
           <ArrowLeft size={22} color={colors.textPrimary} />
         </TouchableOpacity>
@@ -127,11 +119,7 @@ export default function VerifyEmailScreen() {
             </TouchableOpacity>
           ) : null}
 
-          <TouchableOpacity
-            style={styles.primaryButton}
-            onPress={goBack}
-            activeOpacity={0.85}
-          >
+          <TouchableOpacity style={styles.primaryButton} onPress={goBack} activeOpacity={0.85}>
             <Text style={styles.primaryText}>{t('auth.verifyEmail.backToLogin')}</Text>
           </TouchableOpacity>
         </View>

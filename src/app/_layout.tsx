@@ -2,7 +2,7 @@ import '@/i18n';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useEffect } from 'react';
 import { ActivityIndicator, Platform, View } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
+import { Stack } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationBar } from 'expo-navigation-bar';
@@ -10,17 +10,12 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useAuthStore } from '@/store/authStore';
 import { useFonts } from 'expo-font';
 import { colors } from '@/constants/theme';
-import * as Linking from 'expo-linking';
-import * as QueryParams from 'expo-auth-session/build/QueryParams';
 import { initNotifications } from '@/services/notifications';
-import { supabase } from '@/services/supabase';
 
 SplashScreen.preventAutoHideAsync();
 initNotifications();
 
 export default function RootLayout() {
-  const router = useRouter();
-  const url = Linking.useURL();
   const initialize = useAuthStore((s) => s.initialize);
 
   const [fontsLoaded] = useFonts({
@@ -40,39 +35,12 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (Platform.OS !== 'android') return;
-    //NavigationBar.setVisibilityAsync('hidden');
     NavigationBar.setHidden(true);
-    //NavigationBar.setBehaviorAsync('overlay-swipe');
   }, []);
 
   useEffect(() => {
     if (fontsLoaded) SplashScreen.hideAsync();
   }, [fontsLoaded]);
-
-  useEffect(() => {
-    if (!url) return;
-    const { params } = QueryParams.getQueryParams(url);
-    if (params?.type === 'recovery' && params.access_token) {
-      router.replace({
-        pathname: './reset-password',
-        params: {
-          access_token: params.access_token,
-          refresh_token: params.refresh_token,
-        },
-      });
-    } else if (params?.access_token && params?.refresh_token) {
-      supabase.auth
-        .setSession({
-          access_token: params.access_token,
-          refresh_token: params.refresh_token,
-        })
-        .then(({ error }: any) => {
-          if (!error) {
-            router.replace('/');
-          }
-        });
-    }
-  }, [router, url]);
 
   if (!fontsLoaded) {
     return (
@@ -95,6 +63,7 @@ export default function RootLayout() {
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(app)" />
+          <Stack.Screen name="auth/callback" />
           <Stack.Screen name="reset-password" />
         </Stack>
         <StatusBar style="light" />

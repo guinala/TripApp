@@ -5,6 +5,7 @@ import * as WebBrowser from 'expo-web-browser';
 import * as QueryParams from 'expo-auth-session/build/QueryParams';
 import * as Linking from 'expo-linking';
 import { GoogleSignin } from '@react-native-google-signin/google-signin'
+import { getAuthCallbackUrl } from '@/constants/auth';
 
 type AuthState = {
   session: Session | null;
@@ -67,26 +68,46 @@ export const useAuthStore = create<AuthState>((set) => ({
       console.warn('[GoogleSignin] Fallback a navegador OAuth:', nativeError?.message ?? nativeError);
     }
 
-    // 2. Fallback mediante navegador WebBrowser usando el esquema 'tripmate' (evita redirigir a localhost)
-    const { makeRedirectUri } = require('expo-auth-session');
-    const redirectTo = makeRedirectUri({ scheme: 'tripmate' });
+    // 2. Fallback mediante navegador WebBrowser usando el esquema 'tripmate'
+    const redirectTo = getAuthCallbackUrl();
 
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo, skipBrowserRedirect: true },
+    const { data, error } =
+      await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo,
+          skipBrowserRedirect: true,
+        },
     });
+
     if (error) throw error;
 
-    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-    if (result.type !== 'success') return;
+    const result =
+      await WebBrowser.openAuthSessionAsync(
+        data.url,
+        redirectTo
+      );
 
-    const { params } = QueryParams.getQueryParams(result.url);
-    if (params.access_token) {
-      const { error: sessionError } = await supabase.auth.setSession({
-        access_token: params.access_token,
-        refresh_token: params.refresh_token,
-      });
-      if (sessionError) throw sessionError;
+    if (result.type !== 'success') {
+      return;
+    }
+
+    const { params } =
+      QueryParams.getQueryParams(result.url);
+
+    if (
+      params.access_token &&
+      params.refresh_token
+    ) {
+      const { error: sessionError } =
+        await supabase.auth.setSession({
+          access_token: params.access_token,
+          refresh_token: params.refresh_token,
+        });
+
+      if (sessionError) {
+        throw sessionError;
+      }
     }
   },
 
@@ -97,7 +118,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     currency: string;
     language: string;
   }) => {
-    const emailRedirectTo = Linking.createURL('/verify-email');
+    const emailRedirectTo = getAuthCallbackUrl();
     const { error } = await supabase.auth.signUp({
       email: params.email,
       password: params.password,
@@ -118,7 +139,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   resetPassword: async (email: string) => {
-    const redirectTo = Linking.createURL('/reset-password');
+    const redirectTo = getAuthCallbackUrl();
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
     if (error) throw error;
   },

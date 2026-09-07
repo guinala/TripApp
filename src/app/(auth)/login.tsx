@@ -49,7 +49,7 @@ export default function LoginScreen() {
     try {
       setGoogleLoading(true);
       await signInWithGoogle();
-      router.replace('/');
+      //router.replace('/');
     } catch {
       setError(t('auth.login.errorGoogle'));
     } finally {
@@ -69,7 +69,7 @@ export default function LoginScreen() {
     try {
       setLoading(true);
       await signIn(cleanEmail, password);
-      router.replace('/');
+      //router.replace('/');
     } catch (e: any) {
       setError(mapAuthError(e?.message));
     } finally {

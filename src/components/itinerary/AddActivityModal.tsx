@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -111,178 +113,183 @@ export function AddActivityModal({ dayId, activity = null, onClose }: AddActivit
       onRequestClose={close}
     >
       <SafeAreaView style={styles.screen} edges={['top']}>
-        <View style={styles.topbar}>
-          <Pressable onPress={close} hitSlop={10}>
-            <Ionicons name="chevron-back" size={24} color={colors.secondary} />
-          </Pressable>
-          <View style={styles.titleWrap}>
-            <Text style={styles.title}>
-              {t(activity ? 'itinerary.editActivity' : 'itinerary.newActivity')}
-            </Text>
-            {dayLabel ? <Text style={styles.subtitle}>{dayLabel}</Text> : null}
-          </View>
-          <Pressable onPress={close} hitSlop={10}>
-            <Text style={styles.cancel}>{t('common.cancel')}</Text>
-          </Pressable>
-        </View>
-
-        <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-          <View style={styles.searchBox}>
-            <Ionicons name="search" size={16} color={colors.secondary300} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder={t('itinerary.searchPlaceholder')}
-              placeholderTextColor={colors.secondary300}
-              value={query}
-              onChangeText={(text) => {
-                setQuery(text);
-                setPlace(null);
-              }}
-            />
-            {loading ? <ActivityIndicator size="small" /> : null}
+        <KeyboardAvoidingView
+          style={styles.flex}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <View style={styles.topbar}>
+            <Pressable onPress={close} hitSlop={10}>
+              <Ionicons name="chevron-back" size={24} color={colors.secondary} />
+            </Pressable>
+            <View style={styles.titleWrap}>
+              <Text style={styles.title}>
+                {t(activity ? 'itinerary.editActivity' : 'itinerary.newActivity')}
+              </Text>
+              {dayLabel ? <Text style={styles.subtitle}>{dayLabel}</Text> : null}
+            </View>
+            <Pressable onPress={close} hitSlop={10}>
+              <Text style={styles.cancel}>{t('common.cancel')}</Text>
+            </Pressable>
           </View>
 
-          {suggestions.length > 0 && !place ? (
-            <View style={styles.results}>
-              {suggestions.map((s) => (
-                <Pressable
-                  key={s.placeId}
-                  style={styles.result}
-                  onPress={async () => setPlace(await selectPlace(s.placeId))}
-                >
-                  <Ionicons name="location-outline" size={20} color={colors.secondary300} />
-                  <View style={styles.resultTexts}>
-                    <Text style={styles.resultName} numberOfLines={1}>
-                      {s.mainText}
-                    </Text>
-                    {s.secondaryText ? (
-                      <Text style={styles.resultLoc} numberOfLines={1}>
-                        {s.secondaryText}
+          <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+            <View style={styles.searchBox}>
+              <Ionicons name="search" size={16} color={colors.secondary300} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder={t('itinerary.searchPlaceholder')}
+                placeholderTextColor={colors.secondary300}
+                value={query}
+                onChangeText={(text) => {
+                  setQuery(text);
+                  setPlace(null);
+                }}
+              />
+              {loading ? <ActivityIndicator size="small" /> : null}
+            </View>
+
+            {suggestions.length > 0 && !place ? (
+              <View style={styles.results}>
+                {suggestions.map((s) => (
+                  <Pressable
+                    key={s.placeId}
+                    style={styles.result}
+                    onPress={async () => setPlace(await selectPlace(s.placeId))}
+                  >
+                    <Ionicons name="location-outline" size={20} color={colors.secondary300} />
+                    <View style={styles.resultTexts}>
+                      <Text style={styles.resultName} numberOfLines={1}>
+                        {s.mainText}
                       </Text>
-                    ) : null}
-                  </View>
-                </Pressable>
-              ))}
-            </View>
-          ) : null}
+                      {s.secondaryText ? (
+                        <Text style={styles.resultLoc} numberOfLines={1}>
+                          {s.secondaryText}
+                        </Text>
+                      ) : null}
+                    </View>
+                  </Pressable>
+                ))}
+              </View>
+            ) : null}
 
-          <View style={styles.row}>
-            <View style={styles.half}>
-              <Text style={styles.label}>{t('itinerary.time').toUpperCase()}</Text>
-              <TimeField value={time || null} onChange={setTime} />
-            </View>
-            <View style={styles.half}>
-              <Text style={styles.label}>{t('itinerary.duration').toUpperCase()}</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.s2 }}>
-                {[
-                  { label: '30m', v: 30 },
-                  { label: '1h', v: 60 },
-                  { label: '1h30', v: 90 },
-                  { label: '2h', v: 120 },
-                  { label: '3h', v: 180 },
-                  { label: t('itinerary.halfDay'), v: 240 },
-                ].map((d) => {
-                  const active = Math.round((parseFloat(hours) || 0) * 60) === d.v;
-                  return (
-                    <Pressable
-                      key={d.v}
-                      onPress={() => setHours(String(d.v / 60))}
-                      style={[
-                        styles.cat,
-                        active && {
-                          borderColor: colors.primary,
-                          backgroundColor: `${colors.primary}1A`,
-                        },
-                      ]}
-                    >
-                      <Text
+            <View style={styles.row}>
+              <View style={styles.half}>
+                <Text style={styles.label}>{t('itinerary.time').toUpperCase()}</Text>
+                <TimeField value={time || null} onChange={setTime} />
+              </View>
+              <View style={styles.half}>
+                <Text style={styles.label}>{t('itinerary.duration').toUpperCase()}</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.s2 }}>
+                  {[
+                    { label: '30m', v: 30 },
+                    { label: '1h', v: 60 },
+                    { label: '1h30', v: 90 },
+                    { label: '2h', v: 120 },
+                    { label: '3h', v: 180 },
+                    { label: t('itinerary.halfDay'), v: 240 },
+                  ].map((d) => {
+                    const active = Math.round((parseFloat(hours) || 0) * 60) === d.v;
+                    return (
+                      <Pressable
+                        key={d.v}
+                        onPress={() => setHours(String(d.v / 60))}
                         style={[
-                          styles.catLabel,
-                          { color: active ? colors.primary : colors.secondary300 },
+                          styles.cat,
+                          active && {
+                            borderColor: colors.primary,
+                            backgroundColor: `${colors.primary}1A`,
+                          },
                         ]}
                       >
-                        {d.label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
+                        <Text
+                          style={[
+                            styles.catLabel,
+                            { color: active ? colors.primary : colors.secondary300 },
+                          ]}
+                        >
+                          {d.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
               </View>
             </View>
-          </View>
 
-          <Text style={styles.label}>{t('itinerary.category').toUpperCase()}</Text>
-          <View style={styles.categories}>
-            {CATEGORIES.map((c) => {
-              const active = category === c.key;
-              const tint = categoryColors[c.key];
-              return (
-                <Pressable
-                  key={c.key}
-                  onPress={() => setCategory(c.key)}
-                  style={[
-                    styles.cat,
-                    active && { borderColor: tint, backgroundColor: `${tint}1A` },
-                  ]}
-                >
-                  <Ionicons name={c.icon} size={20} color={active ? tint : colors.secondary300} />
-                  <Text
-                    numberOfLines={1}
-                    style={[styles.catLabel, { color: active ? tint : colors.secondary300 }]}
+            <Text style={styles.label}>{t('itinerary.category').toUpperCase()}</Text>
+            <View style={styles.categories}>
+              {CATEGORIES.map((c) => {
+                const active = category === c.key;
+                const tint = categoryColors[c.key];
+                return (
+                  <Pressable
+                    key={c.key}
+                    onPress={() => setCategory(c.key)}
+                    style={[
+                      styles.cat,
+                      active && { borderColor: tint, backgroundColor: `${tint}1A` },
+                    ]}
                   >
-                    {t(c.labelKey)}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+                    <Ionicons name={c.icon} size={20} color={active ? tint : colors.secondary300} />
+                    <Text
+                      numberOfLines={1}
+                      style={[styles.catLabel, { color: active ? tint : colors.secondary300 }]}
+                    >
+                      {t(c.labelKey)}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
 
-          <Text style={styles.label}>{t('itinerary.estimatedCost').toUpperCase()}</Text>
-          <View style={styles.fieldRow}>
+            <Text style={styles.label}>{t('itinerary.estimatedCost').toUpperCase()}</Text>
+            <View style={styles.fieldRow}>
+              <TextInput
+                style={styles.fieldInput}
+                placeholder="0"
+                placeholderTextColor={colors.secondary300}
+                keyboardType="decimal-pad"
+                value={cost}
+                onChangeText={setCost}
+              />
+              {trip?.currency ? (
+                <Text style={{ fontFamily: fonts.sansSemiBold, color: colors.secondary300 }}>
+                  {trip.currency}
+                </Text>
+              ) : null}
+            </View>
+
+            <Text style={styles.label}>{t('itinerary.notes').toUpperCase()}</Text>
             <TextInput
-              style={styles.fieldInput}
-              placeholder="0"
+              style={styles.notesInput}
+              placeholder={t('itinerary.notesPlaceholder')}
               placeholderTextColor={colors.secondary300}
-              keyboardType="decimal-pad"
-              value={cost}
-              onChangeText={setCost}
+              multiline
+              value={notes}
+              onChangeText={setNotes}
             />
-            {trip?.currency ? (
-              <Text style={{ fontFamily: fonts.sansSemiBold, color: colors.secondary300 }}>
-                {trip.currency}
-              </Text>
-            ) : null}
+          </ScrollView>
+
+          <View style={styles.footer}>
+            <Pressable
+              style={[styles.submit, (!query.trim() || saving) && styles.submitDisabled]}
+              onPress={onSubmit}
+              disabled={!query.trim() || saving}
+            >
+              {saving ? (
+                <ActivityIndicator color={colors.white} />
+              ) : (
+                <Text style={styles.submitText}>
+                  {activity
+                    ? t('common.save')
+                    : day
+                      ? t('itinerary.addToDay', { number: day.dayNumber })
+                      : t('itinerary.addToDayGeneric')}
+                </Text>
+              )}
+            </Pressable>
           </View>
-
-          <Text style={styles.label}>{t('itinerary.notes').toUpperCase()}</Text>
-          <TextInput
-            style={styles.notesInput}
-            placeholder={t('itinerary.notesPlaceholder')}
-            placeholderTextColor={colors.secondary300}
-            multiline
-            value={notes}
-            onChangeText={setNotes}
-          />
-        </ScrollView>
-
-        <View style={styles.footer}>
-          <Pressable
-            style={[styles.submit, (!query.trim() || saving) && styles.submitDisabled]}
-            onPress={onSubmit}
-            disabled={!query.trim() || saving}
-          >
-            {saving ? (
-              <ActivityIndicator color={colors.white} />
-            ) : (
-              <Text style={styles.submitText}>
-                {activity
-                  ? t('common.save')
-                  : day
-                    ? t('itinerary.addToDay', { number: day.dayNumber })
-                    : t('itinerary.addToDayGeneric')}
-              </Text>
-            )}
-          </Pressable>
-        </View>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </Modal>
   );
@@ -290,6 +297,7 @@ export function AddActivityModal({ dayId, activity = null, onClose }: AddActivit
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.surfaceCream },
+  flex: { flex: 1 },
   topbar: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -22,6 +22,7 @@ import { useTripDetail } from '@/context/TripDetailContext';
 import type { Activity, ActivityCategory } from '@/types/activity';
 import type { PlaceDetails } from '@/services/places';
 import { TimeField } from './TimeField';
+import { DurationPicker } from './DurationPicker';
 
 const CATEGORIES: {
   key: ActivityCategory;
@@ -51,8 +52,8 @@ export function AddActivityModal({ dayId, activity = null, onClose }: AddActivit
 
   const [place, setPlace] = useState<PlaceDetails | null>(null);
   const [time, setTime] = useState(activity?.time ?? '');
-  const [hours, setHours] = useState(
-    activity?.durationMinutes ? String(activity.durationMinutes / 60) : '',
+  const [durationMinutes, setDurationMinutes] = useState<number | null>(
+    activity?.durationMinutes ?? null,
   );
   const [category, setCategory] = useState<ActivityCategory>(activity?.category ?? 'visit');
   const [cost, setCost] = useState(
@@ -67,7 +68,7 @@ export function AddActivityModal({ dayId, activity = null, onClose }: AddActivit
     setQuery('');
     setPlace(null);
     setTime('');
-    setHours('');
+    setDurationMinutes(null);
     setCategory('visit');
     setCost('');
     setNotes('');
@@ -82,7 +83,7 @@ export function AddActivityModal({ dayId, activity = null, onClose }: AddActivit
         dayId,
         title: query.trim(),
         time: time.trim() || null,
-        durationMinutes: hours ? Math.round(parseFloat(hours) * 60) : null,
+        durationMinutes,
         location: place?.location ?? activity?.location ?? null,
         address: place?.address ?? activity?.address ?? null,
         placeId: place?.placeId ?? activity?.placeId ?? null,
@@ -115,7 +116,7 @@ export function AddActivityModal({ dayId, activity = null, onClose }: AddActivit
       <SafeAreaView style={styles.screen} edges={['top']}>
         <KeyboardAvoidingView
           style={styles.flex}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
           <View style={styles.topbar}>
             <Pressable onPress={close} hitSlop={10}>
@@ -179,40 +180,7 @@ export function AddActivityModal({ dayId, activity = null, onClose }: AddActivit
               </View>
               <View style={styles.half}>
                 <Text style={styles.label}>{t('itinerary.duration').toUpperCase()}</Text>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.s2 }}>
-                  {[
-                    { label: '30m', v: 30 },
-                    { label: '1h', v: 60 },
-                    { label: '1h30', v: 90 },
-                    { label: '2h', v: 120 },
-                    { label: '3h', v: 180 },
-                    { label: t('itinerary.halfDay'), v: 240 },
-                  ].map((d) => {
-                    const active = Math.round((parseFloat(hours) || 0) * 60) === d.v;
-                    return (
-                      <Pressable
-                        key={d.v}
-                        onPress={() => setHours(String(d.v / 60))}
-                        style={[
-                          styles.cat,
-                          active && {
-                            borderColor: colors.primary,
-                            backgroundColor: `${colors.primary}1A`,
-                          },
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.catLabel,
-                            { color: active ? colors.primary : colors.secondary300 },
-                          ]}
-                        >
-                          {d.label}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
+                <DurationPicker value={durationMinutes} onChange={setDurationMinutes} />
               </View>
             </View>
 
@@ -314,7 +282,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   cancel: { fontFamily: fonts.sansSemiBold, fontSize: fontSize.sm, color: colors.primary },
-  body: { paddingHorizontal: spacing.s5, paddingBottom: spacing.s8, gap: spacing.s4 },
+  body: { paddingHorizontal: spacing.s5, paddingBottom: 280, gap: spacing.s4 },
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',

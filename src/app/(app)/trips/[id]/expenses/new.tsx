@@ -122,7 +122,7 @@ export default function NewExpenseScreen() {
 
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView
           contentContainerStyle={styles.content}
@@ -149,7 +149,9 @@ export default function NewExpenseScreen() {
                 ≈ {formatCurrency(conversion.converted, tripCurrency)}
                 {conversion.rateDate
                   ? ` · ${t('expense.rateOf', {
-                      date: format(parseISO(conversion.rateDate), 'd MMM', { locale: dateLocale() }),
+                      date: format(parseISO(conversion.rateDate), 'd MMM', {
+                        locale: dateLocale(),
+                      }),
                     })}`
                   : ''}
               </Text>

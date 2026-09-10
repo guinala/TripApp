@@ -92,8 +92,12 @@ export const useAuthStore = create<AuthState>((set) => ({
       return;
     }
 
-    const { params } =
+    const { params, errorCode } =
       QueryParams.getQueryParams(result.url);
+
+    if (errorCode) {
+      throw new Error(errorCode);
+    }
 
     if (
       params.access_token &&
@@ -108,7 +112,26 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (sessionError) {
         throw sessionError;
       }
+
+      return;
     }
+
+    if (params.code) {
+      const { error: exchangeError } =
+        await supabase.auth.exchangeCodeForSession(
+          params.code,
+        );
+
+      if (exchangeError) {
+        throw exchangeError;
+      }
+
+      return;
+    }
+
+    throw new Error(
+      'Google no ha devuelto una sesión válida.',
+    );
   },
 
   signUp: async (params: {

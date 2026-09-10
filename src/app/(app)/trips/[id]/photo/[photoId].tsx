@@ -199,7 +199,7 @@ export default function PhotoViewerScreen() {
       </SafeAreaView>
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.bottomBar}
       >
         <SafeAreaView edges={['bottom']}>

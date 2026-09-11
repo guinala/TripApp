@@ -4,7 +4,7 @@
     "slug": "TripMate",
     "version": "0.4.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/TripMateIcon.png",
     "scheme": "tripmate",
     "userInterfaceStyle": "automatic",
     "ios": {
@@ -35,9 +35,9 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#fef5ec",
           "android": {
-            "image": "./assets/images/splash-icon.png",
+            "image": "./assets/images/TripMateSplash.png",
             "imageWidth": 76
           }
         }

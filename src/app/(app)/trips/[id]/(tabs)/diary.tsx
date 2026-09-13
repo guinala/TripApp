@@ -12,21 +12,25 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { format, parseISO } from 'date-fns';
-import { colors, fonts, fontSize, spacing } from '@/constants/theme';
+import { colors, fonts, fontSize, radius, spacing } from '@/constants/theme';
 import { useTripDetail } from '@/context/TripDetailContext';
 import { useAuthStore } from '@/store/authStore';
 import { usePhotoStore } from '@/store/photoStore';
 import { useDiaryPhotos, type DiaryPhoto } from '@/hooks/use-diary-photos';
-import { pickPhotoFromLibrary, takePhotoWithCamera, uploadPhotoFile } from '@/utils/photoUpload';
+import {
+  pickPhotoFromLibrary,
+  takePhotoWithCamera,
+  uploadPhotoFile,
+  type PickedPhoto,
+} from '@/utils/photoUpload';
 import { exportDiaryToPdf } from '@/utils/exportDiaryPdf';
 import { DiaryViewSelector } from '@/components/diary/DiaryViewSelector';
 import { DiaryDayHeader } from '@/components/diary/DiaryDayHeader';
 import { PhotoMosaic, type MosaicPhoto } from '@/components/diary/PhotoMosaic';
 import { TimelinePhotoItem } from '@/components/diary/TimelinePhotoItem';
 import { DiaryMap } from '@/components/diary/DiaryMap';
+import { DayPickerModal } from '@/components/diary/DayPickerModal';
 import { Fab } from '@/components/ui/Fab';
-import { dateLocale } from '@/i18n/date';
 import type { DiaryView } from '@/constants/diary';
 
 const SCREEN_PADDING = spacing.s5;
@@ -45,18 +49,52 @@ export default function DiaryScreen() {
   const [view, setView] = useState<DiaryView>('grid');
   const [uploading, setUploading] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
+  const [pendingPhoto, setPendingPhoto] = useState<PickedPhoto | null>(null);
+  const [dayPickerVisible, setDayPickerVisible] = useState(false);
 
   const { width } = useWindowDimensions();
   const mosaicWidth = width - SCREEN_PADDING * 2;
 
+  const uploadAndSavePhoto = useCallback(
+    async (photo: PickedPhoto, dayId: string | null) => {
+      if (!userId) return;
+      setUploading(true);
+      try {
+        const path = await uploadPhotoFile(userId, trip.id, photo.base64);
+        await addPhoto({
+          tripId: trip.id,
+          dayId,
+          uri: path,
+          location: photo.location,
+          takenAt: photo.takenAt ?? undefined,
+        });
+      } catch {
+        Alert.alert(t('diary.addPhotoError'), t('common.tryAgain'));
+      } finally {
+        setUploading(false);
+      }
+    },
+    [userId, trip.id, addPhoto, t],
+  );
+
+  const handleSelectDay = useCallback(
+    async (dayId: string) => {
+      if (!pendingPhoto) return;
+      const photo = pendingPhoto;
+      setDayPickerVisible(false);
+      setPendingPhoto(null);
+      await uploadAndSavePhoto(photo, dayId);
+    },
+    [pendingPhoto, uploadAndSavePhoto],
+  );
+
+  const handleCloseDayPicker = useCallback(() => {
+    setDayPickerVisible(false);
+    setPendingPhoto(null);
+  }, []);
+
   const handleAddPhoto = useCallback(async () => {
     if (!userId) return;
-
-    const today = format(new Date(), 'yyyy-MM-dd');
-    if (today < trip.startDate) {
-      Alert.alert(t('diary.tripNotStartedTitle'), t('diary.tripNotStartedMessage'));
-      return;
-    }
 
     const useCamera = await new Promise<boolean | null>((resolve) => {
       if (Platform.OS === 'ios') {
@@ -83,57 +121,25 @@ export default function DiaryScreen() {
     if (useCamera === null) return;
 
     try {
-      setUploading(true);
       const picked = useCamera ? await takePhotoWithCamera() : await pickPhotoFromLibrary();
       if (!picked) return;
 
-      const availableDays = days.filter((day) => day.date <= today);
-      const selectedDayId = await new Promise<string | null>((resolve) => {
-        if (availableDays.length === 1) {
-          resolve(availableDays[0].id);
-          return;
-        }
+      if (days.length === 0) {
+        await uploadAndSavePhoto(picked, null);
+        return;
+      }
 
-        const options = [
-          ...availableDays.map((day) =>
-            format(parseISO(day.date), 'EEE d MMM', { locale: dateLocale() }),
-          ),
-          t('common.cancel'),
-        ];
-        const cancelButtonIndex = options.length - 1;
+      if (days.length === 1) {
+        await uploadAndSavePhoto(picked, days[0].id);
+        return;
+      }
 
-        if (Platform.OS === 'ios') {
-          ActionSheetIOS.showActionSheetWithOptions({ options, cancelButtonIndex }, (index) =>
-            resolve(index === cancelButtonIndex ? null : availableDays[index].id),
-          );
-          return;
-        }
-
-        Alert.alert(t('diary.chooseDayTitle'), t('diary.chooseDayMessage'), [
-          ...availableDays.map((day) => ({
-            text: format(parseISO(day.date), 'EEE d MMM', { locale: dateLocale() }),
-            onPress: () => resolve(day.id),
-          })),
-          { text: t('common.cancel'), style: 'cancel', onPress: () => resolve(null) },
-        ]);
-      });
-
-      if (!selectedDayId) return;
-
-      const path = await uploadPhotoFile(userId, trip.id, picked.base64);
-      await addPhoto({
-        tripId: trip.id,
-        dayId: selectedDayId,
-        uri: path,
-        location: picked.location,
-        takenAt: picked.takenAt ?? undefined,
-      });
+      setPendingPhoto(picked);
+      setDayPickerVisible(true);
     } catch {
       Alert.alert(t('diary.addPhotoError'), t('common.tryAgain'));
-    } finally {
-      setUploading(false);
     }
-  }, [userId, trip.id, trip.startDate, days, addPhoto, t]);
+  }, [userId, days, uploadAndSavePhoto, t]);
 
   const handlePressPhoto = useCallback(
     (photoId: string) => {
@@ -246,10 +252,25 @@ export default function DiaryScreen() {
         )}
       </ScrollView>
 
+      {uploading && (
+        <View style={styles.uploadingToast}>
+          <ActivityIndicator size="small" color={colors.white} />
+          <Text style={styles.uploadingText}>{t('diary.uploading')}</Text>
+        </View>
+      )}
+
       <Fab
         onPress={uploading ? () => {} : handleAddPhoto}
         icon="camera"
         accessibilityLabel={t('diary.addPhoto')}
+      />
+
+      <DayPickerModal
+        visible={dayPickerVisible}
+        days={days}
+        suggestedDate={pendingPhoto?.takenAt}
+        onSelectDay={handleSelectDay}
+        onClose={handleCloseDayPicker}
       />
     </View>
   );
@@ -277,5 +298,27 @@ const styles = StyleSheet.create({
     color: colors.secondary300,
     textAlign: 'center',
     paddingHorizontal: spacing.s5,
+  },
+  uploadingToast: {
+    position: 'absolute',
+    bottom: 100,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.s2,
+    backgroundColor: colors.secondaryDark,
+    paddingVertical: spacing.s2,
+    paddingHorizontal: spacing.s4,
+    borderRadius: radius.pill,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 6,
+  },
+  uploadingText: {
+    fontFamily: fonts.sansMedium,
+    fontSize: fontSize.sm,
+    color: colors.white,
   },
 });

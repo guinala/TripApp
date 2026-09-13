@@ -1,6 +1,6 @@
 import { DESTINATIONS } from '@/constants/destinations';
 
-export type LatLng = { lat: number; lng: number };
+import type { LatLng } from '@/types/place';
 
 const DESTINATION_ALIASES: Record<string, string> = {
   rome: 'roma',

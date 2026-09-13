@@ -540,6 +540,8 @@
     "chooseDayTitle": "Asignar foto a un día",
     "chooseDayMessage": "Elige el día del viaje al que pertenece esta foto.",
     "addPhotoError": "No se pudo añadir la foto",
+    "uploading": "Subiendo foto...",
+    "photoDateMatch": "Fecha de la foto",
     "nothingToExport": "Nada que exportar",
     "nothingToExportMessage": "Añade fotos a tu diario primero.",
     "exportError": "No se pudo exportar",

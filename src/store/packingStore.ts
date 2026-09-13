@@ -8,6 +8,7 @@ import {
   deleteItem,
   bulkInsert,
   clearItems,
+  replacePackingItems,
   type PackingSeed,
 } from '@/services/packing';
 
@@ -140,9 +141,14 @@ export const usePackingStore = create<PackingState>((set, get) => ({
   },
 
   replaceItems: async (tripId, seeds) => {
-    await clearItems(tripId);
-    const inserted = await bulkInsert(tripId, seeds);
-    set((s) => ({ byTrip: { ...s.byTrip, [tripId]: inserted } }));
+    const previous = get().byTrip[tripId] ?? [];
+    try {
+      const inserted = await replacePackingItems(tripId, seeds);
+      set((s) => ({ byTrip: { ...s.byTrip, [tripId]: inserted } }));
+    } catch (e) {
+      set((s) => ({ byTrip: { ...s.byTrip, [tripId]: previous } }));
+      throw e;
+    }
   },
 
   duplicateFrom: async (targetTripId, sourceTripId) => {

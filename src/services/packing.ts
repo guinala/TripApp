@@ -102,3 +102,57 @@ export async function clearItems(tripId: string): Promise<void> {
   const { error } = await supabase.from('packing_items').delete().eq('trip_id', tripId);
   if (error) throw error;
 }
+
+/**
+ * Reemplaza de forma segura la lista de equipaje de un viaje.
+ * 1. Intenta ejecutar la función RPC atómica en PostgreSQL si está disponible.
+ * 2. Si no, usa la estrategia segura "Insertar y luego Purgar":
+ *    - Obtiene los IDs previos.
+ *    - Inserta la nueva lista primero. Si la inserción falla, la lista previa queda intacta.
+ *    - Solo tras una inserción exitosa elimina los elementos previos por sus IDs.
+ */
+export async function replacePackingItems(
+  tripId: string,
+  items: PackingSeed[],
+): Promise<PackingItem[]> {
+  // 1. Intento con RPC atómico en PostgreSQL
+  try {
+    const { data, error } = await supabase.rpc('replace_packing_items', {
+      p_trip_id: tripId,
+      p_items: items,
+    });
+
+    if (!error && Array.isArray(data)) {
+      return (data as PackingRow[]).map(toPackingItem);
+    }
+  } catch {
+    // Si la función RPC no está disponible o falla, caemos al fallback seguro
+  }
+
+  // 2. Fallback seguro en cliente: "Insert-then-Prune"
+  const { data: existingRows, error: fetchErr } = await supabase
+    .from('packing_items')
+    .select('id')
+    .eq('trip_id', tripId);
+
+  if (fetchErr) throw fetchErr;
+
+  const previousIds = (existingRows ?? []).map((r) => r.id);
+
+  // Insertar primero la nueva lista. Si falla, los elementos previos NUNCA son borrados.
+  const inserted = await bulkInsert(tripId, items);
+
+  // Una vez confirmada la inserción, purgamos los anteriores
+  if (previousIds.length > 0) {
+    const { error: deleteErr } = await supabase
+      .from('packing_items')
+      .delete()
+      .in('id', previousIds);
+
+    if (deleteErr) {
+      console.warn('[packing] No se pudieron purgar los elementos anteriores:', deleteErr.message);
+    }
+  }
+
+  return inserted;
+}

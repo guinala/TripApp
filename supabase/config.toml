@@ -1,3 +1,8 @@
+[functions.places]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/places/index.ts"
+import_map = "./functions/places/deno.json"
 
 [functions.delete-user]
 enabled = true

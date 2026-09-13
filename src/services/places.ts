@@ -1,4 +1,4 @@
-const PLACES_BASE = 'https://places.googleapis.com/v1';
+const PLACES_BASE = "https://places.googleapis.com/v1";
 const API_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY!;
 
 export type PlaceSuggestion = {
@@ -22,11 +22,13 @@ export async function autocompletePlaces(
   if (!input.trim()) return [];
 
   const body: Record<string, unknown> = { input, sessionToken };
-  if (includedPrimaryTypes?.length) body.includedPrimaryTypes = includedPrimaryTypes;
+  if (includedPrimaryTypes?.length) {
+    body.includedPrimaryTypes = includedPrimaryTypes;
+  }
 
   const res = await fetch(`${PLACES_BASE}/places:autocomplete`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': API_KEY },
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Goog-Api-Key": API_KEY },
     body: JSON.stringify(body),
   });
 
@@ -37,9 +39,10 @@ export async function autocompletePlaces(
     .filter((s: any) => s.placePrediction) // descartamos queryPrediction
     .map((s: any) => ({
       placeId: s.placePrediction.placeId,
-      mainText:
-        s.placePrediction.structuredFormat?.mainText?.text ?? s.placePrediction.text?.text ?? '',
-      secondaryText: s.placePrediction.structuredFormat?.secondaryText?.text ?? '',
+      mainText: s.placePrediction.structuredFormat?.mainText?.text ??
+        s.placePrediction.text?.text ?? "",
+      secondaryText: s.placePrediction.structuredFormat?.secondaryText?.text ??
+        "",
     }));
 }
 
@@ -47,21 +50,26 @@ export async function getPlaceDetails(
   placeId: string,
   sessionToken: string,
 ): Promise<PlaceDetails> {
-  const res = await fetch(`${PLACES_BASE}/places/${placeId}?sessionToken=${sessionToken}`, {
-    headers: {
-      'X-Goog-Api-Key': API_KEY,
-      // Obligatorio en Place Details (New); pedimos solo lo que usamos
-      'X-Goog-FieldMask': 'id,displayName,formattedAddress,location',
+  const res = await fetch(
+    `${PLACES_BASE}/places/${placeId}?sessionToken=${sessionToken}`,
+    {
+      headers: {
+        "X-Goog-Api-Key": API_KEY,
+        // Solo se pide lo que se vaya a usar
+        "X-Goog-FieldMask": "id,displayName,formattedAddress,location",
+      },
     },
-  });
+  );
 
   if (!res.ok) throw new Error(`Place Details falló: ${res.status}`);
   const data = await res.json();
 
   return {
     placeId: data.id,
-    name: data.displayName?.text ?? '',
+    name: data.displayName?.text ?? "",
     address: data.formattedAddress ?? null,
-    location: data.location ? { lat: data.location.latitude, lng: data.location.longitude } : null,
+    location: data.location
+      ? { lat: data.location.latitude, lng: data.location.longitude }
+      : null,
   };
 }

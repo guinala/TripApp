@@ -1,10 +1,12 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
-.env
-.env.local
+.env.*
 google-play-key.json
+*.cer
 
 # dependencies
 node_modules/
+
+docs/
 
 # Expo
 .expo/
@@ -23,6 +25,11 @@ expo-env.d.ts
 
 # Metro
 .metro-health-check*
+
+# Supabase
+supabase/.temp/
+supabase/temp/
+supabase/.branch/
 
 # debug
 npm-debug.*

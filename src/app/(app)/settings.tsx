@@ -22,10 +22,22 @@ import { format } from 'date-fns';
 import * as Sharing from 'expo-sharing';
 import { supabase } from '@/services/supabase';
 
+import { OptionPickerModal, type PickerOption } from '@/components/ui/OptionPickerModal';
+
 const LANGUAGES = [
   { code: 'es', label: 'Español' },
   { code: 'en', label: 'English' },
 ];
+
+const LANGUAGE_OPTIONS: PickerOption[] = LANGUAGES.map((l) => ({
+  label: l.label,
+  value: l.code,
+}));
+
+const CURRENCY_OPTIONS: PickerOption[] = CURRENCIES.map((c) => ({
+  label: `${c.code} (${c.symbol})`,
+  value: c.code,
+}));
 
 export default function SettingsScreen() {
   const { t } = useTranslation();
@@ -134,31 +146,33 @@ export default function SettingsScreen() {
     ]);
   }, [performDelete, t]);
 
+  const [languageModalVisible, setLanguageModalVisible] = useState(false);
+  const [currencyModalVisible, setCurrencyModalVisible] = useState(false);
+
+  const handleSelectLanguage = useCallback(
+    async (code: string) => {
+      if (!user) return;
+      await updateProfile(user.id, { preferredLanguage: code });
+      syncLanguage(code);
+    },
+    [user, updateProfile],
+  );
+
+  const handleSelectCurrency = useCallback(
+    async (code: string) => {
+      if (!user) return;
+      await updateProfile(user.id, { defaultCurrency: code });
+    },
+    [user, updateProfile],
+  );
+
   const pickLanguage = useCallback(() => {
-    if (!user) return;
-    Alert.alert(t('settings.language.title'), t('settings.language.subtitle'), [
-      ...LANGUAGES.map((l) => ({
-        text: l.label,
-        onPress: async () => {
-          await updateProfile(user.id, { preferredLanguage: l.code });
-          syncLanguage(l.code);
-        },
-      })),
-      { text: t('common.cancel'), style: 'cancel' as const },
-    ]);
-  }, [user, updateProfile, t]);
+    setLanguageModalVisible(true);
+  }, []);
 
   const pickCurrency = useCallback(() => {
-    if (!user) return;
-    const popular = CURRENCIES.slice(0, 6);
-    Alert.alert(t('settings.currency.title'), t('settings.currency.subtitle'), [
-      ...popular.map((c) => ({
-        text: `${c.code} (${c.symbol})`,
-        onPress: () => updateProfile(user.id, { defaultCurrency: c.code }),
-      })),
-      { text: t('common.cancel'), style: 'cancel' as const },
-    ]);
-  }, [user, updateProfile, t]);
+    setCurrencyModalVisible(true);
+  }, []);
 
   const confirmSignOut = useCallback(() => {
     Alert.alert(t('settings.signOut.title'), t('settings.signOut.message'), [
@@ -257,6 +271,26 @@ export default function SettingsScreen() {
           <Text style={styles.footerText}>{t('settings.footer')}</Text>
         </View>
       </ScrollView>
+
+      <OptionPickerModal
+        visible={languageModalVisible}
+        title={t('settings.language.title')}
+        subtitle={t('settings.language.subtitle')}
+        options={LANGUAGE_OPTIONS}
+        selectedValue={profile?.preferredLanguage ?? 'es'}
+        onSelect={handleSelectLanguage}
+        onClose={() => setLanguageModalVisible(false)}
+      />
+
+      <OptionPickerModal
+        visible={currencyModalVisible}
+        title={t('settings.currency.title')}
+        subtitle={t('settings.currency.subtitle')}
+        options={CURRENCY_OPTIONS}
+        selectedValue={profile?.defaultCurrency ?? 'EUR'}
+        onSelect={handleSelectCurrency}
+        onClose={() => setCurrencyModalVisible(false)}
+      />
     </SafeAreaView>
   );
 }

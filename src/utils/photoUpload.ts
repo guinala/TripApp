@@ -22,14 +22,61 @@ async function manipulateAndEncode(uri: string): Promise<string> {
   return manipulated.base64;
 }
 
+export function parseExifDate(rawDate?: string | null): string | null {
+  if (!rawDate || typeof rawDate !== 'string') return null;
+  try {
+    const trimmed = rawDate.trim();
+    // El formato estándar EXIF es "YYYY:MM:DD HH:MM:SS"
+    const parts = trimmed.split(' ');
+    if (parts.length >= 2) {
+      const datePart = parts[0].replace(/:/g, '-');
+      const timePart = parts[1];
+      const isoCandidate = `${datePart}T${timePart}`;
+      const parsed = new Date(isoCandidate);
+      if (!isNaN(parsed.getTime())) {
+        return parsed.toISOString();
+      }
+    } else if (parts.length === 1 && parts[0].includes(':')) {
+      const datePart = parts[0].replace(/:/g, '-');
+      const parsed = new Date(datePart);
+      if (!isNaN(parsed.getTime())) {
+        return parsed.toISOString();
+      }
+    }
+
+    const directParsed = new Date(trimmed);
+    if (!isNaN(directParsed.getTime())) {
+      return directParsed.toISOString();
+    }
+  } catch {
+    // Si falla el formateo de fecha, no abortamos la subida de la foto
+  }
+  return null;
+}
+
 function extractExif(exif: ImagePicker.ImagePickerAsset['exif']): {
   location: PickedPhoto['location'];
   takenAt: PickedPhoto['takenAt'];
 } {
-  const lat = exif?.GPSLatitude;
-  const lng = exif?.GPSLongitude;
-  const location = typeof lat === 'number' && typeof lng === 'number' ? { lat, lng } : null;
-  const takenAt = exif?.DateTimeOriginal ? new Date(exif.DateTimeOriginal).toISOString() : null;
+  let location: PickedPhoto['location'] = null;
+  try {
+    const rawLat = exif?.GPSLatitude;
+    const rawLng = exif?.GPSLongitude;
+    if (rawLat != null && rawLng != null) {
+      let lat = typeof rawLat === 'number' ? rawLat : Number(rawLat);
+      let lng = typeof rawLng === 'number' ? rawLng : Number(rawLng);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        // Ajustar referencias hemisféricas S y W/O si vienen como valores absolutos
+        if (exif?.GPSLatitudeRef === 'S' && lat > 0) lat = -lat;
+        if ((exif?.GPSLongitudeRef === 'W' || exif?.GPSLongitudeRef === 'O') && lng > 0) lng = -lng;
+        location = { lat, lng };
+      }
+    }
+  } catch {
+    location = null;
+  }
+
+  const takenAt = parseExifDate(exif?.DateTimeOriginal);
   return { location, takenAt };
 }
 

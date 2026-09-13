@@ -537,6 +537,8 @@
     "chooseDayTitle": "Assign photo to a day",
     "chooseDayMessage": "Choose the trip day this photo belongs to.",
     "addPhotoError": "Couldn't add the photo",
+    "uploading": "Uploading photo...",
+    "photoDateMatch": "Photo date",
     "nothingToExport": "Nothing to export",
     "nothingToExportMessage": "Add photos to your diary first.",
     "exportError": "Couldn't export",

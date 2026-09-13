@@ -17,9 +17,7 @@
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
-  "deno.enablePaths": [
-    "supabase/functions"
-  ],
+  "deno.enablePaths": ["supabase/functions"],
   "deno.lint": true,
   "deno.unstable": [
     "bare-node-builtins",
@@ -35,5 +33,6 @@
     "fs",
     "http",
     "net"
-  ]
+  ],
+  "java.configuration.updateBuildConfiguration": "interactive"
 }

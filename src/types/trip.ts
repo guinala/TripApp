@@ -7,6 +7,7 @@ export type Trip = {
   userId: string;
   title: string;
   destination: string;
+  destinationPlaceId: string | null;
   coverImage: string | null;
   startDate: string; // ISO date
   endDate: string;

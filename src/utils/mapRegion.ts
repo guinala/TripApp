@@ -1,45 +1,5 @@
-import { DESTINATIONS } from '@/constants/destinations';
-
-import type { LatLng } from '@/types/place';
-
-const DESTINATION_ALIASES: Record<string, string> = {
-  rome: 'roma',
-  tokyo: 'tokio',
-};
-
-const EXTRA_DESTINATIONS: Record<string, LatLng> = {
-  ginebra: { lat: 46.2044, lng: 6.1432 },
-  geneva: { lat: 46.2044, lng: 6.1432 },
-};
-
-export function normalizeDestination(value: string): string {
-  return value
-    .trim()
-    .toLocaleLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
-}
-
-export function destinationCoordinates(destination: string): LatLng | undefined {
-  const normalized = normalizeDestination(destination);
-  const key = DESTINATION_ALIASES[normalized] ?? normalized;
-  return (
-    EXTRA_DESTINATIONS[key] ??
-    DESTINATIONS.find((item) => normalizeDestination(item.name) === key)?.coordinates
-  );
-}
-
-export function isValidCoordinate(value: LatLng | null | undefined): value is LatLng {
-  return (
-    value != null &&
-    Number.isFinite(value.lat) &&
-    Number.isFinite(value.lng) &&
-    value.lat >= -90 &&
-    value.lat <= 90 &&
-    value.lng >= -180 &&
-    value.lng <= 180
-  );
-}
+import type { LatLng, PlaceDetails, PlaceViewport } from "@/types/place";
+export type { LatLng } from "@/types/place";
 
 export type MapRegion = {
   latitude: number;
@@ -48,20 +8,92 @@ export type MapRegion = {
   longitudeDelta: number;
 };
 
-export function regionForPoints(points: LatLng[], marginFactor = 1.4): MapRegion | undefined {
-  if (points.length === 0) return undefined;
+export function isValidCoordinate(
+  point: LatLng | null | undefined,
+): point is LatLng {
+  return (
+    !!point &&
+    Number.isFinite(point.lat) &&
+    Number.isFinite(point.lng) &&
+    Math.abs(point.lat) <= 90 &&
+    Math.abs(point.lng) <= 180
+  );
+}
 
-  const lats = points.map((p) => p.lat);
-  const lngs = points.map((p) => p.lng);
-  const minLat = Math.min(...lats);
-  const maxLat = Math.max(...lats);
-  const minLng = Math.min(...lngs);
-  const maxLng = Math.max(...lngs);
+const wrap = (lng: number) => ((((lng + 180) % 360) + 360) % 360) - 180;
 
+function region(
+  south: number,
+  north: number,
+  west: number,
+  width: number,
+  padding: number,
+): MapRegion {
   return {
-    latitude: (minLat + maxLat) / 2,
-    longitude: (minLng + maxLng) / 2,
-    latitudeDelta: Math.max((maxLat - minLat) * marginFactor, 0.02),
-    longitudeDelta: Math.max((maxLng - minLng) * marginFactor, 0.02),
+    latitude: (south + north) / 2,
+    longitude: wrap(west + width / 2),
+    latitudeDelta: Math.min(180, Math.max(0.02, (north - south) * padding)),
+    longitudeDelta: Math.min(360, Math.max(0.02, width * padding)),
   };
+}
+
+export function regionFromViewport(
+  viewport: PlaceViewport | null | undefined,
+): MapRegion | null {
+  if (
+    !viewport ||
+    !isValidCoordinate(viewport.low) ||
+    !isValidCoordinate(viewport.high) ||
+    viewport.low.lat > viewport.high.lat
+  ) {
+    return null;
+  }
+  const rawWidth = viewport.high.lng - viewport.low.lng;
+  return region(
+    viewport.low.lat,
+    viewport.high.lat,
+    viewport.low.lng,
+    rawWidth < 0 ? rawWidth + 360 : rawWidth,
+    1.1,
+  );
+}
+
+export function regionForPoints(
+  points: LatLng[],
+  padding = 1.4,
+): MapRegion | null {
+  const valid = points.filter(isValidCoordinate);
+  if (!valid.length) return null;
+  const longitudes = valid.map((p) => (p.lng + 360) % 360).sort((a, b) =>
+    a - b
+  );
+  let largestGap = -1,
+    start = longitudes[0];
+  for (let i = 0; i < longitudes.length; i++) {
+    const next = i === longitudes.length - 1
+      ? longitudes[0] + 360
+      : longitudes[i + 1];
+    if (next - longitudes[i] > largestGap) {
+      largestGap = next - longitudes[i];
+      start = next % 360;
+    }
+  }
+  return region(
+    Math.min(...valid.map((p) => p.lat)),
+    Math.max(...valid.map((p) => p.lat)),
+    start,
+    360 - largestGap,
+    padding,
+  );
+}
+
+export function itineraryRegion(
+  points: LatLng[],
+  destination: PlaceDetails | null,
+): MapRegion | null {
+  return (
+    regionForPoints(points) ??
+      regionFromViewport(destination?.viewport) ??
+      (destination?.location ? regionForPoints([destination.location]) : null)
+  );
 }

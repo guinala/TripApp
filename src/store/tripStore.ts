@@ -1,66 +1,85 @@
-import { create } from 'zustand';
-import type { Trip } from '@/types/trip';
+import { create } from "zustand";
+import type { Trip } from "@/types/trip";
 import {
-  listTrips,
   createTrip,
-  updateTrip,
-  deleteTrip,
   type CreateTripInput,
-} from '@/services/trips';
-import { useAuthStore } from '@/store/authStore';
+  deleteTrip,
+  listTrips,
+  updateTrip,
+} from "@/services/trips";
+import { useAuthStore } from "@/store/authStore";
 
-type TripState = {
+type State = {
   trips: Trip[];
   loading: boolean;
   error: string | null;
+  upsertTrip: (trip: Trip) => void;
   fetchTrips: () => Promise<void>;
   addTrip: (input: CreateTripInput) => Promise<Trip>;
   editTrip: (id: string, patch: Partial<CreateTripInput>) => Promise<void>;
   removeTrip: (id: string) => Promise<void>;
 };
-
-export const useTripStore = create<TripState>((set, get) => ({
+let generation = 0,
+  listing = 0;
+const owner = () => useAuthStore.getState().user?.id;
+export const useTripStore = create<State>((set, get) => ({
   trips: [],
   loading: false,
   error: null,
-
-  fetchTrips: async () => {
-    const userId = useAuthStore.getState().user?.id;
-    if (!userId) return;
-
-    set({ loading: true, error: null });
-    try {
-      const trips = await listTrips(userId);
-      set({ trips, loading: false });
-    } catch (e) {
-      set({ error: (e as Error).message, loading: false });
+  upsertTrip: (trip) => {
+    if (trip.userId === owner()) {
+      set((s) => ({
+        trips: s.trips.some((t) => t.id === trip.id)
+          ? s.trips.map((t) => (t.id === trip.id ? trip : t))
+          : [trip, ...s.trips],
+      }));
     }
   },
-
+  fetchTrips: async () => {
+    const id = owner(),
+      started = generation,
+      request = ++listing;
+    if (!id) return;
+    set({ loading: true, error: null });
+    try {
+      const trips = await listTrips(id);
+      if (started === generation && request === listing) {
+        set({ trips, loading: false });
+      }
+    } catch (e) {
+      if (started === generation && request === listing) {
+        set({ loading: false, error: e instanceof Error ? e.message : "load" });
+      }
+    }
+  },
   addTrip: async (input) => {
-    const userId = useAuthStore.getState().user?.id;
-    if (!userId) throw new Error('No hay sesión activa');
-
-    const trip = await createTrip(userId, input);
-    // Lo nuevo va al principio (desc)
-    set({ trips: [trip, ...get().trips] });
+    const id = owner(),
+      started = generation;
+    if (!id) throw new Error("No hay sesión activa");
+    const trip = await createTrip(id, input);
+    if (started !== generation) throw new Error("La sesión ha cambiado");
+    get().upsertTrip(trip);
     return trip;
   },
-
   editTrip: async (id, patch) => {
-    const updated = await updateTrip(id, patch);
-    set({ trips: get().trips.map((t) => (t.id === id ? updated : t)) });
+    const started = generation;
+    const trip = await updateTrip(id, patch);
+    if (started !== generation) throw new Error("La sesión ha cambiado");
+    get().upsertTrip(trip);
   },
-
   removeTrip: async (id) => {
-    const previous = get().trips;
-
-    set({ trips: previous.filter((t) => t.id !== id) });
-    try {
-      await deleteTrip(id);
-    } catch (e) {
-      set({ trips: previous });
-      throw e;
+    const started = generation;
+    await deleteTrip(id);
+    if (started === generation) {
+      set((s) => ({ trips: s.trips.filter((t) => t.id !== id) }));
     }
   },
 }));
+
+useAuthStore.subscribe((state, previous) => {
+  if (state.user?.id !== previous.user?.id) {
+    generation++;
+    listing++;
+    useTripStore.setState({ trips: [], loading: false, error: null });
+  }
+});

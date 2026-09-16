@@ -1,10 +1,11 @@
-import { supabase } from '@/services/supabase';
-import { Database } from '@/types/database';
-import type { Trip, TripType } from '@/types/trip';
+import { supabase } from "@/services/supabase";
+import { Database } from "@/types/database";
+import type { Trip, TripType } from "@/types/trip";
 
 export type CreateTripInput = {
   title: string;
   destination: string;
+  destinationPlaceId?: string | null;
   coverImage?: string | null;
   startDate: string;
   endDate: string;
@@ -14,10 +15,10 @@ export type CreateTripInput = {
 };
 
 // Datos de Supabase
-type TripRow = Database['public']['Tables']['trips']['Row'];
-
+type TripRow = Database["public"]["Tables"]["trips"]["Row"];
 export async function getTripById(id: string): Promise<Trip | null> {
-  const { data, error } = await supabase.from('trips').select('*').eq('id', id).maybeSingle();
+  const { data, error } = await supabase.from("trips").select("*").eq("id", id)
+    .maybeSingle();
   if (error) throw error;
   return data ? mapRowToTrip(data) : null;
 }
@@ -29,12 +30,13 @@ function mapRowToTrip(row: TripRow): Trip {
     userId: row.user_id,
     title: row.title,
     destination: row.destination,
+    destinationPlaceId: row.destination_place_id,
     coverImage: row.cover_image,
     startDate: row.start_date,
     endDate: row.end_date,
     budget: row.budget,
     currency: row.currency,
-    status: row.status as Trip['status'],
+    status: row.status as Trip["status"],
     tripType: row.trip_type as TripType | null,
     createdAt: row.created_at,
   };
@@ -42,29 +44,34 @@ function mapRowToTrip(row: TripRow): Trip {
 
 export async function listTrips(userId: string): Promise<Trip[]> {
   const { data, error } = await supabase
-    .from('trips')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false });
+    .from("trips")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
 
   if (error) throw error;
   return (data ?? []).map(mapRowToTrip);
 }
 
 export async function getTrip(id: string): Promise<Trip> {
-  const { data, error } = await supabase.from('trips').select('*').eq('id', id).single();
+  const { data, error } = await supabase.from("trips").select("*").eq("id", id)
+    .single();
 
   if (error) throw error;
   return mapRowToTrip(data);
 }
 
-export async function createTrip(userId: string, input: CreateTripInput): Promise<Trip> {
+export async function createTrip(
+  userId: string,
+  input: CreateTripInput,
+): Promise<Trip> {
   const { data, error } = await supabase
-    .from('trips')
+    .from("trips")
     .insert({
       user_id: userId,
       title: input.title,
       destination: input.destination,
+      destination_place_id: input.destinationPlaceId ?? null,
       cover_image: input.coverImage ?? null,
       start_date: input.startDate,
       end_date: input.endDate,
@@ -79,12 +86,19 @@ export async function createTrip(userId: string, input: CreateTripInput): Promis
   return mapRowToTrip(data);
 }
 
-export async function updateTrip(id: string, patch: Partial<CreateTripInput>): Promise<Trip> {
+export async function updateTrip(
+  id: string,
+  patch: Partial<CreateTripInput>,
+): Promise<Trip> {
   const { data, error } = await supabase
-    .from('trips')
+    .from("trips")
     .update({
       ...(patch.title !== undefined && { title: patch.title }),
-      ...(patch.destination !== undefined && { destination: patch.destination }),
+      ...(patch.destinationPlaceId !== undefined && {
+        destination_place_id: patch.destinationPlaceId,
+      }),
+      ...(patch.destination !== undefined &&
+        { destination: patch.destination }),
       ...(patch.coverImage !== undefined && { cover_image: patch.coverImage }),
       ...(patch.startDate !== undefined && { start_date: patch.startDate }),
       ...(patch.endDate !== undefined && { end_date: patch.endDate }),
@@ -92,7 +106,7 @@ export async function updateTrip(id: string, patch: Partial<CreateTripInput>): P
       ...(patch.currency !== undefined && { currency: patch.currency }),
       ...(patch.tripType !== undefined && { trip_type: patch.tripType }),
     })
-    .eq('id', id)
+    .eq("id", id)
     .select()
     .single();
 
@@ -101,6 +115,6 @@ export async function updateTrip(id: string, patch: Partial<CreateTripInput>): P
 }
 
 export async function deleteTrip(id: string): Promise<void> {
-  const { error } = await supabase.from('trips').delete().eq('id', id);
+  const { error } = await supabase.from("trips").delete().eq("id", id);
   if (error) throw error;
 }

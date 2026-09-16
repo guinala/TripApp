@@ -1,7 +1,8 @@
-import { eachDayOfInterval, format, parseISO } from 'date-fns';
-import { supabase } from '@/services/supabase';
-import type { Day } from '@/types/day';
-import type { Trip } from '@/types/trip';
+import { placeSessionVersion } from "@/services/place-session";
+import { eachDayOfInterval, format, parseISO } from "date-fns";
+import { supabase } from "@/services/supabase";
+import type { Day } from "@/types/day";
+import type { Trip } from "@/types/trip";
 
 type DayRow = {
   id: string;
@@ -25,16 +26,16 @@ function toDay(row: DayRow): Day {
 
 export async function listDays(tripId: string): Promise<Day[]> {
   const { data, error } = await supabase
-    .from('days')
-    .select('*')
-    .eq('trip_id', tripId)
-    .order('day_number', { ascending: true });
+    .from("days")
+    .select("*")
+    .eq("trip_id", tripId)
+    .order("day_number", { ascending: true });
 
   if (error) throw error;
   return (data as DayRow[]).map(toDay);
 }
 
-export async function ensureDays(trip: Trip): Promise<Day[]> {
+async function createMissingDays(trip: Trip): Promise<Day[]> {
   const existing = await listDays(trip.id);
   if (existing.length > 0) return existing;
 
@@ -47,11 +48,32 @@ export async function ensureDays(trip: Trip): Promise<Day[]> {
     trip_id: trip.id,
     day_number: i + 1,
     // Fecha local a UTC
-    date: format(date, 'yyyy-MM-dd'),
+    date: format(date, "yyyy-MM-dd"),
   }));
 
-  const { error } = await supabase.from('days').insert(rows);
+  const { error } = await supabase.from("days").insert(rows);
   if (error) throw error;
 
   return listDays(trip.id);
+}
+
+// Deduplica llamadas de esta app (incluido Strict Mode). La concurrencia entre
+// dispositivos y cambiar las fechas de un viaje requieren otra operación de BD.
+const pendingDays = new Map<string, Promise<Day[]>>();
+export function ensureDays(trip: Trip): Promise<Day[]> {
+  const key = JSON.stringify([
+    trip.id,
+    trip.startDate,
+    trip.endDate,
+    placeSessionVersion(),
+  ]);
+  const pending = pendingDays.get(key);
+  if (pending) return pending;
+  const promise = createMissingDays(trip);
+  pendingDays.set(key, promise);
+  const cleanup = () => {
+    if (pendingDays.get(key) === promise) pendingDays.delete(key);
+  };
+  void promise.then(cleanup, cleanup);
+  return promise;
 }

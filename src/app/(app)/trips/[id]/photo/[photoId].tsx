@@ -265,7 +265,7 @@ export default function PhotoViewerScreen() {
       <LocationPickerModal
         visible={locationModalOpen}
         initialLocation={activePhoto?.location ?? null}
-        fallbackRegion={fallbackRegion}
+        fallbackRegion={fallbackRegion ?? undefined}
         resetKey={activePhoto?.id}
         onClose={() => setLocationModalOpen(false)}
         onConfirm={handleSaveLocation}

@@ -1,3 +1,8 @@
+import { useTripRecord } from '@/hooks/use-trip-record';
+import { usePlaceDetails, usePlaceLanguage } from '@/hooks/use-place-details';
+import { PlacesStatus } from '@/components/explore/places-status';
+import { PlacesAttribution } from '@/components/explore/places-attribution';
+import { PlacesScreen } from '@/components/explore/places-ui';
 import { View, Text, Alert, StyleSheet, Platform, Pressable } from 'react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
@@ -30,9 +35,14 @@ export default function NewTripScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { id, destination: destinationParam } = useLocalSearchParams<{
+  const {
+    id,
+    destination: destinationParam,
+    placeId: placeIdParam,
+  } = useLocalSearchParams<{
     id?: string;
     destination?: string;
+    placeId?: string;
   }>();
   const isEdit = !!id;
 
@@ -42,10 +52,26 @@ export default function NewTripScreen() {
 
   const addTrip = useTripStore((s) => s.addTrip);
   const editTrip = useTripStore((s) => s.editTrip);
-  const existing = useTripStore((s) => (id ? s.trips.find((t) => t.id === id) : undefined));
+  const {
+    trip: existing,
+    loading: tripLoading,
+    error: tripError,
+    retry: retryTrip,
+  } = useTripRecord(id ?? null);
 
   const [title, setTitle] = useState('');
   const [destination, setDestination] = useState(destinationParam ?? '');
+  const [destinationPlaceId, setDestinationPlaceId] = useState<string | null>(placeIdParam ?? null);
+  const [referenceChanged, setReferenceChanged] = useState(!!placeIdParam);
+  const [selectingDestination, setSelectingDestination] = useState(false);
+  const resolved = usePlaceDetails(destinationPlaceId, usePlaceLanguage());
+  const destinationText =
+    destinationPlaceId && resolved.place
+      ? [resolved.place.name, resolved.place.countryName].filter(Boolean).join(', ')
+      : destination;
+  const referencePending = referenceChanged && !!destinationPlaceId && resolved.status !== 'ready';
+  const savedTripId = useRef<string | null>(null);
+  const submitting = useRef(false);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [currency, setCurrency] = useState('EUR');
@@ -66,13 +92,18 @@ export default function NewTripScreen() {
         compress: 0.8,
         format: ImageManipulator.SaveFormat.JPEG,
         base64: true,
-      }).then((result) => {
-        if (!cancelled && result.base64) setPickedCover({ uri: result.uri, base64: result.base64 });
-      });
+      })
+        .then((result) => {
+          if (!cancelled && result.base64)
+            setPickedCover({ uri: result.uri, base64: result.base64 });
+        })
+        .catch(() => {
+          if (!cancelled) Alert.alert(t('common.error'), t('places.coverError'));
+        });
       return () => {
         cancelled = true;
       };
-    }, [consumeCover]),
+    }, [consumeCover, t]),
   );
 
   useEffect(() => {
@@ -80,6 +111,7 @@ export default function NewTripScreen() {
     loaded.current = true;
     setTitle(existing.title);
     setDestination(existing.destination);
+    setDestinationPlaceId(existing.destinationPlaceId);
     setStartDate(parseISO(existing.startDate));
     setEndDate(parseISO(existing.endDate));
     setCurrency(existing.currency);
@@ -102,7 +134,10 @@ export default function NewTripScreen() {
   };
 
   const handleSubmit = async () => {
-    if (!destination.trim())
+    if (submitting.current || selectingDestination || referencePending) return;
+    if (destinationPlaceId && !title.trim())
+      return Alert.alert(t('common.error'), t('places.personalTitleRequired'));
+    if (!destinationPlaceId && !destination.trim())
       return Alert.alert(
         t('trips.form.missingDestinationTitle'),
         t('trips.form.missingDestination'),
@@ -113,15 +148,21 @@ export default function NewTripScreen() {
       return Alert.alert(t('trips.form.invalidDatesTitle'), t('trips.form.invalidDates'));
 
     const budgetNum = budget ? Number(budget.replace(',', '.')) : null;
-    if (budgetNum !== null && (Number.isNaN(budgetNum) || budgetNum < 0)) {
+    if (budgetNum !== null && (!Number.isFinite(budgetNum) || budgetNum < 0)) {
       return Alert.alert(t('trips.form.invalidBudgetTitle'), t('trips.form.invalidBudget'));
     }
 
+    submitting.current = true;
     setSaving(true);
     try {
       const payload = {
         title: title.trim() || t('trips.form.defaultTitle', { destination: destination.trim() }),
-        destination: destination.trim(),
+        destination: destinationPlaceId
+          ? isEdit && !referenceChanged
+            ? existing!.destination
+            : title.trim()
+          : destination.trim(),
+        destinationPlaceId,
         startDate: toISODate(startDate),
         endDate: toISODate(endDate),
         currency,
@@ -129,12 +170,13 @@ export default function NewTripScreen() {
         tripType,
       };
 
-      let tripId = id;
-      if (isEdit && id) {
-        await editTrip(id, payload);
+      let tripId = id ?? savedTripId.current ?? undefined;
+      if (tripId) {
+        await editTrip(tripId, payload);
       } else {
         const created = await addTrip({ ...payload, coverImage: null });
         tripId = created.id;
+        savedTripId.current = created.id;
       }
 
       if (pickedCover && userId && tripId) {
@@ -157,6 +199,7 @@ export default function NewTripScreen() {
       router.back();
     } catch (e) {
       Alert.alert(t('trips.form.saveError'), (e as Error).message);
+      submitting.current = false;
       setSaving(false);
     }
   };
@@ -173,6 +216,18 @@ export default function NewTripScreen() {
     setCoverRemoved(true);
   };
 
+  if (isEdit && !existing)
+    return (
+      <PlacesScreen title={t('trips.form.name')}>
+        <PlacesStatus
+          loading={tripLoading}
+          error={tripError}
+          message={!tripLoading && !tripError ? t('places.tripNotFound') : undefined}
+          onRetry={retryTrip}
+        />
+      </PlacesScreen>
+    );
+
   return (
     <View style={[styles.container, { paddingTop: insets.top + 10 }]}>
       <View style={styles.header}>
@@ -185,7 +240,11 @@ export default function NewTripScreen() {
         <View style={{ width: 36 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={styles.body}
+        showsVerticalScrollIndicator={false}
+      >
         <CoverImagePicker
           previewUri={previewCover}
           onPick={handlePickCover}
@@ -206,7 +265,27 @@ export default function NewTripScreen() {
         />
 
         <Text style={styles.label}>{t('trips.form.destination').toUpperCase()}</Text>
-        <DestinationInput value={destination} onChange={setDestination} />
+        <DestinationInput
+          value={destinationText}
+          disabled={saving}
+          onChangeText={(text) => {
+            setDestination(text);
+            setDestinationPlaceId(null);
+            setReferenceChanged(true);
+          }}
+          onSelectPlace={(place) => {
+            setDestinationPlaceId(place.placeId);
+            setReferenceChanged(true);
+          }}
+          onSelectingChange={setSelectingDestination}
+        />
+        {resolved.place && <PlacesAttribution attributions={resolved.place.attributions} />}
+        <PlacesStatus
+          loading={resolved.status === 'loading'}
+          error={resolved.error}
+          onRetry={resolved.error ? resolved.retry : undefined}
+        />
+        {!destinationPlaceId && <Text style={styles.hint}>{t('places.manualDestination')}</Text>}
 
         <View style={styles.row}>
           <View style={styles.col}>
@@ -261,7 +340,7 @@ export default function NewTripScreen() {
       <Pressable
         style={[styles.submit, { marginBottom: insets.bottom + 10 }, saving && { opacity: 0.6 }]}
         onPress={handleSubmit}
-        disabled={saving}
+        disabled={saving || selectingDestination || referencePending}
       >
         <Ionicons name={isEdit ? 'checkmark' : 'add'} size={20} color={colors.surfacePaper} />
         <Text style={styles.submitLabel}>

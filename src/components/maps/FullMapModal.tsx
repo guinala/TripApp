@@ -1,8 +1,10 @@
+import { PlaceMapStatus } from './place-map-status';
+import { PlacesAttribution } from '@/components/explore/places-attribution';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import MapView, { Marker, Polyline, PROVIDER_DEFAULT, Region } from 'react-native-maps';
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import { format, parseISO } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import { dateLocale } from '@/i18n/date';
@@ -10,7 +12,7 @@ import { categoryColors, colors, fonts, fontSize, radius, spacing } from '@/cons
 import { ACTIVITY_ICON } from '@/constants/activityIcons';
 import { useTripDetail } from '@/context/TripDetailContext';
 import { formatDistance, routeDistanceKm } from '@/utils/routedDistance';
-import { destinationCoordinates, isValidCoordinate, regionForPoints } from '@/utils/mapRegion';
+import { isValidCoordinate, itineraryRegion } from '@/utils/mapRegion';
 import type { Activity } from '@/types/activity';
 
 function withAlpha(hex: string, opacity: number): string {
@@ -34,16 +36,22 @@ function NumberedPin({ number, selected }: { number: number; selected: boolean }
 export function FullMapModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const { trip, days, activities, selectedDayId, setSelectedDayId } = useTripDetail();
+  const {
+    trip,
+    days,
+    mapActivities: activities,
+    selectedDayId,
+    setSelectedDayId,
+    destinationResolution,
+    mapAttributions,
+  } = useTripDetail();
 
   const mapRef = useRef<MapView>(null);
   const regionRef = useRef<Region | null>(null);
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
   const [mapType, setMapType] = useState<'standard' | 'satellite'>('standard');
 
-  const destinationLocation = useMemo(() => {
-    return destinationCoordinates(trip.destination) ?? { lat: 40.416775, lng: -3.70379 };
-  }, [trip.destination]);
+  const [mapReady, setMapReady] = useState(false);
 
   const dayById = useMemo(() => new Map(days.map((d) => [d.id, d])), [days]);
   const selectedDay = selectedDayId ? (dayById.get(selectedDayId) ?? null) : null;
@@ -65,41 +73,20 @@ export function FullMapModal({ visible, onClose }: { visible: boolean; onClose: 
     [located],
   );
 
-  const initialRegion = useMemo(() => {
-    if (routePoints.length > 1) {
-      const region = regionForPoints(
-        routePoints.map((point) => ({ lat: point.latitude, lng: point.longitude })),
-        1.4,
-      );
-      if (region) return region;
-    }
-
-    const point = routePoints[0] ?? {
-      latitude: destinationLocation.lat,
-      longitude: destinationLocation.lng,
-    };
-    return {
-      ...point,
-      latitudeDelta: 0.08,
-      longitudeDelta: 0.08,
-    };
-  }, [destinationLocation, routePoints]);
+  const initialRegion = useMemo(
+    () =>
+      itineraryRegion(
+        located.flatMap((a) => (a.location ? [a.location] : [])),
+        destinationResolution.place,
+      ),
+    [located, destinationResolution.place],
+  );
 
   const distanceKm = useMemo(() => routeDistanceKm(located.map((a) => a.location!)), [located]);
 
   useEffect(() => {
-    if (!visible) return;
-
-    const timeout = setTimeout(() => {
-      if (routePoints.length === 1) {
-        mapRef.current?.animateCamera({ center: routePoints[0], zoom: 14 }, { duration: 300 });
-        return;
-      }
-      mapRef.current?.animateToRegion(initialRegion, 300);
-    }, 350);
-
-    return () => clearTimeout(timeout);
-  }, [initialRegion, routePoints, visible]);
+    if (visible && mapReady && initialRegion) mapRef.current?.animateToRegion(initialRegion, 300);
+  }, [initialRegion, mapReady, visible]);
 
   const selectDay = (dayId: string | null) => {
     setSelectedDayId(dayId);
@@ -122,14 +109,15 @@ export function FullMapModal({ visible, onClose }: { visible: boolean; onClose: 
     mapRef.current?.animateToRegion(
       {
         ...region,
-        latitudeDelta: region.latitudeDelta * factor,
-        longitudeDelta: region.longitudeDelta * factor,
+        latitudeDelta: Math.min(180, Math.max(0.001, region.latitudeDelta * factor)),
+        longitudeDelta: Math.min(360, Math.max(0.001, region.longitudeDelta * factor)),
       },
       200,
     );
   };
 
   const recenter = () => {
+    if (!mapReady || !initialRegion) return;
     if (routePoints.length === 0) {
       mapRef.current?.animateToRegion(initialRegion, 300);
       return;
@@ -152,42 +140,50 @@ export function FullMapModal({ visible, onClose }: { visible: boolean; onClose: 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <View style={styles.container}>
-        <MapView
-          ref={mapRef}
-          style={StyleSheet.absoluteFill}
-          provider={PROVIDER_DEFAULT}
-          mapType={mapType}
-          initialRegion={initialRegion}
-          onRegionChangeComplete={(r) => {
-            regionRef.current = r;
-          }}
-        >
-          {routePoints.length > 1 && (
-            <Polyline
-              coordinates={routePoints}
-              strokeColor={colors.primary}
-              strokeWidth={3}
-              geodesic
-            />
-          )}
+        {initialRegion ? (
+          <MapView
+            ref={mapRef}
+            style={StyleSheet.absoluteFill}
+            provider={PROVIDER_GOOGLE}
+            mapType={mapType}
+            initialRegion={initialRegion}
+            onMapReady={() => setMapReady(true)}
+            mapPadding={{ top: 150, right: 0, bottom: 280, left: 0 }}
+            onRegionChangeComplete={(r) => {
+              regionRef.current = r;
+            }}
+          >
+            {routePoints.length > 1 && (
+              <Polyline
+                coordinates={routePoints}
+                strokeColor={colors.primary}
+                strokeWidth={3}
+                geodesic
+              />
+            )}
 
-          {located.map((a, index) => {
-            const isSelected = a.id === selectedActivityId;
-            return (
-              <Marker
-                key={a.id}
-                coordinate={{ latitude: a.location!.lat, longitude: a.location!.lng }}
-                anchor={{ x: 0.5, y: 1 }}
-                onPress={() => setSelectedActivityId(a.id)}
-                // Android necesita true para repintar el pin al seleccionar
-                tracksViewChanges={Platform.OS === 'android'}
-                zIndex={isSelected ? 10 : 1}
-              >
-                <NumberedPin number={index + 1} selected={isSelected} />
-              </Marker>
-            );
-          })}
-        </MapView>
+            {located.map((a, index) => {
+              const isSelected = a.id === selectedActivityId;
+              return (
+                <Marker
+                  key={a.id}
+                  coordinate={{ latitude: a.location!.lat, longitude: a.location!.lng }}
+                  anchor={{ x: 0.5, y: 1 }}
+                  onPress={() => setSelectedActivityId(a.id)}
+                  // Android necesita true para repintar el pin al seleccionar
+                  tracksViewChanges={Platform.OS === 'android'}
+                  zIndex={isSelected ? 10 : 1}
+                >
+                  <NumberedPin number={index + 1} selected={isSelected} />
+                </Marker>
+              );
+            })}
+          </MapView>
+        ) : (
+          <View style={{ marginTop: insets.top + 145, padding: 20 }}>
+            <PlaceMapStatus onNavigate={onClose} />
+          </View>
+        )}
 
         <View style={[styles.header, { top: insets.top + spacing.s2 }]}>
           <Pressable style={styles.headerBtn} onPress={onClose} hitSlop={6}>
@@ -255,6 +251,8 @@ export function FullMapModal({ visible, onClose }: { visible: boolean; onClose: 
 
         <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.s3 }]}>
           <View style={styles.sheetHandle} />
+          {initialRegion && <PlaceMapStatus compact onNavigate={onClose} />}
+          <PlacesAttribution attributions={mapAttributions} />
 
           <View style={styles.sheetHeader}>
             <View style={styles.sheetHeaderInfo}>

@@ -1,97 +1,107 @@
+import { useEffect } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { colors, fonts, fontSize, radius, spacing } from '@/constants/theme';
+import { colors, fonts, radius, spacing } from '@/constants/theme';
 import { usePlacesAutocomplete } from '@/hooks/use-places-autocomplete';
+import { usePlaceLanguage } from '@/hooks/use-place-details';
+import { PlacesStatus } from '@/components/explore/places-status';
+import { PlacesAttribution } from '@/components/explore/places-attribution';
+import type { LatLng, PlaceDetails, PlaceScope } from '@/types/place';
 
-const CITY_TYPES = ['locality', 'administrative_area_level_1', 'country'];
-
-type DestinationInputProps = {
+type Props = {
   value: string;
-  onChange: (v: string) => void;
+  onChangeText: (text: string) => void;
+  onSelectPlace: (place: PlaceDetails) => void;
+  onSelectingChange?: (selecting: boolean) => void;
+  disabled?: boolean;
+  scope?: PlaceScope;
+  center?: LatLng;
 };
-
-export function DestinationInput({ value, onChange }: DestinationInputProps) {
+export function DestinationInput({
+  value,
+  onChangeText,
+  onSelectPlace,
+  onSelectingChange,
+  disabled = false,
+  scope = 'destinations',
+  center,
+}: Props) {
   const { t } = useTranslation();
-  const { setQuery, suggestions, loading, selectPlace } = usePlacesAutocomplete(CITY_TYPES);
-
+  const languageCode = usePlaceLanguage();
+  const search = usePlacesAutocomplete({ scope, languageCode, center, enabled: !disabled });
+  useEffect(() => {
+    onSelectingChange?.(search.selecting);
+    return () => onSelectingChange?.(false);
+  }, [search.selecting, onSelectingChange]);
   return (
-    <View>
-      <View style={styles.box}>
-        <Ionicons name="location-outline" size={18} color={colors.secondary300} />
+    <View style={{ gap: spacing.s2 }}>
+      <View style={styles.inputBox}>
         <TextInput
+          accessibilityLabel={t('places.searchLabel')}
+          editable={!disabled}
           style={styles.input}
-          placeholder={t('trips.form.destinationPlaceholder')}
-          placeholderTextColor={colors.secondary300}
           value={value}
+          placeholder={t('places.searchLabel')}
+          placeholderTextColor={colors.textSecondary}
           onChangeText={(text) => {
-            onChange(text);
-            setQuery(text);
+            onChangeText(text);
+            search.changeQuery(text);
           }}
         />
-        {loading ? <ActivityIndicator size="small" /> : null}
+        {(search.loading || search.selecting) && <ActivityIndicator color={colors.primary700} />}
       </View>
-
-      {suggestions.length > 0 ? (
-        <View style={styles.results}>
-          {suggestions.map((s) => (
-            <Pressable
-              key={s.placeId}
-              style={styles.result}
-              onPress={async () => onChange((await selectPlace(s.placeId)).name)}
-            >
-              <Ionicons name="location-outline" size={18} color={colors.secondary300} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.name} numberOfLines={1}>
-                  {s.mainText}
-                </Text>
-                {s.secondaryText ? (
-                  <Text style={styles.loc} numberOfLines={1}>
-                    {s.secondaryText}
-                  </Text>
-                ) : null}
-              </View>
-            </Pressable>
-          ))}
-        </View>
-      ) : null}
+      {search.suggestions.map((s) => (
+        <Pressable
+          key={s.placeId}
+          accessibilityRole="button"
+          disabled={disabled || search.selecting}
+          style={styles.row}
+          onPress={() => {
+            void search
+              .selectPlace(s.placeId)
+              .then(onSelectPlace)
+              .catch(() => undefined);
+          }}
+        >
+          <Text style={styles.name}>{s.mainText}</Text>
+          <Text style={styles.secondary}>{s.secondaryText}</Text>
+        </Pressable>
+      ))}
+      <PlacesStatus
+        error={search.error}
+        message={
+          search.searched &&
+          !search.loading &&
+          !search.selecting &&
+          !search.suggestions.length &&
+          !search.error
+            ? t('places.noResults')
+            : undefined
+        }
+        onRetry={search.error ? search.retrySearch : undefined}
+      />
+      {search.suggestions.length > 0 && <PlacesAttribution />}
     </View>
   );
 }
-
 const styles = StyleSheet.create({
-  box: {
+  inputBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.s2,
-    backgroundColor: colors.surfacePaper,
     borderWidth: 1,
-    borderColor: colors.textSubtitle,
+    borderColor: colors.secondary100,
     borderRadius: radius.lg,
-    paddingHorizontal: spacing.s4,
-    paddingVertical: spacing.s4,
+    backgroundColor: colors.surfacePaper,
+    paddingHorizontal: 14,
   },
   input: {
     flex: 1,
-    fontFamily: fonts.sansRegular,
-    fontSize: fontSize.base,
+    minHeight: 52,
     color: colors.secondary,
+    fontFamily: fonts.sansRegular,
+    fontSize: 15,
   },
-  results: {
-    marginTop: spacing.s2,
-    backgroundColor: colors.surfacePaper,
-    borderWidth: 1,
-    borderColor: colors.textSubtitle,
-    borderRadius: radius.lg,
-    overflow: 'hidden',
-  },
-  result: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.s3,
-    paddingHorizontal: spacing.s4,
-    paddingVertical: spacing.s3,
-  },
-  name: { fontFamily: fonts.sansSemiBold, fontSize: fontSize.sm, color: colors.secondary },
-  loc: { fontFamily: fonts.sansRegular, fontSize: fontSize.micro, color: colors.secondary300 },
+  row: { padding: 14, minHeight: 56, borderRadius: radius.md, backgroundColor: colors.surfaceAlt },
+  name: { color: colors.secondary, fontFamily: fonts.sansSemiBold },
+  secondary: { color: colors.textSecondary, marginTop: 4 },
 });

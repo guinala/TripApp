@@ -1,6 +1,6 @@
-import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import {
-  ActivityInput,
+  type ActivityInput,
   createActivity,
   listActivitiesByTrip,
   reorderActivities,
@@ -10,125 +10,134 @@ import { ensureDays } from '@/services/days';
 import type { Activity } from '@/types/activity';
 import type { Day } from '@/types/day';
 import type { Trip } from '@/types/trip';
-import i18n from '@/i18n';
+import { usePlaceDetails, usePlaceLanguage } from '@/hooks/use-place-details';
+import { useMapActivities } from '@/hooks/use-map-activities';
+import { useItineraryRefreshStore } from '@/store/itineraryRefreshStore';
+import { placeSessionVersion } from '@/services/place-session';
 
-type TripDetailValue = {
-  trip: Trip;
-  days: Day[];
-  activities: Activity[];
-  loading: boolean;
-  error: string | null;
-  reload: () => Promise<void>;
-  selectedDayId: string | null;
-  addActivity: (input: Omit<ActivityInput, 'orderIndex'>) => Promise<void>;
-  updateActivity: (id: string, input: Omit<ActivityInput, 'orderIndex'>) => Promise<void>;
-  setSelectedDayId: (id: string | null) => void;
-  reorder: (dayId: string, orderedIds: string[]) => Promise<void>;
-};
-
-const TripDetailContext = createContext<TripDetailValue | null>(null);
-
-function fetchTripData(trip: Trip): Promise<[Day[], Activity[]]> {
-  return Promise.all([ensureDays(trip), listActivitiesByTrip(trip.id)]);
-}
-
-export function TripDetailProvider({ trip, children }: { trip: Trip; children: React.ReactNode }) {
-  const [days, setDays] = useState<Day[]>([]);
-  const [activities, setActivities] = useState<Activity[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+function useTripDetailValue(trip: Trip) {
+  const [result, setResult] = useState<{
+    key: string;
+    days: Day[];
+    activities: Activity[];
+    error: string | null;
+  } | null>(null);
+  const [attempt, setAttempt] = useState(0);
   const [selectedDayId, setSelectedDayId] = useState<string | null>(null);
-
-  const addActivity = useCallback(
-    async (input: Omit<ActivityInput, 'orderIndex'>) => {
-      const dayActivities = activities.filter((a) => a.dayId === input.dayId);
-      const created = await createActivity({ ...input, orderIndex: dayActivities.length });
-      setActivities((prev) => [...prev, created]);
-    },
-    [activities],
+  const revision = useItineraryRefreshStore((s) => s.revisions[trip.id] ?? 0);
+  const key = JSON.stringify([trip, revision, attempt]);
+  const current = result?.key === key ? result : null;
+  const days = useMemo(() => current?.days ?? [], [current]);
+  const activities = useMemo(() => current?.activities ?? [], [current]);
+  const loading = !current;
+  const error = current?.error ?? null;
+  const language = usePlaceLanguage();
+  const destinationResolution = usePlaceDetails(trip.destinationPlaceId, language);
+  const scoped = useMemo(
+    () => activities.filter((a) => selectedDayId === null || a.dayId === selectedDayId),
+    [activities, selectedDayId],
   );
-
-  const updateActivity = useCallback(
-    async (id: string, input: Omit<ActivityInput, 'orderIndex'>) => {
-      const updated = await saveActivity(id, input);
-      setActivities((prev) => prev.map((item) => (item.id === id ? updated : item)));
-    },
-    [],
-  );
-
+  const locations = useMapActivities(scoped, language);
   const reload = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const [loadedDays, loadedActivities] = await fetchTripData(trip);
-      setDays(loadedDays);
-      setActivities(loadedActivities);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : i18n.t('errors.loadItinerary'));
-    } finally {
-      setLoading(false);
-    }
-  }, [trip]);
-
-  const reorder = useCallback(
-    async (dayId: string, orderedIds: string[]) => {
-      setActivities((prev) => {
-        const byId = new Map(prev.map((a) => [a.id, a]));
-        const reordered = orderedIds.map((id, i) => ({ ...byId.get(id)!, orderIndex: i }));
-        return [...prev.filter((a) => a.dayId !== dayId), ...reordered];
-      });
-      try {
-        await reorderActivities(orderedIds);
-      } catch {
-        reload();
-      }
-    },
-    [reload],
-  );
+    setAttempt((value) => value + 1);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    void (async () => {
       try {
-        const [loadedDays, loadedActivities] = await fetchTripData(trip);
+        const loadedDays = await ensureDays(trip);
+        const loadedActivities = await listActivitiesByTrip(trip.id);
         if (cancelled) return;
-        setDays(loadedDays);
-        setActivities(loadedActivities);
-        setError(null);
+        setResult({ key, days: loadedDays, activities: loadedActivities, error: null });
+        setSelectedDayId((id) => (loadedDays.some((day) => day.id === id) ? id : null));
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : i18n.t('errors.loadItinerary'));
-      } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled)
+          setResult({
+            key,
+            days: [],
+            activities: [],
+            error: e instanceof Error ? e.message : 'load',
+          });
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [trip]);
+  }, [trip, key]);
 
-  return (
-    <TripDetailContext.Provider
-      value={{
-        trip,
-        days,
-        activities,
-        loading,
-        error,
-        reload,
-        selectedDayId,
-        setSelectedDayId,
-        addActivity,
-        updateActivity,
-        reorder,
-      }}
-    >
-      {children}
-    </TripDetailContext.Provider>
-  );
+  const addActivity = async (input: Omit<ActivityInput, 'orderIndex'>) => {
+    const epoch = placeSessionVersion();
+    const orderIndex =
+      Math.max(-1, ...activities.filter((a) => a.dayId === input.dayId).map((a) => a.orderIndex)) +
+      1;
+    const created = await createActivity({ ...input, orderIndex });
+    if (epoch === placeSessionVersion())
+      setResult((previous) =>
+        previous?.key === key
+          ? { ...previous, activities: [...previous.activities, created] }
+          : previous,
+      );
+  };
+
+  const updateActivity = async (id: string, input: Omit<ActivityInput, 'orderIndex'>) => {
+    const epoch = placeSessionVersion();
+    const updated = await saveActivity(id, input);
+    if (epoch === placeSessionVersion())
+      setResult((previous) =>
+        previous?.key === key
+          ? { ...previous, activities: previous.activities.map((a) => (a.id === id ? updated : a)) }
+          : previous,
+      );
+  };
+
+  const reorder = async (dayId: string, orderedIds: string[]) => {
+    const own = activities.filter((a) => a.dayId === dayId);
+    if (
+      new Set(orderedIds).size !== own.length ||
+      orderedIds.length !== own.length ||
+      orderedIds.some((id) => !own.some((a) => a.id === id))
+    )
+      throw new Error('Orden inválido');
+    await reorderActivities(orderedIds);
+    await reload();
+  };
+
+  return {
+    trip,
+    days,
+    activities,
+    loading,
+    error,
+    reload,
+    selectedDayId,
+    setSelectedDayId,
+    addActivity,
+    updateActivity,
+    reorder,
+    destinationResolution,
+    retryDestination: destinationResolution.retry,
+    mapActivities: locations.mapActivities,
+    missingLocations: locations.missingLocations,
+    locationsLoading: locations.loading,
+    locationFailures: locations.failures,
+    retryActivityLocations: locations.retry,
+    mapAttributions: [
+      ...(destinationResolution.place?.attributions ?? []),
+      ...locations.attributions,
+    ],
+  };
 }
 
-export function useTripDetail(): TripDetailValue {
-  const ctx = useContext(TripDetailContext);
-  if (!ctx) throw new Error('useTripDetail debe usarse dentro de <TripDetailProvider>');
-  return ctx;
+const TripDetailContext = createContext<ReturnType<typeof useTripDetailValue> | null>(null);
+
+export function TripDetailProvider({ trip, children }: { trip: Trip; children: React.ReactNode }) {
+  const value = useTripDetailValue(trip);
+  return <TripDetailContext.Provider value={value}>{children}</TripDetailContext.Provider>;
+}
+
+export function useTripDetail() {
+  const context = useContext(TripDetailContext);
+  if (!context) throw new Error('useTripDetail requiere TripDetailProvider');
+  return context;
 }

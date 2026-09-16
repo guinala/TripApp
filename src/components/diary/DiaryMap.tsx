@@ -42,6 +42,7 @@ export function DiaryMap({ photos, onPressPhoto, style }: DiaryMapProps) {
 
   const initialRegion = useMemo(() => regionForPoints(located.map((p) => p.location!)), [located]);
 
+  if (!initialRegion) return null;
   return (
     <View style={[styles.wrapper, style]}>
       <MapView

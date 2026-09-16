@@ -3,4 +3,7 @@ export type UserStats = {
   countriesCount: number;
   countryCodes: string[];
   kilometers: number | null;
+  unresolvedDestinationsCount: number;
+  resolutionFailures: number;
+  kilometersPartial: boolean;
 };

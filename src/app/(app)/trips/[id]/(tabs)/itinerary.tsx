@@ -1,5 +1,6 @@
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
-import { colors, fonts, fontSize, spacing } from '@/constants/theme';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { colors, spacing } from '@/constants/theme';
+import { PlacesStatus } from '@/components/explore/PlacesStatus';
 import { DaySection } from '@/components/sections/DaySection';
 import { useTripDetail } from '@/context/TripDetailContext';
 import { useState } from 'react';
@@ -8,7 +9,7 @@ import { NestableScrollContainer } from 'react-native-reanimated-drag-list';
 import type { Activity } from '@/types/activity';
 
 export default function ItineraryScreen() {
-  const { days, activities, selectedDayId, loading, error, reorder } = useTripDetail();
+  const { days, activities, selectedDayId, loading, error, reload, reorder } = useTripDetail();
   const [targetDayId, setTargetDayId] = useState<string | null>(null);
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
 
@@ -21,7 +22,7 @@ export default function ItineraryScreen() {
   if (error)
     return (
       <View style={styles.centered}>
-        <Text style={styles.error}>{error}</Text>
+        <PlacesStatus error={error} onRetry={reload} />
       </View>
     );
 
@@ -66,5 +67,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.surfaceCream,
   },
-  error: { fontFamily: fonts.sansRegular, fontSize: fontSize.body, color: colors.danger },
 });

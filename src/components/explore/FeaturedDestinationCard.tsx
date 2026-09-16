@@ -2,7 +2,7 @@ import { Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import type { EditorialDestination } from '@/types/destination';
 import { DestinationCard } from './DestinationCard';
-import { ui } from './places-ui';
+import { ui } from './PlacesUI';
 
 export function FeaturedDestinationCard({
   destination,

@@ -1,8 +1,8 @@
 import { useTripRecord } from '@/hooks/use-trip-record';
 import { usePlaceDetails, usePlaceLanguage } from '@/hooks/use-place-details';
-import { PlacesStatus } from '@/components/explore/places-status';
-import { PlacesAttribution } from '@/components/explore/places-attribution';
-import { PlacesScreen } from '@/components/explore/places-ui';
+import { PlacesStatus } from '@/components/explore/PlacesStatus';
+import { PlacesAttribution } from '@/components/explore/PlacesAttribution';
+import { PlacesScreen } from '@/components/explore/PlacesUI';
 import { View, Text, Alert, StyleSheet, Platform, Pressable } from 'react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';

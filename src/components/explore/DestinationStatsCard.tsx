@@ -2,8 +2,8 @@ import { Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useWeather } from '@/hooks/use-weather';
 import type { LatLng } from '@/types/place';
-import { PlacesStatus } from './places-status';
-import { ui } from './places-ui';
+import { PlacesStatus } from './PlacesStatus';
+import { ui } from './PlacesUI';
 
 export function DestinationStatsCard({ location }: { location: LatLng | null }) {
   const { t } = useTranslation();

@@ -5,9 +5,9 @@ import { useTranslation } from 'react-i18next';
 import { useTripRecord } from '@/hooks/use-trip-record';
 import { useTripStore } from '@/store/tripStore';
 import { DestinationInput } from '@/components/trips/DestinationInput';
-import { PlacesScreen, PlacesButton, ui } from '@/components/explore/places-ui';
-import { PlacesStatus } from '@/components/explore/places-status';
-import { PlacesAttribution } from '@/components/explore/places-attribution';
+import { PlacesScreen, PlacesButton, ui } from '@/components/explore/PlacesUI';
+import { PlacesStatus } from '@/components/explore/PlacesStatus';
+import { PlacesAttribution } from '@/components/explore/PlacesAttribution';
 import { usePlaceDetails, usePlaceLanguage } from '@/hooks/use-place-details';
 import type { Trip } from '@/types/trip';
 

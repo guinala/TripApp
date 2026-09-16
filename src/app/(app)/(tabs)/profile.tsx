@@ -1,3 +1,4 @@
+import { PlacesStatus } from '@/components/explore/PlacesStatus';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -36,30 +37,39 @@ export default function ProfileScreen() {
   const loadProfile = useProfileStore((s) => s.load);
   const trips = useTripStore((s) => s.trips);
 
-  const { stats, reload } = useUserStats(userId);
+  const { stats, reload, loading: statsLoading, error: statsError } = useUserStats(userId);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (userId && !profile) loadProfile(userId);
   }, [userId, profile, loadProfile]);
 
-  // Un reinstall o un segundo dispositivo recuperan el idioma desde la BD,
-  // pisando la caché local.
   useEffect(() => {
     if (profile) syncLanguage(profile.preferredLanguage);
   }, [profile]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([userId ? loadProfile(userId) : null, reload()]);
-    setRefreshing(false);
+    reload();
+    try {
+      if (userId) await loadProfile(userId);
+    } finally {
+      setRefreshing(false);
+    }
   }, [userId, loadProfile, reload]);
 
   const numberLocale = i18n.language === 'es' ? 'es-ES' : 'en-US';
   const statItems = useMemo(
     () => [
       { value: String(stats?.tripCount ?? '—'), label: t('profile.stats.trips') },
-      { value: String(stats?.countriesCount ?? '—'), label: t('profile.stats.countries') },
+      {
+        value: stats?.unresolvedDestinationsCount
+          ? stats.countriesCount > 0
+            ? `${stats.countriesCount}+`
+            : '—'
+          : String(stats?.countriesCount ?? '—'),
+        label: t('profile.stats.countries'),
+      },
       {
         value: stats?.kilometers != null ? stats.kilometers.toLocaleString(numberLocale) : '—',
         label: t('profile.stats.kilometers'),
@@ -84,7 +94,7 @@ export default function ProfileScreen() {
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={<RefreshControl refreshing={refreshing || statsLoading} onRefresh={onRefresh} />}
       >
         <View style={styles.configRow}>
           <Pressable
@@ -108,6 +118,21 @@ export default function ProfileScreen() {
         </View>
 
         <StatsPill items={statItems} />
+        <PlacesStatus
+          loading={statsLoading}
+          error={statsError}
+          onRetry={statsError ? reload : undefined}
+        />
+        {!!stats?.unresolvedDestinationsCount && (
+          <PlacesStatus
+            message={t('places.unresolvedCountries', { count: stats.unresolvedDestinationsCount })}
+            onRetry={reload}
+          />
+        )}
+        {!!stats?.resolutionFailures && (
+          <PlacesStatus message={t('places.statsResolutionFailed')} onRetry={reload} />
+        )}
+        {stats?.kilometersPartial && <PlacesStatus message={t('places.partialKilometers')} />}
 
         <View style={styles.mapSection}>
           <Text style={styles.mapTitle}>

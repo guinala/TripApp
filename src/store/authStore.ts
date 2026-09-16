@@ -1,11 +1,21 @@
-import { create } from 'zustand';
-import type { Session, User } from '@supabase/supabase-js';
-import { supabase } from '@/services/supabase';
-import * as WebBrowser from 'expo-web-browser';
-import * as QueryParams from 'expo-auth-session/build/QueryParams';
-import * as Linking from 'expo-linking';
-import { GoogleSignin } from '@react-native-google-signin/google-signin'
-import { getAuthCallbackUrl } from '@/constants/auth';
+import { setPlaceOwner } from "@/services/place-session";
+import { useItineraryRefreshStore } from "@/store/itineraryRefreshStore";
+import { create } from "zustand";
+import type { Session, User } from "@supabase/supabase-js";
+import { supabase } from "@/services/supabase";
+import * as WebBrowser from "expo-web-browser";
+import * as QueryParams from "expo-auth-session/build/QueryParams";
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
+import { getAuthCallbackUrl } from "@/constants/auth";
+
+let unsubscribeAuth: (() => void) | undefined;
+let previousOwner: string | null = null;
+
+function syncPlaceOwner(id: string | null) {
+  setPlaceOwner(id);
+  if (previousOwner !== id) useItineraryRefreshStore.getState().reset();
+  previousOwner = id;
+}
 
 type AuthState = {
   session: Session | null;
@@ -26,9 +36,10 @@ type AuthState = {
 };
 
 GoogleSignin.configure({
-  webClientId: '1047320188759-3qgfgf8e2br33a35mfkfakotc6faf1nd.apps.googleusercontent.com', 
+  webClientId:
+    "1047320188759-3qgfgf8e2br33a35mfkfakotc6faf1nd.apps.googleusercontent.com",
   // iosClientId: 'TU_IOS_CLIENT_ID.apps.googleusercontent.com', // Android no hace falta
-})
+});
 
 export const useAuthStore = create<AuthState>((set) => ({
   session: null,
@@ -36,78 +47,84 @@ export const useAuthStore = create<AuthState>((set) => ({
   loading: true,
 
   initialize: async () => {
-    // 1. Lee la sesión que Supabase ya guardó en AsyncStorage (Fase 1)
+    // 1. Lee la sesión que Supabase ya guardó en AsyncStorage
     const { data } = await supabase.auth.getSession();
-    set({ session: data.session, user: data.session?.user ?? null, loading: false });
+    syncPlaceOwner(data.session?.user.id ?? null);
+    set({
+      session: data.session,
+      user: data.session?.user ?? null,
+      loading: false,
+    });
 
     // 2. Se suscribe a cualquier cambio futuro de sesión
-    supabase.auth.onAuthStateChange((_event, session) => {
-      set({ session, user: session?.user ?? null });
-    });
+    unsubscribeAuth?.();
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        syncPlaceOwner(session?.user.id ?? null);
+        set({ session, user: session?.user ?? null });
+      },
+    );
+    unsubscribeAuth = () => listener.subscription.unsubscribe();
   },
 
   signIn: async (email, password) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
     if (error) throw error;
   },
 
   signInWithGoogle: async () => {
     try {
-      // 1. Intentar inicio de sesión nativo con Google Play Services (Nativo Android)
+      // 1. Intentar inicio de sesión nativo con Google Play Services (Android Only)
       await GoogleSignin.hasPlayServices();
       const response = await GoogleSignin.signIn();
       if (response.data?.idToken) {
         const { error } = await supabase.auth.signInWithIdToken({
-          provider: 'google',
+          provider: "google",
           token: response.data.idToken,
         });
         if (error) throw error;
         return;
       }
     } catch (nativeError: any) {
-      console.warn('[GoogleSignin] Fallback a navegador OAuth:', nativeError?.message ?? nativeError);
+      console.warn(
+        "[GoogleSignin] Fallback a navegador OAuth:",
+        nativeError?.message ?? nativeError,
+      );
     }
 
     // 2. Fallback mediante navegador WebBrowser usando el esquema 'tripmate'
     const redirectTo = getAuthCallbackUrl();
 
-    const { data, error } =
-      await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo,
-          skipBrowserRedirect: true,
-        },
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo,
+        skipBrowserRedirect: true,
+      },
     });
 
     if (error) throw error;
 
-    const result =
-      await WebBrowser.openAuthSessionAsync(
-        data.url,
-        redirectTo
-      );
+    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
 
-    if (result.type !== 'success') {
+    if (result.type !== "success") {
       return;
     }
 
-    const { params, errorCode } =
-      QueryParams.getQueryParams(result.url);
+    const { params, errorCode } = QueryParams.getQueryParams(result.url);
 
     if (errorCode) {
       throw new Error(errorCode);
     }
 
-    if (
-      params.access_token &&
-      params.refresh_token
-    ) {
-      const { error: sessionError } =
-        await supabase.auth.setSession({
-          access_token: params.access_token,
-          refresh_token: params.refresh_token,
-        });
+    if (params.access_token && params.refresh_token) {
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: params.access_token,
+        refresh_token: params.refresh_token,
+      });
 
       if (sessionError) {
         throw sessionError;
@@ -117,10 +134,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
 
     if (params.code) {
-      const { error: exchangeError } =
-        await supabase.auth.exchangeCodeForSession(
-          params.code,
-        );
+      const { error: exchangeError } = await supabase.auth
+        .exchangeCodeForSession(params.code);
 
       if (exchangeError) {
         throw exchangeError;
@@ -129,9 +144,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       return;
     }
 
-    throw new Error(
-      'Google no ha devuelto una sesión válida.',
-    );
+    throw new Error("Google no ha devuelto una sesión válida.");
   },
 
   signUp: async (params: {
@@ -163,7 +176,9 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   resetPassword: async (email: string) => {
     const redirectTo = getAuthCallbackUrl();
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo,
+    });
     if (error) throw error;
   },
 }));

@@ -10,10 +10,10 @@ import { useEditorialDestinations } from '@/hooks/use-editorial-destinations';
 import { useDestinationFilter } from '@/hooks/use-destination-filter';
 import { CONTINENTS } from '@/constants/destinations';
 import type { Continent } from '@/types/destination';
-import { PlaceResultRow } from '@/components/explore/place-result-row';
-import { PlaceSearchResults } from '@/components/explore/place-search-results';
-import { PlacesStatus } from '@/components/explore/places-status';
-import { PlacesButton, ui } from '@/components/explore/places-ui';
+import { PlaceResultRow } from '@/components/explore/PlaceResultRow';
+import { PlaceSearchResults } from '@/components/explore/PlaceSearchResults';
+import { PlacesStatus } from '@/components/explore/PlacesStatus';
+import { PlacesButton, ui } from '@/components/explore/PlacesUI';
 import { DestinationCard } from '@/components/explore/DestinationCard';
 import { FeaturedDestinationCard } from '@/components/explore/FeaturedDestinationCard';
 export default function ExploreScreen() {

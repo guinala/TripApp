@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -159,6 +159,65 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "trips"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      explore_destinations: {
+        Row: {
+          continent: string
+          country: string
+          country_code: string | null
+          cover_query: string
+          description_en: string | null
+          description_es: string
+          featured: boolean
+          id: string
+          name: string
+          place_id: string | null
+          published: boolean
+          sort_order: number
+          types: string[]
+          updated_at: string
+        }
+        Insert: {
+          continent: string
+          country: string
+          country_code?: string | null
+          cover_query: string
+          description_en?: string | null
+          description_es?: string
+          featured?: boolean
+          id: string
+          name: string
+          place_id?: string | null
+          published?: boolean
+          sort_order?: number
+          types?: string[]
+          updated_at?: string
+        }
+        Update: {
+          continent?: string
+          country?: string
+          country_code?: string | null
+          cover_query?: string
+          description_en?: string | null
+          description_es?: string
+          featured?: boolean
+          id?: string
+          name?: string
+          place_id?: string | null
+          published?: boolean
+          sort_order?: number
+          types?: string[]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "explore_destinations_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "place_references"
+            referencedColumns: ["google_place_id"]
           },
         ]
       }
@@ -367,6 +426,23 @@ export type Database = {
       consume_places_request: {
         Args: { p_action: string; p_user_id: string }
         Returns: boolean
+      }
+      replace_packing_items: {
+        Args: { p_items: Json; p_trip_id: string }
+        Returns: {
+          category: string
+          checked: boolean
+          created_at: string
+          id: string
+          name: string
+          trip_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "packing_items"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
     }
     Enums: {

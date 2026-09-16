@@ -2,7 +2,7 @@
   "expo": {
     "name": "TripMate",
     "slug": "TripMate",
-    "version": "0.4.0",
+    "version": "0.5.0",
     "orientation": "portrait",
     "icon": "./assets/images/TripMateIcon.png",
     "scheme": "tripmate",
@@ -12,11 +12,6 @@
     },
     "android": {
       "versionCode": 14,
-      "config": {
-        "googleMaps": {
-          "apiKey": "AIzaSyDxO37sUdi93ky2NVyPBc1WKhjAjOqXllo"
-        }
-      },
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -48,7 +43,14 @@
       "expo-web-browser",
       "expo-sharing",
       "expo-localization",
-      ["expo-navigation-bar", { "hidden": true, "style": "light", "enforceContrast": false }],
+      [
+        "expo-navigation-bar",
+        {
+          "hidden": true,
+          "style": "light",
+          "enforceContrast": false
+        }
+      ],
       "@react-native-google-signin/google-signin",
       "expo-secure-store"
     ],

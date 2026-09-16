@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
-import { CurrentWeather, getCurrentWeather } from '@/services/weather';
-import i18n from '@/i18n';
+import { usePlaceLanguage } from "@/hooks/use-place-details";
+import { useEffect, useMemo, useState } from "react";
+import { CurrentWeather, getCurrentWeather } from "@/services/weather";
+import i18n from "@/i18n";
 
 type WeatherState = {
   weather: CurrentWeather | null;
@@ -14,21 +15,22 @@ type WeatherResult = {
   error: string | null;
 };
 
-// Sin setState síncrono en el efecto (react-hooks/set-state-in-effect):
-// el efecto solo guarda el resultado con la clave de su petición y
-// `loading` se deriva en el render comparando claves.
 const IDLE: WeatherState = { weather: null, loading: false, error: null };
 
-export function useWeather(lat: number | null, lng: number | null): WeatherState {
+export function useWeather(
+  lat: number | null,
+  lng: number | null,
+): WeatherState {
+  const language = usePlaceLanguage();
   const [result, setResult] = useState<WeatherResult | null>(null);
 
-  const key = lat != null && lng != null ? `${lat},${lng}` : null;
+  const key = lat != null && lng != null ? `${lat},${lng}|${language}` : null;
 
   useEffect(() => {
     if (key == null || lat == null || lng == null) return;
 
     let cancelled = false;
-    getCurrentWeather(lat, lng)
+    getCurrentWeather(lat, lng, language)
       .then((weather) => {
         if (!cancelled) setResult({ key, weather, error: null });
       })
@@ -37,7 +39,9 @@ export function useWeather(lat: number | null, lng: number | null): WeatherState
           setResult({
             key,
             weather: null,
-            error: e instanceof Error ? e.message : i18n.t('errors.loadWeather'),
+            error: e instanceof Error
+              ? e.message
+              : i18n.t("errors.loadWeather"),
           });
         }
       });
@@ -45,7 +49,7 @@ export function useWeather(lat: number | null, lng: number | null): WeatherState
     return () => {
       cancelled = true;
     };
-  }, [key, lat, lng]);
+  }, [key, lat, lng, language]);
 
   return useMemo(() => {
     if (key == null) return IDLE;

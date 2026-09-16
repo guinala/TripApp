@@ -1,6 +1,5 @@
 import type { ConfigContext, ExpoConfig } from "expo/config";
-// Expo proporciona en config el contenido de tu app.json actual.
-// Estas claves pertenecen a los SDK móviles; no uses la clave secreta del servidor.
+
 export default ({ config }: ConfigContext): ExpoConfig => {
     const plugins = config.plugins ?? [];
     const maps = plugins.find(

@@ -1,216 +1,118 @@
-import { Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
-import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { useEffect, useState } from 'react';
+import { Share, Text } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { colors, fonts, fontSize, spacing } from '@/constants/theme';
-import { getDestination } from '@/constants/destinations';
-import { DestinationStatsCard } from '@/components/explore/DestinationStatsCard';
-import { HighlightCard } from '@/components/explore/HighlightCard';
-import { useUnsplashCover } from '@/hooks/use-unsplash-photos';
+import { getEditorialDestination } from '@/services/editorial-destinations';
+import type { EditorialDestination } from '@/types/destination';
+import { usePlaceDetails, usePlaceLanguage } from '@/hooks/use-place-details';
+import { PlacesScreen, PlacesButton, ui } from '@/components/explore/places-ui';
+import { PlacesStatus } from '@/components/explore/places-status';
+import { PlaceDetailContent } from '@/components/explore/place-detail-content';
+import { DestinationCard } from '@/components/explore/DestinationCard';
+import { useAuthStore } from '@/store/authStore';
 
-const HERO_HEIGHT = 314;
-const STATS_OVERLAP = -59;
-
-export default function DestinationDetailScreen() {
+function EditorialBody({ destination }: { destination: EditorialDestination }) {
   const { t } = useTranslation();
-  const router = useRouter();
-  const insets = useSafeAreaInsets();
-  const { id } = useLocalSearchParams<{ id: string }>();
-
-  const destination = id ? getDestination(id) : undefined;
-  const { photo } = useUnsplashCover(destination?.coverQuery ?? null);
-
-  if (!destination) {
-    return <Redirect href="/(app)/(tabs)/explore" />;
-  }
-
-  const handleShare = () => {
-    Share.share({
-      message: t('destination.shareMessage', {
-        name: destination.name,
-        country: destination.country,
-      }),
-    });
-  };
-
-  const handleAddToTrip = () => {
-    router.push({
-      pathname: '/trips/new',
-      params: { destination: `${destination.name}, ${destination.country}` },
-    });
-  };
-
-  const footerHeight = 54 + spacing.s3 * 2 + insets.bottom;
-
+  const resolution = usePlaceDetails(destination.placeId, usePlaceLanguage());
+  const [shareError, setShareError] = useState<string | null>(null);
   return (
-    <View style={styles.screen}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: footerHeight + spacing.s5 }}
-      >
-        <View style={styles.hero}>
-          {photo && (
-            <Image
-              source={{ uri: photo.regularUrl }}
-              style={StyleSheet.absoluteFill}
-              contentFit="cover"
-              transition={250}
-            />
-          )}
-          <LinearGradient
-            colors={['rgba(5,5,5,0.1)', 'rgba(0,0,0,0.45)']}
-            style={StyleSheet.absoluteFill}
+    <>
+      <DestinationCard
+        destination={destination}
+        onPress={() => {
+          void Share.share({ message: `${destination.name}, ${destination.country}` }).catch(() =>
+            setShareError('share'),
+          );
+        }}
+      />
+      <PlacesStatus error={shareError} />
+      {resolution.place ? (
+        <PlaceDetailContent place={resolution.place} editorial={destination} />
+      ) : (
+        <>
+          <Text style={ui.text} accessibilityLanguage={destination.descriptionLanguage}>
+            {destination.description}
+          </Text>
+          <Text style={ui.text}>
+            {t('places.textLanguage', { language: destination.descriptionLanguage.toUpperCase() })}
+          </Text>
+          <PlacesStatus
+            loading={resolution.status === 'loading'}
+            error={resolution.error}
+            onRetry={resolution.error ? resolution.retry : undefined}
           />
-
-          <View style={[styles.heroIcons, { paddingTop: insets.top + spacing.s2 }]}>
-            <Pressable onPress={() => router.back()} hitSlop={10}>
-              <Ionicons name="chevron-back" size={32} color={colors.white} />
-            </Pressable>
-            <Pressable onPress={handleShare} hitSlop={10}>
-              <Ionicons name="share-outline" size={28} color={colors.white} />
-            </Pressable>
-          </View>
-
-          <View style={styles.heroInfo}>
-            <Text style={styles.heroPlace}>
-              {destination.continent} · {destination.country}
-            </Text>
-            <Text style={styles.heroTitle}>{destination.name}</Text>
-          </View>
-        </View>
-
-        <View style={styles.statsWrapper}>
-          <DestinationStatsCard destination={destination} />
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
-            {t('destination.about')}{' '}
-            <Text style={styles.sectionTitleAccent}>{destination.name}</Text>
-          </Text>
-          <Text style={styles.description}>{destination.description}</Text>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, styles.sectionTitlePadded]}>
-            {t('destination.highlights')}
-          </Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.highlightsRow}
-          >
-            {destination.highlights.map((h) => (
-              <HighlightCard key={h.name} highlight={h} />
-            ))}
-          </ScrollView>
-        </View>
-      </ScrollView>
-
-      <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.s3 }]}>
-        <Pressable style={styles.addButton} onPress={handleAddToTrip}>
-          <Text style={styles.addButtonText}>{t('destination.addToTrip')}</Text>
-        </Pressable>
-      </View>
-    </View>
+          <PlacesButton
+            title={t('places.createTrip')}
+            onPress={() =>
+              router.push({
+                pathname: '/trips/new',
+                params: destination.placeId
+                  ? { placeId: destination.placeId }
+                  : { destination: `${destination.name}, ${destination.country}` },
+              })
+            }
+          />
+          <PlacesButton
+            title={t('places.searchCity')}
+            secondary
+            onPress={() =>
+              router.push({
+                pathname: '/(app)/(tabs)/explore',
+                params: {
+                  query: `${destination.name}, ${destination.country}`,
+                  queryKey: String(Date.now()),
+                },
+              })
+            }
+          />
+        </>
+      )}
+    </>
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.surfaceCream,
-  },
-  hero: {
-    height: HERO_HEIGHT,
-    backgroundColor: colors.surfaceAlt,
-    justifyContent: 'space-between',
-  },
-  heroIcons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 15,
-  },
-  heroInfo: {
-    paddingHorizontal: 20,
-    paddingVertical: 23,
-    gap: 10,
-  },
-  heroPlace: {
-    fontFamily: fonts.sansMedium,
-    fontSize: fontSize.base,
-    lineHeight: fontSize.base * 0.95 + 2,
-    color: colors.white,
-  },
-  heroTitle: {
-    fontFamily: fonts.serifItalic,
-    fontSize: fontSize.textMd,
-    lineHeight: fontSize.textMd * 0.95 + 4,
-    color: colors.white,
-    textShadowColor: 'rgba(0,0,0,0.69)',
-    textShadowOffset: { width: 0, height: 4 },
-    textShadowRadius: 4,
-  },
-  statsWrapper: {
-    marginTop: STATS_OVERLAP,
-    paddingHorizontal: 21,
-  },
-  section: {
-    marginTop: spacing.s8,
-    gap: 10,
-  },
-  sectionTitle: {
-    paddingHorizontal: 25,
-    fontFamily: fonts.serifItalic,
-    fontSize: fontSize.textSm,
-    lineHeight: fontSize.textSm * 0.95 + 4,
-    color: colors.textPrimary,
-  },
-  sectionTitleAccent: {
-    color: colors.primary,
-  },
-  sectionTitlePadded: {
-    paddingHorizontal: 25,
-  },
-  description: {
-    paddingHorizontal: 25,
-    fontFamily: fonts.sansRegular,
-    fontSize: fontSize.base,
-    lineHeight: fontSize.base * 1.5,
-    color: colors.secondary300,
-  },
-  highlightsRow: {
-    paddingHorizontal: 25,
-    gap: 10,
-  },
-  footer: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    paddingHorizontal: 25,
-    paddingTop: spacing.s3,
-    backgroundColor: colors.surfaceCream,
-  },
-  addButton: {
-    height: 54,
-    borderRadius: 10,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: colors.primary,
-    shadowOpacity: 0.5,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 2,
-    elevation: 4,
-  },
-  addButtonText: {
-    fontFamily: fonts.sansExtraBold,
-    fontSize: 16,
-    color: colors.primary50,
-  },
-});
+export default function EditorialScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const { t } = useTranslation(),
+    language = usePlaceLanguage();
+  const owner = useAuthStore((s) => s.user?.id);
+  const [attempt, setAttempt] = useState(0);
+  const key = JSON.stringify([id, language, owner, attempt]);
+  const [result, setResult] = useState<{
+    key: string;
+    destination: EditorialDestination | null;
+    error: string | null;
+  } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getEditorialDestination(id, language)
+      .then((destination) => {
+        if (!cancelled) setResult({ key, destination, error: null });
+      })
+      .catch((e) => {
+        if (!cancelled)
+          setResult({ key, destination: null, error: e instanceof Error ? e.message : 'load' });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [id, language, key]);
+
+  const current = result?.key === key ? result : null;
+
+  return (
+    <PlacesScreen title={t('places.editorial')}>
+      {current?.destination ? (
+        <EditorialBody key={id} destination={current.destination} />
+      ) : (
+        <PlacesStatus
+          loading={!current}
+          error={current?.error}
+          message={current && !current.error ? t('places.notPublished') : undefined}
+          onRetry={current?.error ? () => setAttempt((a) => a + 1) : undefined}
+        />
+      )}
+    </PlacesScreen>
+  );
+}

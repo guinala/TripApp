@@ -1,118 +1,77 @@
-import { Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { Linking, Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, fonts, fontSize, radius, spacing } from '@/constants/theme';
-import { PRICE_META } from '@/constants/destinations';
+import { useTranslation } from 'react-i18next';
 import { useUnsplashCover } from '@/hooks/use-unsplash-photos';
-import i18n from '@/i18n';
-import type { Destination } from '@/types/destination';
+import type { EditorialDestination } from '@/types/destination';
+import { colors, fonts } from '@/constants/theme';
+import { DESTINATION_TYPE_LABELS } from '@/constants/destinations';
 
-type DestinationCardProps = {
-  destination: Destination;
+export function DestinationCard({
+  destination,
+  onPress,
+  style,
+}: {
+  destination: EditorialDestination;
   onPress: () => void;
   style?: ViewStyle;
-};
-
-export function formatRating(rating: number): string {
-  const text = rating.toFixed(1);
-  return i18n.language === 'es' ? text.replace('.', ',') : text;
-}
-
-export function DestinationCard({ destination, onPress, style }: DestinationCardProps) {
+}) {
+  const { t } = useTranslation();
   const { photo } = useUnsplashCover(destination.coverQuery);
-  const price = PRICE_META[destination.priceRange];
-
   return (
-    <View style={[styles.shadowWrapper, style]}>
-      <Pressable onPress={onPress} style={styles.card}>
-        <View style={styles.imageWrapper}>
-          {photo && (
+    <View style={[styles.card, style]}>
+      <Pressable accessibilityRole="button" onPress={onPress}>
+        <View style={styles.picture}>
+          {photo ? (
             <Image
               source={{ uri: photo.smallUrl }}
               style={StyleSheet.absoluteFill}
               contentFit="cover"
-              transition={200}
             />
+          ) : (
+            <Ionicons name="compass-outline" size={40} color={colors.primary700} />
           )}
         </View>
-        <View style={styles.info}>
-          <View style={styles.titleRow}>
-            <Text style={styles.name} numberOfLines={1}>
-              {destination.name}
-            </Text>
-            <View style={styles.rating}>
-              <Ionicons name="star" size={12} color={colors.accent} />
-              <Text style={styles.ratingText}>{formatRating(destination.rating)}</Text>
-            </View>
-          </View>
-          <View style={styles.metaRow}>
-            <Text style={styles.meta} numberOfLines={1}>
-              {destination.country} · {destination.continent}
-            </Text>
-            <Text style={styles.price}>{price.symbol}</Text>
-          </View>
+        <View style={styles.body}>
+          <Text style={styles.name}>{destination.name}</Text>
+          <Text style={styles.country}>{destination.country}</Text>
+          <Text style={styles.tags}>
+            {destination.types.map((type) => t(DESTINATION_TYPE_LABELS[type])).join(' · ')}
+          </Text>
         </View>
       </Pressable>
+      {photo && (
+        <Pressable
+          accessibilityRole="link"
+          onPress={() => {
+            void Linking.openURL(photo.authorLink).catch(() => undefined);
+          }}
+          style={styles.credit}
+        >
+          <Text style={styles.country}>{photo.authorName} · Unsplash</Text>
+        </Pressable>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  shadowWrapper: {
-    borderRadius: radius.lg,
+  card: {
+    borderRadius: 18,
     backgroundColor: colors.surfacePaper,
-    shadowColor: colors.secondary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 4,
+    borderWidth: 1,
+    borderColor: colors.secondary100,
+    overflow: 'hidden',
   },
-  card: { borderRadius: radius.lg, overflow: 'hidden' },
-  imageWrapper: {
-    height: 120.5,
+  picture: {
+    height: 124,
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: colors.surfaceAlt,
   },
-  info: {
-    padding: 10,
-    gap: spacing.s1,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.s2,
-  },
-  name: {
-    flex: 1,
-    fontFamily: fonts.serifItalic,
-    fontSize: fontSize.title,
-    color: colors.textPrimary,
-  },
-  rating: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.s1,
-  },
-  ratingText: {
-    fontFamily: fonts.sansMedium,
-    fontSize: fontSize.label,
-    color: colors.textPrimary,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.s2,
-  },
-  meta: {
-    flex: 1,
-    fontFamily: fonts.sansRegular,
-    fontSize: fontSize.nano,
-    color: colors.secondary300,
-  },
-  price: {
-    fontFamily: fonts.sansMedium,
-    fontSize: fontSize.nano,
-    color: colors.secondary300,
-  },
+  body: { padding: 12, gap: 6 },
+  name: { fontFamily: fonts.serifItalic, fontSize: 24, color: colors.secondary },
+  country: { fontFamily: fonts.sansRegular, fontSize: 12, color: colors.textSecondary },
+  tags: { color: colors.primary700, fontFamily: fonts.sansMedium, fontSize: 12 },
+  credit: { paddingHorizontal: 12, minHeight: 44, justifyContent: 'center' },
 });

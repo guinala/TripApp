@@ -1,27 +1,18 @@
-export type Continent = 'Europa' | 'Asia' | 'África' | 'América' | 'Oceanía';
+export type Continent = "Europa" | "Asia" | "África" | "América" | "Oceanía";
 
-export type DestinationType = 'cultural' | 'gastro' | 'aventura' | 'relax';
+export type DestinationType = "cultural" | "gastro" | "aventura" | "relax";
 
-export type PriceRange = 'low' | 'mid' | 'high';
-
-export type DestinationHighlight = {
-  name: string;
-  tag: string;
-  query: string;
-};
-
-export type Destination = {
+export type EditorialDestination = {
   id: string;
+  placeId: string | null;
   name: string;
   country: string;
+  countryCode: string | null;
   continent: Continent;
   types: DestinationType[];
-  priceRange: PriceRange;
-  rating: number;
   description: string;
+  descriptionLanguage: "es" | "en";
   coverQuery: string;
-  coordinates: { lat: number; lng: number };
-  language: { code: string; label: string };
-  highlights: DestinationHighlight[];
-  featured?: boolean;
+  featured: boolean;
+  sortOrder: number;
 };

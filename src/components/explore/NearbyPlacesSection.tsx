@@ -5,9 +5,9 @@ import { router } from 'expo-router';
 import type { InterestCategory, LatLng } from '@/types/place';
 import { usePlaceLanguage } from '@/hooks/use-place-details';
 import { useNearbyPlaces } from '@/hooks/use-nearby-places';
-import { PlaceResultRow } from './place-result-row';
-import { PlacesButton, ui } from './places-ui';
-import { PlacesStatus } from './places-status';
+import { PlaceResultRow } from './PlaceResultRow';
+import { PlacesButton, ui } from './PlacesUI';
+import { PlacesStatus } from './PlacesStatus';
 export function NearbyPlacesSection({ center }: { center: LatLng }) {
   const { t } = useTranslation();
   const [category, setCategory] = useState<InterestCategory>('visit');

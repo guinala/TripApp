@@ -1,3 +1,4 @@
+import { setAccountOwner } from "@/services/account-session";
 import { setPlaceOwner } from "@/services/place-session";
 import { useItineraryRefreshStore } from "@/store/itineraryRefreshStore";
 import { create } from "zustand";
@@ -12,6 +13,7 @@ let unsubscribeAuth: (() => void) | undefined;
 let previousOwner: string | null = null;
 
 function syncPlaceOwner(id: string | null) {
+  setAccountOwner(id);
   setPlaceOwner(id);
   if (previousOwner !== id) useItineraryRefreshStore.getState().reset();
   previousOwner = id;
@@ -48,7 +50,8 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   initialize: async () => {
     // 1. Lee la sesión que Supabase ya guardó en AsyncStorage
-    const { data } = await supabase.auth.getSession();
+    const { data, error } = await supabase.auth.getSession();
+    if (error) throw error;
     syncPlaceOwner(data.session?.user.id ?? null);
     set({
       session: data.session,
@@ -171,7 +174,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   signOut: async () => {
-    await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
   },
 
   resetPassword: async (email: string) => {

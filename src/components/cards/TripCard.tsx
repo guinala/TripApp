@@ -7,9 +7,12 @@ import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { colors, fonts, fontSize, radius } from '@/constants/theme';
 import type { Trip } from '@/types/trip';
+import { useTripDestinationLabel } from '@/hooks/use-trip-destination-label';
+import { PlacesAttribution } from '@/components/explore/PlacesAttribution';
 
 type TripCardProps = {
   trip: Trip;
+  resolveDestination?: boolean;
 };
 
 function getBadge(trip: Trip, t: TFunction): { label: string; color: string } {
@@ -27,10 +30,11 @@ function getBadge(trip: Trip, t: TFunction): { label: string; color: string } {
   return { label, color: colors.primary };
 }
 
-export function TripCard({ trip }: TripCardProps) {
+export function TripCard({ trip, resolveDestination = false }: TripCardProps) {
   const { t } = useTranslation();
   const router = useRouter();
   const badge = getBadge(trip, t);
+  const destination = useTripDestinationLabel(trip, resolveDestination);
 
   return (
     <Pressable
@@ -58,7 +62,21 @@ export function TripCard({ trip }: TripCardProps) {
       </View>
 
       <View style={styles.titleWrap}>
-        <Text style={styles.title}>{trip.destination}</Text>
+        <Text
+          style={[
+            styles.title,
+            !trip.coverImage && { color: colors.secondary, textShadowRadius: 0 },
+          ]}
+        >
+          {destination.label}
+        </Text>
+        {destination.place && (
+          <View
+            style={{ backgroundColor: colors.surfacePaper, borderRadius: 6, paddingHorizontal: 4 }}
+          >
+            <PlacesAttribution attributions={destination.place.attributions} />
+          </View>
+        )}
       </View>
     </Pressable>
   );

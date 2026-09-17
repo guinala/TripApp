@@ -2,8 +2,8 @@ import { View } from 'react-native';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useTripDetail } from '@/context/TripDetailContext';
-import { PlacesStatus } from '@/components/explore/places-status';
-import { PlacesButton } from '@/components/explore/places-ui';
+import { PlacesStatus } from '@/components/explore/PlacesStatus';
+import { PlacesButton } from '@/components/explore/PlacesUI';
 export function PlaceMapStatus({
   compact = false,
   onNavigate,

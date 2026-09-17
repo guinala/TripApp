@@ -7,7 +7,13 @@ import { TripCard } from '../cards/TripCard';
 import { colors, fonts, fontSize, radius } from '@/constants/theme';
 import type { Trip } from '@/types/trip';
 
-export function SwipeableTripCard({ trip }: { trip: Trip }) {
+export function SwipeableTripCard({
+  trip,
+  resolveDestination = false,
+}: {
+  trip: Trip;
+  resolveDestination?: boolean;
+}) {
   const { t } = useTranslation();
   const removeTrip = useTripStore((s) => s.removeTrip);
 
@@ -17,7 +23,10 @@ export function SwipeableTripCard({ trip }: { trip: Trip }) {
       {
         text: t('common.delete'),
         style: 'destructive',
-        onPress: () => removeTrip(trip.id).catch(() => {}),
+        onPress: () =>
+          removeTrip(trip.id).catch(() => {
+            Alert.alert(t('common.error'), t('common.tryAgain'));
+          }),
       },
     ]);
   };
@@ -35,7 +44,7 @@ export function SwipeableTripCard({ trip }: { trip: Trip }) {
           </Pressable>
         )}
       >
-        <TripCard trip={trip} />
+        <TripCard trip={trip} resolveDestination={resolveDestination} />
       </ReanimatedSwipeable>
     </View>
   );

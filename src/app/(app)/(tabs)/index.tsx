@@ -1,6 +1,10 @@
 import { View, Text, StyleSheet, FlatList, RefreshControl } from 'react-native';
-import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'expo-router';
+import type { ViewToken } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useIsFocused, useRouter } from 'expo-router';
+import { useTripDestinationLabel } from '@/hooks/use-trip-destination-label';
+import { PlacesAttribution } from '@/components/explore/PlacesAttribution';
+import { PlacesStatus } from '@/components/explore/PlacesStatus';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/store/authStore';
 import { useTripStore } from '@/store/tripStore';
@@ -14,6 +18,8 @@ import { useUIStore } from '@/store/uiStore';
 import { resyncNotifications } from '@/services/notifications';
 import { useTranslation } from 'react-i18next';
 
+const VIEWABILITY_CONFIG = { itemVisiblePercentThreshold: 50 };
+
 export default function TripsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
@@ -22,9 +28,17 @@ export default function TripsScreen() {
   const user = useAuthStore((s) => s.user);
   const trips = useTripStore((s) => s.trips);
   const loading = useTripStore((s) => s.loading);
+  const error = useTripStore((s) => s.error);
   const fetchTrips = useTripStore((s) => s.fetchTrips);
 
   const [filter, setFilter] = useState<TripFilter>('all');
+  const focused = useIsFocused();
+  const [visibleIds, setVisibleIds] = useState<Set<string>>(new Set());
+  const onViewableItemsChanged = useCallback(
+    ({ viewableItems }: { viewableItems: ViewToken[] }) =>
+      setVisibleIds(new Set(viewableItems.map((item) => item.key))),
+    [],
+  );
 
   useEffect(() => {
     fetchTrips();
@@ -50,13 +64,16 @@ export default function TripsScreen() {
   );
 
   const nextTrip = trips.find((trip) => trip.status === 'planned');
+  const destination = useTripDestinationLabel(nextTrip ?? null, focused);
   const claim = nextTrip
-    ? t('home.claimNext', { destination: nextTrip.destination })
+    ? t('home.claimNext', { destination: destination.label })
     : t('home.claimIdle');
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
       <TopBar name={displayName} claim={claim} />
+      {destination.place && <PlacesAttribution attributions={destination.place.attributions} />}
+      {error && <PlacesStatus error={error} onRetry={fetchTrips} />}
 
       <Text style={styles.heading}>
         {t('home.titleStart')}
@@ -69,18 +86,22 @@ export default function TripsScreen() {
 
       <FlatList
         data={visibleTrips}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={VIEWABILITY_CONFIG}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <SwipeableTripCard trip={item} />}
+        renderItem={({ item }) => (
+          <SwipeableTripCard trip={item} resolveDestination={focused && visibleIds.has(item.id)} />
+        )}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={loading} onRefresh={fetchTrips} tintColor={colors.primary} />
         }
-        ListEmptyComponent={loading ? null : <TripsEmptyState />}
+        ListEmptyComponent={loading || error ? null : <TripsEmptyState />}
       />
 
       <Fab
-        onPress={() => router.push('../trips/new')}
+        onPress={() => router.push('/trips/new')}
         bottomOffset={76}
         accessibilityLabel={t('home.newTrip')}
       />

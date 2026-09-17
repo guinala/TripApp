@@ -147,13 +147,6 @@ export function DurationPicker({ value, onChange }: DurationPickerProps) {
 
   const selectedMinuteIndex = useMemo(() => Math.max(0, MINUTES.indexOf(minutePart)), [minutePart]);
 
-  useEffect(() => {
-    if (!visible) {
-      setHours(getHours(value));
-      setMinutePart(getMinutePart(value));
-    }
-  }, [value, visible]);
-
   const open = () => {
     setHours(getHours(value));
     setMinutePart(getMinutePart(value));

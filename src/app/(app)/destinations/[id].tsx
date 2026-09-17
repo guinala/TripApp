@@ -5,9 +5,9 @@ import { useTranslation } from 'react-i18next';
 import { getEditorialDestination } from '@/services/editorial-destinations';
 import type { EditorialDestination } from '@/types/destination';
 import { usePlaceDetails, usePlaceLanguage } from '@/hooks/use-place-details';
-import { PlacesScreen, PlacesButton, ui } from '@/components/explore/places-ui';
-import { PlacesStatus } from '@/components/explore/places-status';
-import { PlaceDetailContent } from '@/components/explore/place-detail-content';
+import { PlacesScreen, PlacesButton, ui } from '@/components/explore/PlacesUI';
+import { PlacesStatus } from '@/components/explore/PlacesStatus';
+import { PlaceDetailContent } from '@/components/explore/PlaceDetailContent';
 import { DestinationCard } from '@/components/explore/DestinationCard';
 import { useAuthStore } from '@/store/authStore';
 

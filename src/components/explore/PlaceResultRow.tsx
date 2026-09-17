@@ -1,8 +1,8 @@
 import { Pressable, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { PlaceSummary } from '@/types/place';
-import { ui } from './places-ui';
-import { PlacesAttribution } from './places-attribution';
+import { ui } from './PlacesUI';
+import { PlacesAttribution } from './PlacesAttribution';
 import { colors } from '@/constants/theme';
 export function PlaceResultRow({
   place,

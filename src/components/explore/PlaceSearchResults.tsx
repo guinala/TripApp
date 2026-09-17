@@ -1,7 +1,7 @@
 import { FlatList, Pressable, Text, View } from 'react-native';
 import type { PlaceSuggestion } from '@/types/place';
-import { PlacesAttribution } from './places-attribution';
-import { ui } from './places-ui';
+import { PlacesAttribution } from './PlacesAttribution';
+import { ui } from './PlacesUI';
 export function PlaceSearchResults({
   suggestions,
   selecting,

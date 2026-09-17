@@ -3,8 +3,8 @@ import { View } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { useTripDetail } from '@/context/TripDetailContext';
 import { itineraryRegion, isValidCoordinate } from '@/utils/mapRegion';
-import { PlaceMapStatus } from './place-map-status';
-import { PlacesAttribution } from '@/components/explore/places-attribution';
+import { PlaceMapStatus } from './PlaceMapStatus';
+import { PlacesAttribution } from '@/components/explore/PlacesAttribution';
 import { colors } from '@/constants/theme';
 
 export default function TripMap() {

@@ -1,5 +1,5 @@
-import { PlaceMapStatus } from './place-map-status';
-import { PlacesAttribution } from '@/components/explore/places-attribution';
+import { PlaceMapStatus } from './PlaceMapStatus';
+import { PlacesAttribution } from '@/components/explore/PlacesAttribution';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

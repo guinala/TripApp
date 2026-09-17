@@ -1,9 +1,9 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { usePlaceDetails, usePlaceLanguage } from '@/hooks/use-place-details';
-import { PlacesScreen } from '@/components/explore/places-ui';
-import { PlacesStatus } from '@/components/explore/places-status';
-import { PlaceDetailContent } from '@/components/explore/place-detail-content';
+import { PlacesScreen } from '@/components/explore/PlacesUI';
+import { PlacesStatus } from '@/components/explore/PlacesStatus';
+import { PlaceDetailContent } from '@/components/explore/PlaceDetailContent';
 
 export default function PlaceScreen() {
   const { placeId } = useLocalSearchParams<{ placeId: string }>();

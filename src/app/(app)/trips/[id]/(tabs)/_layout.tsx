@@ -1,7 +1,7 @@
-import { ActivityIndicator, Alert, Pressable, Text, View } from 'react-native';
+import { Alert, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
-import { Redirect, router, useLocalSearchParams, withLayoutContext } from 'expo-router';
+import { router, useLocalSearchParams, withLayoutContext } from 'expo-router';
 import { createMaterialTopTabNavigator } from 'expo-router/js-top-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
@@ -9,10 +9,13 @@ import { TripDetailProvider } from '@/context/TripDetailContext';
 import { useTripStore } from '@/store/tripStore';
 import TripMap from '@/components/maps/TripMap';
 import DayFilter from '@/components/trips/DayFilter';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { FullMapModal } from '@/components/maps/FullMapModal';
-import { Trip } from '@/types/trip';
-import { getTripById } from '@/services/trips';
+import { useTripRecord } from '@/hooks/use-trip-record';
+import { useTripDestinationLabel } from '@/hooks/use-trip-destination-label';
+import { PlacesScreen } from '@/components/explore/PlacesUI';
+import { PlacesStatus } from '@/components/explore/PlacesStatus';
+import { PlacesAttribution } from '@/components/explore/PlacesAttribution';
 
 const { Navigator } = createMaterialTopTabNavigator();
 const MaterialTopTabs = withLayoutContext(Navigator);
@@ -20,11 +23,10 @@ const MaterialTopTabs = withLayoutContext(Navigator);
 export default function TripDetailLayout() {
   const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const storeTrip = useTripStore((s) => s.trips.find((t) => t.id === id));
+  const { trip, loading, error, retry } = useTripRecord(id);
+  const destination = useTripDestinationLabel(trip);
   const removeTrip = useTripStore((s) => s.removeTrip);
   const [mapOpen, setMapOpen] = useState(false);
-  const [fetched, setFetched] = useState<Trip | null | undefined>(undefined);
-  const trip = storeTrip ?? fetched ?? null;
 
   const handleDeleteTrip = () => {
     Alert.alert(t('trips.delete.title'), t('trips.delete.message'), [
@@ -44,32 +46,17 @@ export default function TripDetailLayout() {
     ]);
   };
 
-  useEffect(() => {
-    if (storeTrip || !id) return;
-    getTripById(id)
-      .then(setFetched)
-      .catch(() => setFetched(null));
-  }, [storeTrip, id]);
-
-  // Fallback
-  if (!storeTrip && fetched === undefined) {
+  if (!trip)
     return (
-      <View
-        style={{
-          flex: 1,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: colors.surfaceCream,
-        }}
-      >
-        <ActivityIndicator />
-      </View>
+      <PlacesScreen title={t('trips.form.name')}>
+        <PlacesStatus
+          loading={loading}
+          error={error}
+          message={!loading && !error ? t('places.tripNotFound') : undefined}
+          onRetry={retry}
+        />
+      </PlacesScreen>
     );
-  }
-
-  if (!trip) {
-    return <Redirect href="/(app)/(tabs)" />;
-  }
 
   return (
     <TripDetailProvider trip={trip}>
@@ -108,6 +95,10 @@ export default function TripDetailLayout() {
           </Text>
         </View>
 
+        <View style={{ paddingHorizontal: 20, paddingBottom: 8 }}>
+          <Text style={{ color: colors.secondary }}>{destination.label}</Text>
+          {destination.place && <PlacesAttribution attributions={destination.place.attributions} />}
+        </View>
         <TripMap />
 
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>

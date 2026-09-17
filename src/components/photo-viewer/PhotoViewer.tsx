@@ -1,7 +1,7 @@
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import PagerView from 'react-native-pager-view';
 import { ImageZoom } from '@likashefqet/react-native-image-zoom';
-import { useRef, type RefObject } from 'react';
+import { useRef } from 'react';
 import { colors } from '@/constants/theme';
 import { Photo } from '@/types/photo';
 
@@ -48,7 +48,6 @@ export function PhotoViewer({
           );
         })}
       </PagerView>
-      ;
     </>
   );
 }

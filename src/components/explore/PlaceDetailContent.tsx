@@ -3,10 +3,10 @@ import { Linking, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import type { PlaceDetails } from '@/types/place';
-import { PlacesAttribution } from './places-attribution';
-import { PlacesButton, ui } from './places-ui';
-import { PlacesStatus } from './places-status';
-import { NearbyPlacesSection } from './nearby-places-section';
+import { PlacesAttribution } from './PlacesAttribution';
+import { PlacesButton, ui } from './PlacesUI';
+import { PlacesStatus } from './PlacesStatus';
+import { NearbyPlacesSection } from './NearbyPlacesSection';
 import { DestinationStatsCard } from './DestinationStatsCard';
 export function PlaceDetailContent({
   place,

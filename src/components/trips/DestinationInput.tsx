@@ -4,8 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { colors, fonts, radius, spacing } from '@/constants/theme';
 import { usePlacesAutocomplete } from '@/hooks/use-places-autocomplete';
 import { usePlaceLanguage } from '@/hooks/use-place-details';
-import { PlacesStatus } from '@/components/explore/places-status';
-import { PlacesAttribution } from '@/components/explore/places-attribution';
+import { PlacesStatus } from '@/components/explore/PlacesStatus';
+import { PlacesAttribution } from '@/components/explore/PlacesAttribution';
 import type { LatLng, PlaceDetails, PlaceScope } from '@/types/place';
 
 type Props = {

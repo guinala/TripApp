@@ -346,7 +346,8 @@
       "restaurant": "Food",
       "transport": "Transport",
       "hotel": "Stay",
-      "entertainment": "Leisure"
+      "entertainment": "Leisure",
+      "others": "Other"
     }
   },
   "map": {
@@ -354,7 +355,7 @@
     "viewList": "View list",
     "emptyDay": "No activities this day.",
     "emptyTrip": "No activities in this trip yet.",
-    "unavailableWeb": "Map not available on web",
+    "unavailableWeb": "Open the mobile app to view the interactive map. Your itinerary remains available here.",
     "locationUnavailableWeb": "Location selection not available on web"
   },
   "budget": {
@@ -556,6 +557,9 @@
     }
   },
   "photo": {
+    "previous": "Previous photo",
+    "next": "Next photo",
+    "imageLabel": "Trip photo",
     "locationSaveError": "Couldn't save the location",
     "unavailable": "Not available",
     "shareUnavailable": "Sharing is not available on this device.",
@@ -593,5 +597,83 @@
     "savePhoto": "Couldn't save the photo",
     "updatePhoto": "Couldn't update the photo",
     "deletePhoto": "Couldn't delete the photo"
+  },
+  "places": {
+    "searchLabel": "Search for and select a place",
+    "searching": "Searching for places…",
+    "selecting": "Loading place…",
+    "retry": "Try again",
+    "genericError": "We could not complete this action. Please try again.",
+    "noResults": "No matches found.",
+    "resolveDestination": "Locate destination",
+    "locationUnavailable": "Location unavailable.",
+    "manualDestination": "You can locate the destination later.",
+    "createTrip": "Create a trip here",
+    "addToTrip": "Add to trip",
+    "nearCenter": "Near the center",
+    "partialLocationsCount": "{{count}} activities have no available location.",
+    "personalTitleRequired": "Give your trip a name, for example “Autumn getaway”.",
+    "coverError": "We could not prepare the cover. You can select it again.",
+    "tripNotFound": "This trip was not found or you do not have access.",
+    "locateExplanation": "Search for and confirm the destination. Your dates, activities and trip name will be kept.",
+    "nearbyScope": "Choose a category to see up to 10 places within 5 km of this center.",
+    "currentWeather": "Current weather · OpenWeather",
+    "editorial": "TripMate selection",
+    "textLanguage": "Editorial text in {{language}}",
+    "destinationType": "Destination",
+    "placeType": "Place of interest",
+    "openMaps": "Open in Google Maps",
+    "details": "Discover this place",
+    "chooseTrip": "Choose a trip",
+    "noTrips": "You have no trips yet. Create one to add activities.",
+    "explore": "Explore",
+    "searchPlaceholder": "Search for a city or place",
+    "search": "Search",
+    "minQuery": "Enter at least 3 characters.",
+    "allContinents": "All",
+    "noRecommendations": "There are no published recommendations in this selection.",
+    "searchHint": "Press search to look up the city.",
+    "loadMore": "Load more",
+    "searchCity": "Search for this city",
+    "notPublished": "This recommendation is unavailable.",
+    "activityTitle": "Your activity title",
+    "activityTitlePlaceholder": "For example: Visit with Ana",
+    "associatedPlace": "Associated place",
+    "linkedPlace": "Linked place",
+    "removePlace": "Remove place",
+    "activityValidation": "Check the title, time and cost. Use a time such as 09:30 and a non-negative cost.",
+    "noDays": "This trip has no available days. Check its dates.",
+    "unresolvedCountries": "{{count}} destinations still need a location; the country count is partial.",
+    "statsResolutionFailed": "Some destinations could not be resolved. You can try again.",
+    "partialKilometers": "Partial estimated distance: some locations are missing. It runs from your last available position to the center of each trip’s activities.",
+    "errors": {
+      "INVALID_INPUT": "Check your search text.",
+      "UNAUTHENTICATED": "Your session has expired. Please sign in again.",
+      "RATE_LIMITED": "Too many requests. Wait a minute before trying again.",
+      "NOT_FOUND": "This place is no longer available. You can search again.",
+      "UPSTREAM_UNAVAILABLE": "The places service is currently unavailable.",
+      "TIMEOUT": "The request took too long. Please try again.",
+      "REFERENCE_SAVE_FAILED": "We could not prepare this place for saving. Please select it again.",
+      "NETWORK_ERROR": "Could not connect. Check your connection.",
+      "INVALID_RESPONSE": "The service returned an unexpected response.",
+      "CANCELLED": "The request was cancelled."
+    },
+    "modes": {
+      "cities": "Cities",
+      "places": "Places"
+    },
+    "categories": {
+      "visit": "Sights",
+      "museum": "Museums",
+      "park": "Parks",
+      "restaurant": "Restaurants"
+    },
+    "continents": {
+      "Europa": "Europe",
+      "Asia": "Asia",
+      "África": "Africa",
+      "América": "Americas",
+      "Oceanía": "Oceania"
+    }
   }
 }

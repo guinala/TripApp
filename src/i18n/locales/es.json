@@ -349,7 +349,8 @@
       "restaurant": "Comida",
       "transport": "Transporte",
       "hotel": "Estancia",
-      "entertainment": "Ocio"
+      "entertainment": "Ocio",
+      "others": "Otros"
     }
   },
   "map": {
@@ -357,7 +358,7 @@
     "viewList": "Ver lista",
     "emptyDay": "Sin actividades este día.",
     "emptyTrip": "Aún no hay actividades en este viaje.",
-    "unavailableWeb": "Mapa no disponible en web",
+    "unavailableWeb": "Abre la app móvil para ver el mapa interactivo. Tu itinerario sigue disponible aquí.",
     "locationUnavailableWeb": "Selección de ubicación no disponible en web"
   },
   "budget": {
@@ -559,6 +560,9 @@
     }
   },
   "photo": {
+    "previous": "Foto anterior",
+    "next": "Foto siguiente",
+    "imageLabel": "Foto del viaje",
     "locationSaveError": "No se pudo guardar la ubicación",
     "unavailable": "No disponible",
     "shareUnavailable": "Compartir no está disponible en este dispositivo.",
@@ -596,5 +600,83 @@
     "savePhoto": "No se pudo guardar la foto",
     "updatePhoto": "No se pudo actualizar la foto",
     "deletePhoto": "No se pudo eliminar la foto"
+  },
+  "places": {
+    "searchLabel": "Busca y selecciona un lugar",
+    "searching": "Buscando lugares…",
+    "selecting": "Cargando lugar…",
+    "retry": "Reintentar",
+    "genericError": "No pudimos completar la operación. Inténtalo de nuevo.",
+    "noResults": "No encontramos coincidencias.",
+    "resolveDestination": "Localizar destino",
+    "locationUnavailable": "Ubicación no disponible.",
+    "manualDestination": "Podrás localizar el destino después.",
+    "createTrip": "Crear viaje aquí",
+    "addToTrip": "Añadir al viaje",
+    "nearCenter": "Cerca del centro",
+    "partialLocationsCount": "Hay {{count}} actividades sin ubicación disponible.",
+    "personalTitleRequired": "Escribe un nombre para tu viaje, por ejemplo «Escapada de otoño».",
+    "coverError": "No pudimos preparar la portada. Puedes volver a elegirla.",
+    "tripNotFound": "No encontramos este viaje o no tienes acceso.",
+    "locateExplanation": "Busca y confirma el destino. Tus fechas, actividades y nombre del viaje se conservarán.",
+    "nearbyScope": "Elige una categoría para ver hasta 10 lugares a menos de 5 km de este centro.",
+    "currentWeather": "Clima actual · OpenWeather",
+    "editorial": "Selección de TripMate",
+    "textLanguage": "Texto editorial en {{language}}",
+    "destinationType": "Destino",
+    "placeType": "Lugar de interés",
+    "openMaps": "Abrir en Google Maps",
+    "details": "Descubre este lugar",
+    "chooseTrip": "Elige un viaje",
+    "noTrips": "Todavía no tienes viajes. Crea uno para añadir actividades.",
+    "explore": "Explorar",
+    "searchPlaceholder": "Busca una ciudad o un lugar",
+    "search": "Buscar",
+    "minQuery": "Escribe al menos 3 caracteres.",
+    "allContinents": "Todos",
+    "noRecommendations": "No hay recomendaciones publicadas en esta selección.",
+    "searchHint": "Pulsa buscar para consultar la ciudad.",
+    "loadMore": "Cargar más",
+    "searchCity": "Buscar esta ciudad",
+    "notPublished": "Esta recomendación no está disponible.",
+    "activityTitle": "Título de tu actividad",
+    "activityTitlePlaceholder": "Por ejemplo: Visita con Ana",
+    "associatedPlace": "Lugar asociado",
+    "linkedPlace": "Lugar vinculado",
+    "removePlace": "Quitar lugar",
+    "activityValidation": "Revisa el título, la hora y el coste. La hora debe tener formato 09:30 y el coste debe ser un número positivo o cero.",
+    "noDays": "El viaje no tiene días disponibles. Revisa sus fechas.",
+    "unresolvedCountries": "Hay {{count}} destinos pendientes de localizar; el recuento de países es parcial.",
+    "statsResolutionFailed": "No pudimos resolver algunos destinos. Puedes reintentar la consulta.",
+    "partialKilometers": "Distancia estimada parcial: faltan ubicaciones. Se calcula desde tu última posición disponible al centro de las actividades de cada viaje.",
+    "errors": {
+      "INVALID_INPUT": "Revisa el texto de búsqueda.",
+      "UNAUTHENTICATED": "La sesión ha caducado. Vuelve a iniciar sesión.",
+      "RATE_LIMITED": "Has realizado muchas consultas. Espera un minuto antes de reintentar.",
+      "NOT_FOUND": "Este lugar ya no está disponible. Puedes buscarlo de nuevo.",
+      "UPSTREAM_UNAVAILABLE": "El servicio de lugares no está disponible ahora.",
+      "TIMEOUT": "La consulta ha tardado demasiado. Inténtalo de nuevo.",
+      "REFERENCE_SAVE_FAILED": "No pudimos preparar el lugar para guardarlo. Reintenta la selección.",
+      "NETWORK_ERROR": "No pudimos conectar. Comprueba tu conexión.",
+      "INVALID_RESPONSE": "El servicio devolvió una respuesta inesperada.",
+      "CANCELLED": "La consulta se ha cancelado."
+    },
+    "modes": {
+      "cities": "Ciudades",
+      "places": "Lugares"
+    },
+    "categories": {
+      "visit": "Visitas",
+      "museum": "Museos",
+      "park": "Parques",
+      "restaurant": "Restaurantes"
+    },
+    "continents": {
+      "Europa": "Europa",
+      "Asia": "Asia",
+      "África": "África",
+      "América": "América",
+      "Oceanía": "Oceanía"
+    }
   }
 }

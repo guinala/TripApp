@@ -1,25 +1,36 @@
-import { StyleSheet, Text, View } from 'react-native';
-import { useTranslation } from 'react-i18next';
-import { colors, fonts, radius, spacing } from '@/constants/theme';
+import { useState } from 'react';
+import { View } from 'react-native';
+import { useTripDetail } from '@/context/TripDetailContext';
+import { PlacesButton } from '@/components/explore/PlacesUI';
+import { PlacesAttribution } from '@/components/explore/PlacesAttribution';
+import { PlaceMapStatus } from './PlaceMapStatus';
+import { EmbedMap } from './EmbedMap.web';
 
-// react-native-maps no funciona en web => placeholder
 export default function TripMap() {
-  const { t } = useTranslation();
+  const { trip, mapActivities, destinationResolution, mapAttributions } = useTripDetail();
+  const [selected, setSelected] = useState<string | null>(null);
+  const activity = mapActivities.find((item) => item.id === selected);
+  const place = destinationResolution.place;
   return (
-    <View style={styles.wrapper}>
-      <Text style={styles.text}>{t('map.unavailableWeb')}</Text>
+    <View style={{ paddingHorizontal: 16, gap: 12 }}>
+      <EmbedMap
+        title={activity?.title ?? place?.name ?? trip.title}
+        placeId={activity?.placeId ?? (!activity ? trip.destinationPlaceId : null)}
+        location={activity?.location ?? (!activity ? place?.location : null)}
+      />
+      <View style={{ gap: 8, flexDirection: 'row', flexWrap: 'wrap' }}>
+        <PlacesButton secondary={!selected} title={trip.title} onPress={() => setSelected(null)} />
+        {mapActivities.map((item) => (
+          <PlacesButton
+            key={item.id}
+            title={item.title}
+            secondary={selected !== item.id}
+            onPress={() => setSelected(item.id)}
+          />
+        ))}
+      </View>
+      <PlaceMapStatus compact />
+      <PlacesAttribution attributions={mapAttributions} />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  wrapper: {
-    marginHorizontal: spacing.s5,
-    height: 160,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surfaceAlt,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  text: { fontFamily: fonts.sansRegular, color: colors.secondary300 },
-});

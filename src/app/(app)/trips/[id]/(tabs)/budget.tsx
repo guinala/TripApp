@@ -1,4 +1,4 @@
-// app/(app)/trips/[id]/budget.tsx
+import { LoadNotice } from '@/components/ui/LoadNotice';
 import { useCallback } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
@@ -25,6 +25,8 @@ export default function BudgetScreen() {
 
   const expenses = useExpenseStore((s) => s.byTrip[id] ?? EMPTY);
   const loading = useExpenseStore((s) => s.loadingByTrip[id] ?? false);
+  const error = useExpenseStore((s) => s.errorByTrip[id]);
+  const loaded = useExpenseStore((s) => s.byTrip[id] !== undefined);
   const loadExpenses = useExpenseStore((s) => s.loadExpenses);
 
   useFocusEffect(
@@ -37,8 +39,9 @@ export default function BudgetScreen() {
   useBudgetAlert(id, summary.percentage);
 
   const handleAddExpense = () => router.push(`/trips/${id}/expenses/new`);
-  const handleViewAll = () => router.push(`./trips/${id}/expenses`);
-  const handleEditExpense = (e: Expense) => router.push(`./trips/${id}/expenses/${e.id}`);
+  const handleViewAll = () => router.push({ pathname: '/trips/[id]/expenses', params: { id } });
+  const handleEditExpense = (e: Expense) =>
+    router.push({ pathname: '/trips/[id]/expenses/[expenseId]', params: { id, expenseId: e.id } });
 
   if (loading && expenses.length === 0) {
     return (
@@ -51,27 +54,39 @@ export default function BudgetScreen() {
   return (
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <BudgetSummaryCard
-          spent={summary.spent ?? 0}
-          budget={budget}
-          percentage={summary.percentage ?? 0}
-          remaining={summary.remaining ?? 0}
-          dailyAverage={summary.dailyAverage ?? 0}
-          currency={trip.currency}
+        <LoadNotice error={!!error} onRetry={() => void loadExpenses(id)} />
+        <LoadNotice
+          loading={!error && summary.loading}
+          error={!error && summary.error}
+          message={!error && summary.error ? t('fixes.rateError') : undefined}
+          onRetry={summary.retry}
         />
+        {!error && loaded && !summary.loading && !summary.error && summary.spent !== null && (
+          <>
+            <BudgetSummaryCard
+              spent={summary.spent ?? 0}
+              budget={budget}
+              percentage={summary.percentage ?? 0}
+              remaining={summary.remaining ?? 0}
+              dailyAverage={summary.dailyAverage ?? 0}
+              currency={trip.currency}
+            />
 
-        <View style={styles.charts}>
-          <CategoryCard segments={summary.donutSegments} />
-          <DayBarChart byDay={summary.byDay} tripStart={trip.startDate} />
-        </View>
-
-        <RecentExpenses
-          expenses={expenses}
-          tripStart={trip.startDate}
-          onViewAll={handleViewAll}
-          onEditExpense={handleEditExpense}
-          onAddExpense={handleAddExpense}
-        />
+            <View style={styles.charts}>
+              <CategoryCard segments={summary.donutSegments} />
+              <DayBarChart byDay={summary.byDay} tripStart={trip.startDate} />
+            </View>
+          </>
+        )}
+        {(loaded || expenses.length > 0) && (
+          <RecentExpenses
+            expenses={expenses}
+            tripStart={trip.startDate}
+            onViewAll={handleViewAll}
+            onEditExpense={handleEditExpense}
+            onAddExpense={handleAddExpense}
+          />
+        )}
       </ScrollView>
 
       <Fab onPress={handleAddExpense} accessibilityLabel={t('budget.addExpense')} />
@@ -88,5 +103,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.surfaceCream,
   },
-  charts: { flexDirection: 'row', gap: spacing.s2, alignItems: 'stretch' },
+  charts: { gap: spacing.s2, alignItems: 'stretch' },
 });

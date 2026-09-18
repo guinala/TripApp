@@ -7,6 +7,7 @@ export default function TripLayout() {
       <Stack.Screen name="destination" />
       <Stack.Screen name="activities/new" />
       <Stack.Screen name="expenses/new" />
+      <Stack.Screen name="expenses/[expenseId]" />
       <Stack.Screen name="photo/[photoId]" options={{ presentation: 'fullScreenModal' }} />
     </Stack>
   );

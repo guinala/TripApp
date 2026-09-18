@@ -1,5 +1,4 @@
 import { placeSessionVersion } from "@/services/place-session";
-import { eachDayOfInterval, format, parseISO } from "date-fns";
 import { supabase } from "@/services/supabase";
 import type { Day } from "@/types/day";
 import type { Trip } from "@/types/trip";
@@ -36,29 +35,14 @@ export async function listDays(tripId: string): Promise<Day[]> {
 }
 
 async function createMissingDays(trip: Trip): Promise<Day[]> {
-  const existing = await listDays(trip.id);
-  if (existing.length > 0) return existing;
-
-  const dates = eachDayOfInterval({
-    start: parseISO(trip.startDate),
-    end: parseISO(trip.endDate),
+  const { data, error } = await supabase.rpc("ensure_trip_days", {
+    p_trip_id: trip.id,
   });
-
-  const rows = dates.map((date, i) => ({
-    trip_id: trip.id,
-    day_number: i + 1,
-    // Fecha local a UTC
-    date: format(date, "yyyy-MM-dd"),
-  }));
-
-  const { error } = await supabase.from("days").insert(rows);
   if (error) throw error;
-
-  return listDays(trip.id);
+  return (data ?? []).map(toDay);
 }
 
-// Deduplica llamadas de esta app (incluido Strict Mode). La concurrencia entre
-// dispositivos y cambiar las fechas de un viaje requieren otra operación de BD.
+// La concurrencia entre dispositivos se resuelve mediante bloqueo de la fila trips dentro del RPC.
 const pendingDays = new Map<string, Promise<Day[]>>();
 export function ensureDays(trip: Trip): Promise<Day[]> {
   const key = JSON.stringify([

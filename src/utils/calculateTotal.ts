@@ -1,23 +1,19 @@
-import type { Expense } from '@/types/expense';
-import { convert } from '@/utils/currency';
+import type { Expense } from "@/types/expense";
+import { getRateOn } from "@/services/exchangeRates";
 
 export async function calculateTotalInCurrency(
   expenses: Expense[],
   targetCurrency: string,
 ): Promise<number> {
-  // 1. Importes por moneda de origen
-  const sumsByCurrency = new Map<string, number>();
-  for (const e of expenses) {
-    sumsByCurrency.set(e.currency, (sumsByCurrency.get(e.currency) ?? 0) + e.amount);
+  let total = 0;
+  // Para evitar centenares de llamadas simultáneas, el servicio deduplica/cacha por fecha y moneda.
+  for (const expense of expenses) {
+    const { rate } = await getRateOn(
+      expense.currency,
+      targetCurrency,
+      expense.date,
+    );
+    total += expense.amount * rate;
   }
-
-  // 2. Conversión por moneda distinta, en paralelo
-  const entries = [...sumsByCurrency.entries()];
-  const converted = await Promise.all(
-    entries.map(([currency, sum]) =>
-      currency === targetCurrency ? Promise.resolve(sum) : convert(sum, currency, targetCurrency),
-    ),
-  );
-
-  return converted.reduce((total, value) => total + value, 0);
+  return total;
 }

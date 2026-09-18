@@ -1,11 +1,11 @@
 import '@/i18n';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { useEffect } from 'react';
-import { ActivityIndicator, Platform, View } from 'react-native';
-import { Stack } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { Stack, useSegments } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { NavigationBar } from 'expo-navigation-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useAuthStore } from '@/store/authStore';
 import { useFonts } from 'expo-font';
@@ -16,9 +16,18 @@ SplashScreen.preventAutoHideAsync();
 initNotifications();
 
 export default function RootLayout() {
+  const [attempt, setAttempt] = useState(0);
+  return <Layout key={attempt} onRetry={() => setAttempt((n) => n + 1)} />;
+}
+
+function Layout({ onRetry }: { onRetry: () => void }) {
+  const { t } = useTranslation();
+  const segments = useSegments();
+  const light = segments.some((segment) => segment === 'welcome' || segment === 'photo');
+  const [authError, setAuthError] = useState(false);
   const initialize = useAuthStore((s) => s.initialize);
 
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontsError] = useFonts({
     'PlusJakartaSans-Regular': require('../../assets/fonts/PlusJakartaSans-Regular.ttf'),
     'PlusJakartaSans-Medium': require('../../assets/fonts/PlusJakartaSans-Medium.ttf'),
     'PlusJakartaSans-SemiBold': require('../../assets/fonts/PlusJakartaSans-SemiBold.ttf'),
@@ -30,17 +39,30 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    initialize();
+    void initialize().catch(() => setAuthError(true));
   }, [initialize]);
 
   useEffect(() => {
-    if (Platform.OS !== 'android') return;
-    NavigationBar.setHidden(true);
-  }, []);
+    if (fontsLoaded || fontsError || authError) void SplashScreen.hideAsync();
+  }, [fontsLoaded, fontsError, authError]);
 
-  useEffect(() => {
-    if (fontsLoaded) SplashScreen.hideAsync();
-  }, [fontsLoaded]);
+  if (fontsError || authError)
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: 'center',
+          padding: 24,
+          gap: 16,
+          backgroundColor: colors.surfacePaper,
+        }}
+      >
+        <Text style={{ color: colors.secondary }}>{t('fixes.startupError')}</Text>
+        <Pressable accessibilityRole="button" onPress={onRetry} style={{ padding: 16 }}>
+          <Text>{t('places.retry')}</Text>
+        </Pressable>
+      </View>
+    );
 
   if (!fontsLoaded) {
     return (
@@ -66,7 +88,7 @@ export default function RootLayout() {
           <Stack.Screen name="auth/callback" />
           <Stack.Screen name="reset-password" />
         </Stack>
-        <StatusBar style="light" />
+        <StatusBar style={light ? 'light' : 'dark'} />
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

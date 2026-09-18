@@ -1,8 +1,10 @@
+import { useState } from 'react';
+import { dateLocale } from '@/i18n/date';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { differenceInCalendarDays, parseISO } from 'date-fns';
+import { differenceInCalendarDays, format, parseISO } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { colors, fonts, fontSize, radius } from '@/constants/theme';
@@ -34,10 +36,14 @@ export function TripCard({ trip, resolveDestination = false }: TripCardProps) {
   const { t } = useTranslation();
   const router = useRouter();
   const badge = getBadge(trip, t);
+  const [failedCover, setFailedCover] = useState<string | null>(null);
+  const hasCover = !!trip.coverImage && failedCover !== trip.coverImage;
   const destination = useTripDestinationLabel(trip, resolveDestination);
 
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${trip.title}, ${destination.label}`}
       style={styles.card}
       onPress={() =>
         router.push({
@@ -46,9 +52,10 @@ export function TripCard({ trip, resolveDestination = false }: TripCardProps) {
         })
       }
     >
-      {trip.coverImage ? (
+      {hasCover ? (
         <Image
-          source={{ uri: trip.coverImage }}
+          source={{ uri: trip.coverImage! }}
+          onError={() => setFailedCover(trip.coverImage)}
           style={StyleSheet.absoluteFill}
           contentFit="cover"
         />
@@ -62,13 +69,15 @@ export function TripCard({ trip, resolveDestination = false }: TripCardProps) {
       </View>
 
       <View style={styles.titleWrap}>
-        <Text
-          style={[
-            styles.title,
-            !trip.coverImage && { color: colors.secondary, textShadowRadius: 0 },
-          ]}
-        >
+        <Text style={[styles.title, !hasCover && { color: colors.secondary, textShadowRadius: 0 }]}>
+          {trip.title}
+        </Text>
+        <Text style={{ fontFamily: fonts.sansRegular, color: colors.secondary }}>
           {destination.label}
+        </Text>
+        <Text style={{ fontFamily: fonts.sansRegular, color: colors.textSecondary }}>
+          {format(parseISO(trip.startDate), 'd MMM', { locale: dateLocale() })} –{' '}
+          {format(parseISO(trip.endDate), 'd MMM yyyy', { locale: dateLocale() })}
         </Text>
         {destination.place && (
           <View
@@ -92,7 +101,7 @@ const styles = StyleSheet.create({
   //   elevation: 4,
   // },
   card: {
-    height: 130,
+    minHeight: 180,
     borderRadius: radius.lg,
     overflow: 'hidden',
     backgroundColor: 'transparent',
@@ -112,12 +121,18 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   badgeText: { fontFamily: fonts.sansBold, fontSize: fontSize.sm, letterSpacing: 0.3 },
-  titleWrap: { alignItems: 'flex-end' },
+  titleWrap: {
+    alignItems: 'flex-start',
+    backgroundColor: colors.surfacePaper,
+    padding: 12,
+    borderRadius: 12,
+    gap: 4,
+  },
   title: {
     fontFamily: fonts.serifItalic,
     fontSize: fontSize.title,
-    color: colors.white,
-    textShadowColor: 'rgba(0,0,0,0.69)',
+    color: colors.secondary,
+    textShadowColor: 'transparent',
     textShadowOffset: { width: 0, height: 4 },
     textShadowRadius: 4,
   },

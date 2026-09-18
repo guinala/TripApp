@@ -1,12 +1,14 @@
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Modal, ScrollView } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { colors, fonts, spacing } from '@/constants/theme';
 import type { DiaryPhoto } from '@/hooks/use-diary-photos';
+import { PlacesButton } from '@/components/explore/PlacesUI';
+import { DiaryMap } from './DiaryMap.web';
 
 export function FullDiaryMapModal({
   visible,
+  photos,
   onClose,
+  onPressPhoto,
 }: {
   visible: boolean;
   photos: DiaryPhoto[];
@@ -15,25 +17,11 @@ export function FullDiaryMapModal({
 }) {
   const { t } = useTranslation();
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View style={styles.container}>
-        <Text style={styles.text}>{t('map.unavailableWeb')}</Text>
-        <Pressable style={styles.btn} onPress={onClose} hitSlop={10}>
-          <Ionicons name="close" size={22} color={colors.secondary} />
-        </Pressable>
-      </View>
+    <Modal visible={visible} onRequestClose={onClose}>
+      <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
+        <PlacesButton title={t('common.back')} onPress={onClose} />
+        <DiaryMap photos={photos} onPressPhoto={onPressPhoto} />
+      </ScrollView>
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surfaceCream,
-    gap: spacing.s4,
-  },
-  text: { fontFamily: fonts.sansRegular, color: colors.secondary300 },
-  btn: { padding: spacing.s3 },
-});

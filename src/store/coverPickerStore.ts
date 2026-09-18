@@ -1,5 +1,6 @@
-import { create } from 'zustand';
-import type { UnsplashPhoto } from '@/services/unsplash';
+import { subscribeAccount } from "@/services/account-session";
+import { create } from "zustand";
+import type { UnsplashPhoto } from "@/services/unsplash";
 
 type CoverPickerState = {
   selected: UnsplashPhoto | null;
@@ -16,3 +17,5 @@ export const useCoverPickerStore = create<CoverPickerState>((set, get) => ({
     return selected;
   },
 }));
+
+subscribeAccount(() => useCoverPickerStore.setState({ selected: null }));

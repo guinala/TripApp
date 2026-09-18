@@ -1,3 +1,4 @@
+import { AccountBoundary } from '@/components/auth/AccountBoundary';
 import { useEffect } from 'react';
 import { setPlaceForeground } from '@/services/place-session';
 import { useAuthStore } from '@/store/authStore';
@@ -28,10 +29,12 @@ export default function AppLayout() {
   if (!session) return <Redirect href="/(auth)/welcome" />;
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="trips/new" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="settings" />
-      <Stack.Screen name="profile/edit" />
-    </Stack>
+    <AccountBoundary key={session.user.id} userId={session.user.id}>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="trips/new" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="settings" />
+        <Stack.Screen name="profile/edit" />
+      </Stack>
+    </AccountBoundary>
   );
 }

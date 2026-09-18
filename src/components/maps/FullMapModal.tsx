@@ -195,7 +195,9 @@ export function FullMapModal({ visible, onClose }: { visible: boolean; onClose: 
             </Text>
             <Text style={styles.headerSubtitle}>
               {t('itinerary.activitiesCount', { count: located.length })}
-              {located.length > 1 ? ` · ${formatDistance(distanceKm)}` : ''}
+              {located.length > 1
+                ? ` · ${formatDistance(distanceKm)} · ${t('fixes.straightLine')}`
+                : ''}
             </Text>
           </View>
           <Pressable

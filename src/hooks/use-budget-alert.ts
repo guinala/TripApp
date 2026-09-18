@@ -1,7 +1,12 @@
-import { useEffect } from 'react';
-import { Alert } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import i18n from '@/i18n';
+import {
+  accountOwner,
+  accountVersion,
+  isCurrentAccount,
+} from "@/services/account-session";
+import { useEffect } from "react";
+import { Alert } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import i18n from "@/i18n";
 
 const THRESHOLD = 80;
 
@@ -9,18 +14,24 @@ export function useBudgetAlert(tripId: string, percentage: number | null) {
   useEffect(() => {
     if (percentage === null) return;
 
-    const key = `budget-alert-80:${tripId}`;
+    const started = accountVersion();
+    let cancelled = false;
+    const key = `budget-alert-80:${accountOwner()}:${tripId}`;
 
     (async () => {
       let alreadyNotified = false;
       try {
-        alreadyNotified = (await AsyncStorage.getItem(key)) === '1';
+        alreadyNotified = (await AsyncStorage.getItem(key)) === "1";
       } catch {}
 
+      if (cancelled || !isCurrentAccount(started)) return;
       if (percentage >= THRESHOLD && !alreadyNotified) {
-        Alert.alert(i18n.t('budget.alert.title'), i18n.t('budget.alert.message'));
+        Alert.alert(
+          i18n.t("budget.alert.title"),
+          i18n.t("budget.alert.message"),
+        );
         try {
-          await AsyncStorage.setItem(key, '1');
+          await AsyncStorage.setItem(key, "1");
         } catch {}
       } else if (percentage < THRESHOLD && alreadyNotified) {
         try {
@@ -28,5 +39,9 @@ export function useBudgetAlert(tripId: string, percentage: number | null) {
         } catch {}
       }
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [tripId, percentage]);
 }

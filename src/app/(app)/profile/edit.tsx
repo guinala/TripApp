@@ -1,3 +1,4 @@
+import { accountVersion, assertAccount } from '@/services/account-session';
 import { useCallback, useState } from 'react';
 import {
   Alert,
@@ -35,10 +36,13 @@ export default function EditProfileScreen() {
   const handleChangeAvatar = useCallback(async () => {
     if (!user) return;
     try {
+      const started = accountVersion();
       const uri = await pickAvatarImage();
+      assertAccount(started);
       if (!uri) return;
       setUploading(true);
       const url = await uploadAvatar(user.id, uri);
+      assertAccount(started);
       setAvatarUrl(url);
     } catch {
       Alert.alert(t('common.error'), t('profile.edit.errorPhoto'));

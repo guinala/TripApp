@@ -1,5 +1,6 @@
+import { parseAmount } from '@/utils/parseAmount';
 import { useRef, useState } from 'react';
-import { ScrollView, Text, TextInput, View } from 'react-native';
+import { Alert, ScrollView, Text, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { TimeField } from './TimeField';
 import { DurationPicker } from './DurationPicker';
@@ -20,6 +21,7 @@ type Props = {
   center?: LatLng;
   onSubmit: (input: ActivityInput) => Promise<void>;
   onCancel: () => void;
+  onDelete?: () => Promise<void>;
   onSavingChange?: (saving: boolean) => void;
 };
 
@@ -32,6 +34,7 @@ export function ActivityForm({
   onSubmit,
   onCancel,
   onSavingChange,
+  onDelete,
 }: Props) {
   const { t } = useTranslation();
   const [title, setTitle] = useState(activity?.title ?? '');
@@ -57,9 +60,10 @@ export function ActivityForm({
   const unresolvedNewPlace = placeChanged && !!placeId && resolution.status !== 'ready';
   const save = async () => {
     if (busy.current || selecting || unresolvedNewPlace) return;
-    const estimatedCost = cost.trim() ? Number(cost.replace(',', '.')) : null;
+    const estimatedCost = cost.trim() ? parseAmount(cost) : null;
     if (
       !title.trim() ||
+      (cost.trim() !== '' && estimatedCost === null) ||
       (estimatedCost !== null && (!Number.isFinite(estimatedCost) || estimatedCost < 0)) ||
       (time && !/^([01]\d|2[0-3]):[0-5]\d$/.test(time))
     ) {
@@ -70,6 +74,7 @@ export function ActivityForm({
     setSaving(true);
     onSavingChange?.(true);
     setError(null);
+
     try {
       await onSubmit({
         dayId,
@@ -197,6 +202,36 @@ export function ActivityForm({
           }}
           disabled={!title.trim() || saving || selecting || unresolvedNewPlace}
         />
+        {onDelete && (
+          <PlacesButton
+            secondary
+            title={t('common.delete')}
+            disabled={saving}
+            onPress={() => {
+              Alert.alert(t('common.delete'), t('fixes.deleteActivityConfirm'), [
+                { text: t('common.cancel'), style: 'cancel' },
+                {
+                  text: t('common.delete'),
+                  style: 'destructive',
+                  onPress: () => {
+                    if (busy.current) return;
+                    busy.current = true;
+                    setSaving(true);
+                    onSavingChange?.(true);
+                    setError(null);
+                    void onDelete()
+                      .catch(() => setError('delete'))
+                      .finally(() => {
+                        busy.current = false;
+                        setSaving(false);
+                        onSavingChange?.(false);
+                      });
+                  },
+                },
+              ]);
+            }}
+          />
+        )}
         <PlacesButton title={t('common.cancel')} secondary onPress={onCancel} disabled={saving} />
       </ScrollView>
     </View>

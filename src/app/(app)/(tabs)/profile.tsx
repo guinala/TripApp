@@ -1,5 +1,5 @@
 import { PlacesStatus } from '@/components/explore/PlacesStatus';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -30,6 +30,8 @@ function activeSince(createdAt: string, t: TFunction): string {
 export default function ProfileScreen() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
+  const scroll = useRef<ScrollView>(null);
+  const statsY = useRef(0);
   const user = useAuthStore((s) => s.user);
   const userId = user?.id;
 
@@ -92,9 +94,12 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView
+        ref={scroll}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing || statsLoading} onRefresh={onRefresh} />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing || statsLoading} onRefresh={onRefresh} />
+        }
       >
         <View style={styles.configRow}>
           <Pressable
@@ -117,7 +122,13 @@ export default function ProfileScreen() {
           <Text style={styles.subtitle}>{subtitle}</Text>
         </View>
 
-        <StatsPill items={statItems} />
+        <View
+          onLayout={(event) => {
+            statsY.current = event.nativeEvent.layout.y;
+          }}
+        >
+          <StatsPill items={statItems} />
+        </View>
         <PlacesStatus
           loading={statsLoading}
           error={statsError}
@@ -147,19 +158,23 @@ export default function ProfileScreen() {
             icon="briefcase-outline"
             title={t('profile.options.packingTemplates')}
             subtitle={t('profile.options.packingTemplatesSubtitle')}
-            onPress={() => router.push('/settings')}
+            onPress={() =>
+              router.push({ pathname: '/profile/trips', params: { section: 'packing' } })
+            }
           />
           <ProfileOptionCard
             icon="book-outline"
             title={t('profile.options.diaries')}
             subtitle={t('profile.options.diariesCount', { count: trips.length })}
-            onPress={() => router.push('/(app)/(tabs)')}
+            onPress={() =>
+              router.push({ pathname: '/profile/trips', params: { section: 'diary' } })
+            }
           />
           <ProfileOptionCard
             icon="bar-chart-outline"
             title={t('profile.options.stats')}
             subtitle={t('profile.options.statsSubtitle', { count: stats?.tripCount ?? 0 })}
-            onPress={() => router.push('/profile/edit')}
+            onPress={() => scroll.current?.scrollTo({ y: statsY.current, animated: true })}
           />
           <ProfileOptionCard
             icon="share-social-outline"

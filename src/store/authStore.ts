@@ -83,10 +83,10 @@ export const useAuthStore = create<AuthState>((set) => ({
       // 1. Intentar inicio de sesión nativo con Google Play Services (Android Only)
       await GoogleSignin.hasPlayServices();
       const response = await GoogleSignin.signIn();
-      if (response.data?.idToken) {
+      if (response.user?.id) {
         const { error } = await supabase.auth.signInWithIdToken({
           provider: "google",
-          token: response.data.idToken,
+          token: response.user?.id,
         });
         if (error) throw error;
         return;

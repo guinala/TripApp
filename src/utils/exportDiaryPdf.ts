@@ -1,155 +1,123 @@
-import * as Print from 'expo-print';
-import * as Sharing from 'expo-sharing';
-import { format, parseISO } from 'date-fns';
-import { es } from 'date-fns/locale';
-import type { DiaryDayGroup } from '@/hooks/use-diary-photos';
+import * as Print from "expo-print";
+import * as Sharing from "expo-sharing";
+import { File } from "expo-file-system";
+import { fetch as expoFetch } from "expo/fetch";
+import { encode } from "base64-arraybuffer";
+import { Platform } from "react-native";
+import i18n from "@/i18n";
+import { supabase } from "@/services/supabase";
+import { accountVersion, assertAccount } from "@/services/account-session";
+import type { DiaryDayGroup } from "@/hooks/use-diary-photos";
+import { buildDiaryHtml, type DiaryPdfMeta } from "./diaryHtml";
+export type { DiaryPdfMeta } from "./diaryHtml";
 
-export type DiaryPdfMeta = {
-  tripTitle: string;
-  destination: string;
-  startDate: string; // ISO
-  endDate: string; // ISO
-};
+export async function exportDiaryToPdf(
+  meta: DiaryPdfMeta,
+  groups: DiaryDayGroup[],
+): Promise<void> {
+  const started = accountVersion();
+  assertAccount(started);
+  const language = i18n.language;
+  const photos = groups.flatMap((group) => group.photos);
 
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-function coverPageHtml(meta: DiaryPdfMeta): string {
-  const range = `${format(parseISO(meta.startDate), 'd MMM', { locale: es })} - ${format(
-    parseISO(meta.endDate),
-    'd MMM yyyy',
-    { locale: es },
-  )}`;
-
-  return `
-    <section class="cover">
-      <p class="cover-eyebrow">DIARIO DE VIAJE</p>
-      <h1 class="cover-title">${escapeHtml(meta.tripTitle)}</h1>
-      <p class="cover-meta">${escapeHtml(meta.destination)} · ${range}</p>
-    </section>
-  `;
-}
-
-function dayPageHtml(group: DiaryDayGroup, destination: string): string {
-  const heading = group.day
-    ? `Día ${group.day.dayNumber} · ${format(parseISO(group.day.date), "d 'de' MMMM", { locale: es })}`
-    : 'Fotos sueltas';
-
-  const photosHtml = group.photos
-    .filter((p) => p.uri)
-    .map((photo) => {
-      const caption = photo.caption ? `<p class="caption">${escapeHtml(photo.caption)}</p>` : '';
-      return `
-        <figure class="photo">
-          <img src="${photo.uri}" />
-          ${caption}
-        </figure>a
-      `;
-    })
-    .join('\n');
-
-  return `
-    <section class="day-page">
-      <p class="day-eyebrow">${escapeHtml(destination)}</p>
-      <h2 class="day-title">${escapeHtml(heading)}</h2>
-      <div class="photo-grid">
-        ${photosHtml}
-      </div>
-    </section>
-  `;
-}
-
-function buildHtml(meta: DiaryPdfMeta, groups: DiaryDayGroup[]): string {
-  const pages = [coverPageHtml(meta), ...groups.map((g) => dayPageHtml(g, meta.destination))].join(
-    '\n<div class="page-break"></div>\n',
-  );
-
-  return `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta charset="utf-8" />
-        <style>
-          * { box-sizing: border-box; margin: 0; padding: 0; }
-          body { font-family: -apple-system, Helvetica, Arial, sans-serif; color: #1b2d4f; }
-          .page-break { page-break-after: always; }
-
-          .cover {
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            padding: 40px;
-          }
-          .cover-eyebrow {
-            font-size: 12px;
-            font-weight: 700;
-            letter-spacing: 2px;
-            color: #e26d4f;
-            margin-bottom: 16px;
-          }
-          .cover-title {
-            font-family: Georgia, 'Times New Roman', serif;
-            font-style: italic;
-            font-size: 48px;
-            margin-bottom: 12px;
-          }
-          .cover-meta { font-size: 15px; color: #6b7a99; }
-
-          .day-page { padding: 32px; }
-          .day-eyebrow {
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            color: #6b7a99;
-            margin-bottom: 4px;
-          }
-          .day-title {
-            font-family: Georgia, 'Times New Roman', serif;
-            font-style: italic;
-            font-size: 26px;
-            margin-bottom: 20px;
-          }
-
-          .photo-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 14px;
-          }
-          .photo { break-inside: avoid; }
-          .photo img {
-            width: 100%;
-            border-radius: 10px;
-            display: block;
-            object-fit: cover;
-          }
-          .caption { font-size: 11px; color: #4f5f7e; margin-top: 6px; }
-        </style>
-      </head>
-      <body>
-        ${pages}
-      </body>
-    </html>
-  `;
-}
-
-export async function exportDiaryToPdf(meta: DiaryPdfMeta, groups: DiaryDayGroup[]): Promise<void> {
-  const html = buildHtml(meta, groups);
-  const { uri } = await Print.printToFileAsync({ html, base64: false });
-
-  const available = await Sharing.isAvailableAsync();
-  if (!available) {
-    throw new Error('Compartir no está disponible en este dispositivo');
+  if (!photos.length || photos.length > 60) {
+    throw new Error(i18n.t("fixes.pdfLimit"));
   }
-  await Sharing.shareAsync(uri, {
-    mimeType: 'application/pdf',
-    UTI: 'com.adobe.pdf',
-  });
+
+  // Abrir durante el gesto evita el bloqueador de ventanas en navegador.
+  const popup = Platform.OS === "web" ? window.open("", "_blank") : null;
+  if (Platform.OS === "web" && !popup) {
+    throw new Error(i18n.t("fixes.popupBlocked"));
+  }
+
+  if (popup) popup.opener = null;
+
+  let file: File | null = null;
+
+  try {
+    // Firmas nuevas: no depender de una URL expirada que llevaba una hora en pantalla.
+    const { data, error } = await supabase.storage.from("trip-photos")
+      .createSignedUrls(
+        photos.map((p) => p.uri),
+        600,
+      );
+
+    assertAccount(started);
+
+    if (error) throw error;
+
+    const images = new Map<string, string>();
+    let bytes = 0;
+
+    for (let index = 0; index < photos.length; index++) {
+      const signed = data?.[index];
+      if (!signed?.signedUrl || signed.error) {
+        throw new Error(i18n.t("fixes.pdfImageError"));
+      }
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 15_000);
+      try {
+        const response = await expoFetch(signed.signedUrl, {
+          signal: controller.signal,
+        });
+
+        if (!response.ok) throw new Error(i18n.t("fixes.pdfImageError"));
+
+        const mime = (response.headers.get("content-type") ?? "").split(";")[0];
+
+        if (!["image/jpeg", "image/png", "image/webp"].includes(mime)) {
+          throw new Error(i18n.t("fixes.pdfImageError"));
+        }
+
+        const declared = Number(response.headers.get("content-length"));
+
+        if (declared > 8_000_000) throw new Error(i18n.t("fixes.pdfLimit"));
+
+        const buffer = await response.arrayBuffer();
+        bytes += buffer.byteLength;
+
+        if (buffer.byteLength > 8_000_000 || bytes > 24_000_000) {
+          throw new Error(i18n.t("fixes.pdfLimit"));
+        }
+
+        assertAccount(started);
+        images.set(photos[index].id, `data:${mime};base64,${encode(buffer)}`);
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    const html = buildDiaryHtml(meta, groups, images, language);
+    assertAccount(started);
+
+    if (popup) {
+      popup.document.open();
+      popup.document.write(html);
+      popup.document.close();
+      await Promise.all(
+        Array.from(popup.document.images).map((img) => img.decode()),
+      );
+      assertAccount(started);
+      popup.focus();
+      popup.print();
+      return;
+    }
+
+    if (!(await Sharing.isAvailableAsync())) {
+      throw new Error(i18n.t("fixes.shareUnavailable"));
+    }
+
+    const printed = await Print.printToFileAsync({ html, base64: false });
+    file = new File(printed.uri);
+    assertAccount(started);
+    await Sharing.shareAsync(file.uri, {
+      mimeType: "application/pdf",
+      UTI: "com.adobe.pdf",
+    });
+  } catch (error) {
+    popup?.close();
+    throw error;
+  } finally {
+    if (file?.exists) file.delete();
+  }
 }

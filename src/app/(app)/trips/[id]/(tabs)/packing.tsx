@@ -1,3 +1,4 @@
+import { LoadNotice } from '@/components/ui/LoadNotice';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -45,6 +46,7 @@ export default function PackingScreen() {
 
   const items = usePackingItems(tripId);
   const loading = usePackingLoading(tripId);
+  const error = usePackingStore((s) => s.errorByTrip[tripId]);
   const fetchItems = usePackingStore((s) => s.fetchItems);
   const toggle = usePackingStore((s) => s.toggle);
   const addItem = usePackingStore((s) => s.addItem);
@@ -90,7 +92,7 @@ export default function PackingScreen() {
         category: cat,
         label: t(CATEGORY_LABEL_KEY[cat]),
         data: items.filter((i) => i.category === cat),
-      })).filter((s) => s.data.length > 0),
+      })),
     [items, t],
   );
 
@@ -168,20 +170,16 @@ export default function PackingScreen() {
         <View style={styles.centered}>
           <ActivityIndicator color={colors.primary} />
         </View>
-      ) : items.length === 0 ? (
-        <View style={styles.centered}>
-          <Text style={styles.emptyTitle}>{t('packing.emptyTitle')}</Text>
-          <Text style={styles.emptyText}>{t('packing.emptyText')}</Text>
-          <Pressable style={styles.emptyBtn} onPress={() => setTemplatesOpen(true)}>
-            <Text style={styles.emptyBtnText}>{t('packing.loadTemplate')}</Text>
-          </Pressable>
-        </View>
       ) : (
         <ScrollView
           style={styles.flex}
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
         >
+          <LoadNotice error={!!error} onRetry={() => void fetchItems(tripId)} />
+          {!error && items.length === 0 && (
+            <Text style={styles.emptyText}>{t('fixes.manualPacking')}</Text>
+          )}
           <View style={styles.datos}>
             <View style={styles.chartGroup}>
               <PackingProgressRing done={done} total={items.length} />
@@ -239,7 +237,13 @@ const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 10 },
   content: { paddingTop: 16, paddingHorizontal: 20, paddingBottom: 120, gap: 20 },
 
-  datos: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  datos: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 16,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   chartGroup: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   amount: { width: 104, gap: 5 },
   info: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

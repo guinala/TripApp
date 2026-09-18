@@ -1,4 +1,3 @@
-// src/components/budget/CategorySelector.tsx
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -35,9 +34,7 @@ export function CategorySelector({ value, onChange }: Props) {
               onPress={() => onChange(c.key)}
             >
               <Ionicons name={EXPENSE_ICON[c.key]} size={22} color={tint} />
-              <Text style={[styles.itemLabel, active && { color: tint }]} numberOfLines={1}>
-                {t(c.labelKey)}
-              </Text>
+              <Text style={[styles.itemLabel, active && { color: tint }]}>{t(c.labelKey)}</Text>
             </Pressable>
           );
         })}
@@ -55,9 +52,10 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textTransform: 'uppercase',
   },
-  grid: { flexDirection: 'row', gap: spacing.s2 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.s2 },
   item: {
-    flex: 1,
+    flexGrow: 1,
+    minWidth: 90,
     alignItems: 'center',
     gap: spacing.s1,
     paddingVertical: spacing.s3,

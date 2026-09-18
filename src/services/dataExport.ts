@@ -1,34 +1,24 @@
-import { supabase } from '@/services/supabase';
+import { supabase } from "@/services/supabase";
+import { accountOwner, accountVersion, assertAccount } from "./account-session";
 
 export async function exportUserData(userId: string) {
-  const [profileRes, tripsRes] = await Promise.all([
-    supabase.from('profiles').select('*').eq('id', userId).single(),
-    supabase.from('trips').select('*').eq('user_id', userId),
-  ]);
-  if (tripsRes.error) throw tripsRes.error;
+  const started = accountVersion();
+  assertAccount(started);
+  if (userId !== accountOwner()) throw new Error("SESSION_CHANGED");
+  const { data, error } = await supabase.rpc("export_my_data");
+  assertAccount(started);
 
-  const trips = tripsRes.data ?? [];
-  const tripIds = trips.map((t) => t.id);
+  if (error) throw error;
 
-  const [daysRes, expensesRes, packingRes, photosRes] = await Promise.all([
-    supabase.from('days').select('*').in('trip_id', tripIds),
-    supabase.from('expenses').select('*').in('trip_id', tripIds),
-    supabase.from('packing_items').select('*').in('trip_id', tripIds),
-    supabase.from('photos').select('*').in('trip_id', tripIds),
-  ]);
+  if (
+    !data || typeof data !== "object" || Array.isArray(data) || !data.profile
+  ) {
+    throw new Error("INCOMPLETE_EXPORT");
+  }
 
-  const dayIds = (daysRes.data ?? []).map((d) => d.id);
-  const activitiesRes = await supabase.from('activities').select('*').in('day_id', dayIds);
+  if (JSON.stringify(data).length > 20_000_000) {
+    throw new Error("EXPORT_TOO_LARGE");
+  }
 
-  return {
-    exported_at: new Date().toISOString(),
-    format_version: 1,
-    profile: profileRes.data,
-    trips,
-    days: daysRes.data ?? [],
-    activities: activitiesRes.data ?? [],
-    expenses: expensesRes.data ?? [],
-    packing_items: packingRes.data ?? [],
-    photos: photosRes.data ?? [],
-  };
+  return data;
 }

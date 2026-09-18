@@ -6,6 +6,7 @@ import { useTripDetail } from '@/context/TripDetailContext';
 import type { Activity } from '@/types/activity';
 import { ActivityForm } from './ActivityForm';
 import { ui } from '@/components/explore/PlacesUI';
+
 export function AddActivityModal({
   dayId,
   activity = null,
@@ -16,9 +17,11 @@ export function AddActivityModal({
   onClose: () => void;
 }) {
   const { t } = useTranslation();
-  const { trip, days, addActivity, updateActivity, destinationResolution } = useTripDetail();
+  const { trip, days, addActivity, updateActivity, removeActivity, destinationResolution } =
+    useTripDetail();
   const [saving, setSaving] = useState(false);
   const day = days.find((d) => d.id === dayId);
+
   return (
     <Modal
       visible={!!dayId}
@@ -46,6 +49,14 @@ export function AddActivityModal({
               center={destinationResolution.place?.location ?? undefined}
               onSavingChange={setSaving}
               onCancel={onClose}
+              onDelete={
+                activity
+                  ? async () => {
+                      await removeActivity(activity.id);
+                      onClose();
+                    }
+                  : undefined
+              }
               onSubmit={async (input) => {
                 if (activity) await updateActivity(activity.id, input);
                 else await addActivity(input);

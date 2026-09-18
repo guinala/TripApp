@@ -1,46 +1,46 @@
-import { ExpenseCategory } from '@/types/expense';
+import { ExpenseCategory } from "@/types/expense";
 
 export const colors = {
   // Primary
-  primary: '#e26d4f',
-  primary700: '#c85738',
-  primary100: '#fbe8df',
-  primary50: '#fdf4ef',
+  primary: "#B54832",
+  primary700: "#913925",
+  primary100: "#fbe8df",
+  primary50: "#fdf4ef",
   // Secundary
-  secondary: '#1b2d4f',
-  secondaryDark: '#0f1b33',
-  secondary700: '#2e4373',
-  secondary300: '#6b7a99',
-  secondary100: '#dce3f0',
+  secondary: "#1B2D4F",
+  secondaryDark: "#0f1b33",
+  secondary700: "#2e4373",
+  secondary300: "#6b7a99",
+  secondary100: "#dce3f0",
   //Accent
-  accent: '#e8b547',
-  accent100: '#fff4d4',
+  accent: "#e8b547",
+  accent100: "#fff4d4",
   // Surface
-  surfacePaper: '#fffcf7',
-  surfaceCream: '#fbf2ea',
-  surfaceAlt: '#f4efe5',
+  surfacePaper: "#FFFFFF",
+  surfaceCream: "#F7F8FA",
+  surfaceAlt: "#EAF0F7",
   // Accent
-  textPrimary: '#1b2d4f',
-  textSecondary: '#4f5f7e',
-  textMetadata: '#8a95ac',
-  textSubtitle: '#d9d9d9',
+  textPrimary: "#1b2d4f",
+  textSecondary: "#4f5f7e",
+  textMetadata: "#53627A",
+  textSubtitle: "#53627A",
   // States
-  success: '#2d7a55',
-  warning: '#e8b547',
-  danger: '#c84a2e',
+  success: "#2d7a55",
+  warning: "#e8b547",
+  danger: "#B4233A",
   // Misc
-  white: '#ffffff',
-  cardBorder: '#D9D9D9',
-  ink: '#1B2D4F',
+  white: "#ffffff",
+  cardBorder: "#D9D9D9",
+  ink: "#1B2D4F",
 } as const;
 
 export const categoryColors = {
-  visit: '#e26d4f',
-  restaurant: '#c99422',
-  transport: '#1b2d4f',
-  hotel: '#2d7a55',
-  entertainment: '#8b5cb8',
-  others: '#6b7a99',
+  visit: "#e26d4f",
+  restaurant: "#c99422",
+  transport: "#1b2d4f",
+  hotel: "#2d7a55",
+  entertainment: "#8b5cb8",
+  others: "#6b7a99",
 } as const;
 
 export const expenseCategoryColors: Record<ExpenseCategory, string> = {
@@ -89,20 +89,20 @@ export const spacing = {
 } as const;
 
 export const fonts = {
-  sansRegular: 'PlusJakartaSans-Regular', // 400
-  sansMedium: 'PlusJakartaSans-Medium', // 500
-  sansSemiBold: 'PlusJakartaSans-SemiBold', // 600
-  sansBold: 'PlusJakartaSans-Bold', // 700
-  sansExtraBold: 'PlusJakartaSans-ExtraBold', // 800
-  serif: 'InstrumentSerif-Regular',
-  serifItalic: 'InstrumentSerif-Italic',
-  mono: 'JetBrainsMono-Regular',
+  sansRegular: "PlusJakartaSans-Regular", // 400
+  sansMedium: "PlusJakartaSans-Medium", // 500
+  sansSemiBold: "PlusJakartaSans-SemiBold", // 600
+  sansBold: "PlusJakartaSans-Bold", // 700
+  sansExtraBold: "PlusJakartaSans-ExtraBold", // 800
+  serif: "InstrumentSerif-Regular",
+  serifItalic: "InstrumentSerif-Italic",
+  mono: "JetBrainsMono-Regular",
 } as const;
 
 export const onboarding = {
-  overlayTop: 'rgba(226, 109, 79, 0.67)',
-  overlayBottom: 'rgba(113, 37, 37, 0.9)',
-  gold: '#ffdb8f',
-  muted: '#d0c8c8',
-  cta: '#ff5a14',
+  overlayTop: "rgba(226, 109, 79, 0.67)",
+  overlayBottom: "rgba(113, 37, 37, 0.9)",
+  gold: "#ffdb8f",
+  muted: "#d0c8c8",
+  cta: "#ff5a14",
 } as const;

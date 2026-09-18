@@ -1,7 +1,7 @@
 import { Alert, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
-import { router, useLocalSearchParams, withLayoutContext } from 'expo-router';
+import { router, useLocalSearchParams, useSegments, withLayoutContext } from 'expo-router';
 import { createMaterialTopTabNavigator } from 'expo-router/js-top-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, fontSize, spacing } from '@/constants/theme';
@@ -22,6 +22,8 @@ const MaterialTopTabs = withLayoutContext(Navigator);
 
 export default function TripDetailLayout() {
   const { t } = useTranslation();
+  const segments = useSegments();
+  const showMap = segments[segments.length - 1] === 'itinerary';
   const { id } = useLocalSearchParams<{ id: string }>();
   const { trip, loading, error, retry } = useTripRecord(id);
   const destination = useTripDestinationLabel(trip);
@@ -75,6 +77,13 @@ export default function TripDetailLayout() {
               </Text>
             </Pressable>
             <Pressable
+              accessibilityRole="button"
+              style={{ minHeight: 44, justifyContent: 'center' }}
+              onPress={() => router.push({ pathname: '/trips/new', params: { id } })}
+            >
+              <Text style={{ color: colors.primary }}>{t('common.edit')}</Text>
+            </Pressable>
+            <Pressable
               onPress={handleDeleteTrip}
               hitSlop={8}
               accessibilityRole="button"
@@ -99,27 +108,31 @@ export default function TripDetailLayout() {
           <Text style={{ color: colors.secondary }}>{destination.label}</Text>
           {destination.place && <PlacesAttribution attributions={destination.place.attributions} />}
         </View>
-        <TripMap />
+        {showMap && (
+          <>
+            <TripMap />
 
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <View style={{ flex: 1 }}>
-            <DayFilter />
-          </View>
-          <Pressable onPress={() => setMapOpen(true)} style={{ paddingRight: spacing.s5 }}>
-            <Text
-              style={{
-                fontFamily: fonts.sansSemiBold,
-                fontSize: fontSize.label,
-                color: colors.primary,
-              }}
-            >
-              {t('tripDetail.viewFullMap')} →
-            </Text>
-          </Pressable>
-        </View>
-
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={{ flex: 1 }}>
+                <DayFilter />
+              </View>
+              <Pressable onPress={() => setMapOpen(true)} style={{ paddingRight: spacing.s5 }}>
+                <Text
+                  style={{
+                    fontFamily: fonts.sansSemiBold,
+                    fontSize: fontSize.label,
+                    color: colors.primary,
+                  }}
+                >
+                  {t('tripDetail.viewFullMap')} →
+                </Text>
+              </Pressable>
+            </View>
+          </>
+        )}
         <MaterialTopTabs
           screenOptions={{
+            tabBarScrollEnabled: true,
             tabBarActiveTintColor: colors.primary,
             tabBarInactiveTintColor: colors.secondary300,
             tabBarLabelStyle: {
@@ -143,7 +156,7 @@ export default function TripDetailLayout() {
           <MaterialTopTabs.Screen name="diary" options={{ title: t('tripDetail.tabs.diary') }} />
         </MaterialTopTabs>
 
-        {mapOpen ? <FullMapModal visible onClose={() => setMapOpen(false)} /> : null}
+        {showMap && mapOpen ? <FullMapModal visible onClose={() => setMapOpen(false)} /> : null}
       </SafeAreaView>
     </TripDetailProvider>
   );

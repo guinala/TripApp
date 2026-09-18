@@ -1,3 +1,6 @@
+import { LoadNotice } from '@/components/ui/LoadNotice';
+import { useLocalToday } from '@/hooks/use-local-today';
+import { tripStatus } from '@/utils/tripStatus';
 import { View, Text, StyleSheet, FlatList, RefreshControl } from 'react-native';
 import type { ViewToken } from 'react-native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -14,8 +17,6 @@ import { colors, fonts, fontSize } from '@/constants/theme';
 import TripsEmptyState from '@/components/trips/TripsEmptyState';
 import { SwipeableTripCard } from '@/components/trips/SwipeableTripCard';
 import { Fab } from '@/components/ui/Fab';
-import { useUIStore } from '@/store/uiStore';
-import { resyncNotifications } from '@/services/notifications';
 import { useTranslation } from 'react-i18next';
 
 const VIEWABILITY_CONFIG = { itemVisiblePercentThreshold: 50 };
@@ -26,7 +27,16 @@ export default function TripsScreen() {
   const insets = useSafeAreaInsets();
 
   const user = useAuthStore((s) => s.user);
-  const trips = useTripStore((s) => s.trips);
+  const savedTrips = useTripStore((s) => s.trips);
+  const today = useLocalToday();
+  const trips = useMemo(
+    () =>
+      savedTrips.map((trip) => ({
+        ...trip,
+        status: tripStatus(trip.startDate, trip.endDate, today),
+      })),
+    [savedTrips, today],
+  );
   const loading = useTripStore((s) => s.loading);
   const error = useTripStore((s) => s.error);
   const fetchTrips = useTripStore((s) => s.fetchTrips);
@@ -43,16 +53,6 @@ export default function TripsScreen() {
   useEffect(() => {
     fetchTrips();
   }, [fetchTrips]);
-
-  useEffect(() => {
-    if (trips.length === 0) return;
-    const s = useUIStore.getState();
-    resyncNotifications(trips, {
-      tripReminders: s.notifTripReminders,
-      budgetSummary: s.notifBudgetSummary,
-      weeklyInspiration: s.notifWeeklyInspiration,
-    });
-  }, [trips]);
 
   const displayName =
     (user?.user_metadata?.display_name as string | undefined) ??
@@ -97,7 +97,13 @@ export default function TripsScreen() {
         refreshControl={
           <RefreshControl refreshing={loading} onRefresh={fetchTrips} tintColor={colors.primary} />
         }
-        ListEmptyComponent={loading || error ? null : <TripsEmptyState />}
+        ListEmptyComponent={
+          loading || error ? null : trips.length > 0 ? (
+            <LoadNotice message={t('fixes.emptyFilter')} onRetry={() => setFilter('all')} />
+          ) : (
+            <TripsEmptyState />
+          )
+        }
       />
 
       <Fab

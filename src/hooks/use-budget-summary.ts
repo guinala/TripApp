@@ -1,13 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
-import type { Expense, ExpenseCategory } from '@/types/expense';
-import { useExpenseStore } from '@/store/expenseStore';
-import { calculateTotalInCurrency } from '@/utils/calculateTotal';
+import { useCallback, useEffect, useState } from "react";
+import { differenceInCalendarDays, parseISO } from "date-fns";
+import type { Expense, ExpenseCategory } from "@/types/expense";
+import { useExpenseStore } from "@/store/expenseStore";
+import { getRateOn } from "@/services/exchangeRates";
 
-const EMPTY: Expense[] = [];
+export type BudgetStatus = "safe" | "caution" | "warning" | "over";
 
-export type BudgetStatus = 'safe' | 'caution' | 'warning' | 'over';
-
-export type DonutSegmentKey = ExpenseCategory | 'remaining';
+export type DonutSegmentKey = ExpenseCategory | "remaining";
 
 export type DonutSegment = {
   key: DonutSegmentKey;
@@ -15,18 +14,14 @@ export type DonutSegment = {
   percentage: number;
 };
 
-export type CategoryBreakdown = {
-  category: ExpenseCategory;
-  amount: number;
-};
+export type CategoryBreakdown = { category: ExpenseCategory; amount: number };
 
-export type DayBreakdown = {
-  date: string; // YYYY-MM-DD
-  amount: number;
-};
+export type DayBreakdown = { date: string; amount: number };
 
 export interface BudgetSummary {
   loading: boolean;
+  error: boolean;
+  retry: () => void;
   spent: number | null;
   remaining: number | null;
   percentage: number | null;
@@ -37,105 +32,93 @@ export interface BudgetSummary {
   byDay: DayBreakdown[];
 }
 
-export function getBudgetStatus(percentage: number | null): BudgetStatus {
-  if (percentage === null) return 'safe';
-  if (percentage > 100) return 'over';
-  if (percentage > 80) return 'warning';
-  if (percentage > 60) return 'caution';
-  return 'safe';
+export function getBudgetStatus(value: number | null): BudgetStatus {
+  return value === null
+    ? "safe"
+    : value > 100
+    ? "over"
+    : value > 80
+    ? "warning"
+    : value > 60
+    ? "caution"
+    : "safe";
 }
 
-function elapsedTripDays(start?: string, end?: string): number | null {
-  if (!start) return null;
-  const MS = 86_400_000;
-  const startMs = new Date(start).getTime();
-  const endMs = end ? new Date(end).getTime() : Date.now();
-  const nowMs = Date.now();
-  const clamped = Math.min(Math.max(nowMs, startMs), endMs);
-  return Math.max(1, Math.floor((clamped - startMs) / MS) + 1);
-}
+const EMPTY: Expense[] = [];
 
-async function breakdownBy<K extends string>(
-  expenses: Expense[],
-  keyOf: (e: Expense) => K,
-  targetCurrency: string,
-): Promise<{ key: K; amount: number }[]> {
-  const groups = new Map<K, Expense[]>();
-  for (const e of expenses) {
-    const k = keyOf(e);
-    const arr = groups.get(k);
-    if (arr) arr.push(e);
-    else groups.set(k, [e]);
-  }
-
-  const entries = [...groups.entries()];
-  const amounts = await Promise.all(
-    entries.map(([, list]) => calculateTotalInCurrency(list, targetCurrency)),
-  );
-
-  return entries.map(([key], i) => ({ key, amount: amounts[i] }));
-}
-
-// Sin setState síncrono en el efecto (react-hooks/set-state-in-effect):
-// el efecto solo guarda el resultado junto a los inputs de su petición y
-// `loading` se deriva en el render comparando identidades.
-type BudgetResult = {
+type Result = {
   expenses: Expense[];
-  currency: string;
+  key: string;
   spent: number | null;
   byCategory: CategoryBreakdown[];
   byDay: DayBreakdown[];
+  error: boolean;
 };
-
-const NO_CATEGORIES: CategoryBreakdown[] = [];
-const NO_DAYS: DayBreakdown[] = [];
 
 export function useBudgetSummary(
   tripId: string,
   budget: number,
-  tripCurrency: string,
-  tripStart?: string,
-  tripEnd?: string,
+  currency: string,
+  start?: string,
+  end?: string,
 ): BudgetSummary {
   const expenses = useExpenseStore((s) => s.byTrip[tripId] ?? EMPTY);
-
-  const [result, setResult] = useState<BudgetResult | null>(null);
+  const loaded = useExpenseStore((s) => s.byTrip[tripId] !== undefined);
+  const sourceLoading = useExpenseStore((s) =>
+    s.loadingByTrip[tripId] ?? false
+  );
+  const sourceError = useExpenseStore((s) => s.errorByTrip[tripId]);
+  const [attempt, setAttempt] = useState(0);
+  const retry = useCallback(() => setAttempt((n) => n + 1), []);
+  const key = JSON.stringify([tripId, currency, attempt]);
+  const [result, setResult] = useState<Result | null>(null);
 
   useEffect(() => {
-    if (expenses.length === 0) return;
-
     let cancelled = false;
-    (async () => {
+    void (async () => {
       try {
-        const [total, cats, days] = await Promise.all([
-          calculateTotalInCurrency(expenses, tripCurrency),
-          breakdownBy(expenses, (e) => e.category, tripCurrency),
-          breakdownBy(expenses, (e) => e.date, tripCurrency),
-        ]);
-
-        if (cancelled) return;
-
-        setResult({
-          expenses,
-          currency: tripCurrency,
-          spent: total,
-          byCategory: cats
-            .map((c) => ({ category: c.key as ExpenseCategory, amount: c.amount }))
-            .sort((a, b) => b.amount - a.amount),
-          byDay: days
-            .map((d) => ({ date: d.key, amount: d.amount }))
-            .sort((a, b) => a.date.localeCompare(b.date)),
-        });
-      } catch {
-        // Marca la petición como resuelta conservando los últimos valores.
+        let spent = 0;
+        const categories = new Map<ExpenseCategory, number>();
+        const dates = new Map<string, number>();
+        for (const expense of expenses) {
+          const { rate } = await getRateOn(
+            expense.currency,
+            currency,
+            expense.date,
+          );
+          if (cancelled) return;
+          const amount = expense.amount * rate;
+          spent += amount;
+          categories.set(
+            expense.category,
+            (categories.get(expense.category) ?? 0) + amount,
+          );
+          dates.set(expense.date, (dates.get(expense.date) ?? 0) + amount);
+        }
         if (!cancelled) {
-          setResult((prev) => ({
+          setResult({
             expenses,
-            currency: tripCurrency,
-            spent: prev?.spent ?? null,
-            byCategory: prev?.byCategory ?? NO_CATEGORIES,
-            byDay: prev?.byDay ?? NO_DAYS,
-          }));
+            key,
+            spent,
+            error: false,
+            byCategory: [...categories]
+              .map(([category, amount]) => ({ category, amount }))
+              .sort((a, b) => b.amount - a.amount),
+            byDay: [...dates]
+              .map(([date, amount]) => ({ date, amount }))
+              .sort((a, b) => a.date.localeCompare(b.date)),
+          });
+        }
+      } catch {
+        if (!cancelled) {
+          setResult({
+            expenses,
+            key,
+            spent: null,
+            error: true,
+            byCategory: [],
+            byDay: [],
+          });
         }
       }
     })();
@@ -143,56 +126,58 @@ export function useBudgetSummary(
     return () => {
       cancelled = true;
     };
-  }, [expenses, tripCurrency]);
+  }, [expenses, currency, key]);
 
-  return useMemo(() => {
-    const isEmpty = expenses.length === 0;
-    const upToDate =
-      result !== null && result.expenses === expenses && result.currency === tripCurrency;
-    const loading = !isEmpty && !upToDate;
-    const spent = isEmpty ? 0 : (result?.spent ?? null);
-    const byCategory = isEmpty ? NO_CATEGORIES : (result?.byCategory ?? NO_CATEGORIES);
-    const byDay = isEmpty ? NO_DAYS : (result?.byDay ?? NO_DAYS);
+  const current = result?.key === key && result.expenses === expenses
+    ? result
+    : null;
+  const loading = sourceLoading || (!loaded && !sourceError) || !current;
+  const error = !!sourceError || !!current?.error;
+  const valid = loaded && !loading && !error;
+  const spent = valid ? current!.spent : null;
+  const byCategory = valid ? current!.byCategory : [];
+  const byDay = valid ? current!.byDay : [];
+  const percentage = spent !== null && budget > 0
+    ? (spent / budget) * 100
+    : null;
+  const elapsed = start
+    ? Math.max(
+      1,
+      differenceInCalendarDays(
+        end && parseISO(end) < new Date() ? parseISO(end) : new Date(),
+        parseISO(start),
+      ) + 1,
+    )
+    : Math.max(1, byDay.length);
 
-    const percentage = spent !== null && budget > 0 ? (spent / budget) * 100 : null;
-    const remaining = spent !== null ? budget - spent : null;
+  const denom = spent !== null ? Math.max(spent, budget) : 0;
+  const donutSegments: DonutSegment[] = denom > 0
+    ? byCategory.map((item) => ({
+      key: item.category,
+      amount: item.amount,
+      percentage: (item.amount / denom) * 100,
+    }))
+    : [];
 
-    const days = elapsedTripDays(tripStart, tripEnd) ?? (byDay.length || 1);
-    const dailyAverage = spent !== null ? spent / days : null;
+  if (spent !== null && budget > spent) {
+    donutSegments.push({
+      key: "remaining",
+      amount: budget - spent,
+      percentage: ((budget - spent) / budget) * 100,
+    });
+  }
 
-    const donutSegments: DonutSegment[] = [];
-    if (spent !== null) {
-      const overBudget = spent > budget;
-      const denom = overBudget ? spent : budget;
-      if (denom > 0) {
-        for (const c of byCategory) {
-          donutSegments.push({
-            key: c.category,
-            amount: c.amount,
-            percentage: (c.amount / denom) * 100,
-          });
-        }
-        if (!overBudget) {
-          const rem = budget - spent;
-          donutSegments.push({
-            key: 'remaining',
-            amount: rem,
-            percentage: (rem / denom) * 100,
-          });
-        }
-      }
-    }
-
-    return {
-      loading,
-      spent,
-      remaining,
-      percentage,
-      status: getBudgetStatus(percentage),
-      dailyAverage,
-      byCategory,
-      donutSegments,
-      byDay,
-    };
-  }, [expenses, result, tripCurrency, budget, tripStart, tripEnd]);
+  return {
+    loading,
+    error,
+    retry,
+    spent,
+    remaining: spent !== null ? budget - spent : null,
+    percentage,
+    status: getBudgetStatus(percentage),
+    dailyAverage: spent !== null ? spent / elapsed : null,
+    byCategory,
+    byDay,
+    donutSegments,
+  };
 }

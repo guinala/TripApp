@@ -12,6 +12,7 @@ import { useAuthStore } from "@/store/authStore";
 type State = {
   trips: Trip[];
   loading: boolean;
+  loaded: boolean;
   error: string | null;
   upsertTrip: (trip: Trip) => void;
   fetchTrips: () => Promise<void>;
@@ -23,6 +24,7 @@ let generation = 0,
   listing = 0;
 const owner = () => useAuthStore.getState().user?.id;
 export const useTripStore = create<State>((set, get) => ({
+  loaded: false,
   trips: [],
   loading: false,
   error: null,
@@ -44,7 +46,7 @@ export const useTripStore = create<State>((set, get) => ({
     try {
       const trips = await listTrips(id);
       if (started === generation && request === listing) {
-        set({ trips, loading: false });
+        set({ trips, loading: false, loaded: true });
       }
     } catch (e) {
       if (started === generation && request === listing) {
@@ -80,6 +82,11 @@ useAuthStore.subscribe((state, previous) => {
   if (state.user?.id !== previous.user?.id) {
     generation++;
     listing++;
-    useTripStore.setState({ trips: [], loading: false, error: null });
+    useTripStore.setState({
+      trips: [],
+      loading: false,
+      loaded: false,
+      error: null,
+    });
   }
 });

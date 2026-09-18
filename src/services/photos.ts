@@ -1,8 +1,8 @@
-import { supabase } from '@/services/supabase';
-import type { Database } from '@/types/database';
-import type { Photo } from '@/types/photo';
+import { supabase } from "@/services/supabase";
+import type { Database } from "@/types/database";
+import type { Photo } from "@/types/photo";
 
-type PhotoRow = Database['public']['Tables']['photos']['Row'];
+type PhotoRow = Database["public"]["Tables"]["photos"]["Row"];
 
 export type CreatePhotoInput = {
   tripId: string;
@@ -13,7 +13,9 @@ export type CreatePhotoInput = {
   takenAt?: string; // ISO
 };
 
-export type UpdatePhotoInput = Partial<Omit<CreatePhotoInput, 'tripId' | 'uri'>>;
+export type UpdatePhotoInput = Partial<
+  Omit<CreatePhotoInput, "tripId" | "uri">
+>;
 
 function mapRowToPhoto(row: PhotoRow): Photo {
   return {
@@ -30,10 +32,10 @@ function mapRowToPhoto(row: PhotoRow): Photo {
 
 export async function listPhotos(tripId: string): Promise<Photo[]> {
   const { data, error } = await supabase
-    .from('photos')
-    .select('*')
-    .eq('trip_id', tripId)
-    .order('taken_at', { ascending: true });
+    .from("photos")
+    .select("*")
+    .eq("trip_id", tripId)
+    .order("taken_at", { ascending: true });
 
   if (error) throw error;
   return (data ?? []).map(mapRowToPhoto);
@@ -41,7 +43,7 @@ export async function listPhotos(tripId: string): Promise<Photo[]> {
 
 export async function createPhoto(input: CreatePhotoInput): Promise<Photo> {
   const { data, error } = await supabase
-    .from('photos')
+    .from("photos")
     .insert({
       trip_id: input.tripId,
       day_id: input.dayId ?? null,
@@ -50,25 +52,28 @@ export async function createPhoto(input: CreatePhotoInput): Promise<Photo> {
       location: input.location ?? null,
       taken_at: input.takenAt ?? new Date().toISOString(),
     })
-    .select('*')
+    .select("*")
     .single();
 
   if (error) throw error;
   return mapRowToPhoto(data as PhotoRow);
 }
 
-export async function updatePhoto(id: string, patch: UpdatePhotoInput): Promise<Photo> {
-  const row: Database['public']['Tables']['photos']['Update'] = {};
+export async function updatePhoto(
+  id: string,
+  patch: UpdatePhotoInput,
+): Promise<Photo> {
+  const row: Database["public"]["Tables"]["photos"]["Update"] = {};
   if (patch.dayId !== undefined) row.day_id = patch.dayId;
   if (patch.caption !== undefined) row.caption = patch.caption;
   if (patch.location !== undefined) row.location = patch.location;
   if (patch.takenAt !== undefined) row.taken_at = patch.takenAt;
 
   const { data, error } = await supabase
-    .from('photos')
+    .from("photos")
     .update(row)
-    .eq('id', id)
-    .select('*')
+    .eq("id", id)
+    .select("*")
     .single();
 
   if (error) throw error;
@@ -76,11 +81,10 @@ export async function updatePhoto(id: string, patch: UpdatePhotoInput): Promise<
 }
 
 export async function deletePhoto(photo: Photo): Promise<void> {
-  const { error: storageError } = await supabase.storage.from('trip-photos').remove([photo.uri]);
-  if (storageError) {
-    console.warn(`[photos] No se pudo borrar el archivo ${photo.uri}:`, storageError.message);
-  }
-
-  const { error } = await supabase.from('photos').delete().eq('id', photo.id);
+  const { error } = await supabase
+    .from("photos")
+    .delete()
+    .eq("id", photo.id)
+    .eq("trip_id", photo.tripId);
   if (error) throw error;
 }

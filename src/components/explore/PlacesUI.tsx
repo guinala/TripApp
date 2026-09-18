@@ -22,7 +22,12 @@ export function PlacesButton({
       accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}
-      style={[ui.button, secondary && ui.secondary, disabled && { opacity: 0.5 }]}
+      style={({ pressed }) => [
+        ui.button,
+        secondary && ui.secondary,
+        disabled && { opacity: 0.5 },
+        pressed && { opacity: 0.8 },
+      ]}
     >
       <Text style={[ui.buttonText, secondary && { color: colors.secondary }]}>{title}</Text>
     </Pressable>
@@ -39,6 +44,7 @@ export function PlacesScreen({
   scroll?: boolean;
 }) {
   const { t } = useTranslation();
+
   return (
     <SafeAreaView style={ui.screen}>
       <View style={ui.header}>

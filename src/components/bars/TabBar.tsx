@@ -42,6 +42,10 @@ export default function TabBar({ state, navigation }: BottomTabBarProps) {
           return (
             <Pressable
               key={route.key}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: focused }}
+              accessibilityLabel={t(meta.labelKey)}
+              onLongPress={() => navigation.emit({ type: 'tabLongPress', target: route.key })}
               onPress={onPress}
               style={[styles.tab, focused && styles.tabActive]}
             >
@@ -65,11 +69,12 @@ const styles = StyleSheet.create({
   bar: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 4,
+    width: '100%',
     backgroundColor: colors.surfacePaper,
     borderRadius: radius.xl2,
-    paddingHorizontal: 16,
-    paddingVertical: 18,
+    paddingHorizontal: 4,
+    paddingVertical: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.13,
@@ -79,7 +84,9 @@ const styles = StyleSheet.create({
   tab: {
     alignItems: 'center',
     gap: 3,
-    paddingHorizontal: 20,
+    flex: 1,
+    minHeight: 48,
+    paddingHorizontal: 4,
     paddingVertical: 6,
     borderRadius: radius.md,
   },

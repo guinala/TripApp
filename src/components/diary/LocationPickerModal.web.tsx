@@ -1,41 +1,61 @@
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { useState } from 'react';
+import { Modal, ScrollView, TextInput, Text } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { colors, fonts, spacing } from '@/constants/theme';
 import type { LatLng, MapRegion } from '@/utils/mapRegion';
+import { isValidCoordinate } from '@/utils/mapRegion';
+import { PlacesButton, ui } from '@/components/explore/PlacesUI';
+import { EmbedMap } from '@/components/maps/EmbedMap.web';
 
-export function LocationPickerModal({
-  visible,
-  onClose,
-}: {
+type Props = {
   visible: boolean;
   initialLocation: LatLng | null;
   fallbackRegion?: MapRegion;
   resetKey?: string;
   onClose: () => void;
   onConfirm: (location: LatLng | null) => void;
-}) {
+};
+
+function Editor({ initialLocation, onClose, onConfirm }: Props) {
   const { t } = useTranslation();
+  const [lat, setLat] = useState(initialLocation ? String(initialLocation.lat) : '');
+  const [lng, setLng] = useState(initialLocation ? String(initialLocation.lng) : '');
+  const candidate = { lat: Number(lat.replace(',', '.')), lng: Number(lng.replace(',', '.')) };
+  const location = lat.trim() && lng.trim() && isValidCoordinate(candidate) ? candidate : null;
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View style={styles.container}>
-        <Text style={styles.text}>{t('map.locationUnavailableWeb')}</Text>
-        <Pressable style={styles.btn} onPress={onClose} hitSlop={10}>
-          <Ionicons name="close" size={22} color={colors.secondary} />
-        </Pressable>
-      </View>
-    </Modal>
+    <ScrollView contentContainerStyle={{ padding: 24, gap: 16 }}>
+      <Text style={ui.text}>{t('fixes.coordinatesHelp')}</Text>
+      <TextInput
+        style={ui.input}
+        accessibilityLabel={t('fixes.latitude')}
+        placeholder={t('fixes.latitude')}
+        value={lat}
+        onChangeText={setLat}
+      />
+      <TextInput
+        style={ui.input}
+        accessibilityLabel={t('fixes.longitude')}
+        placeholder={t('fixes.longitude')}
+        value={lng}
+        onChangeText={setLng}
+      />
+      <EmbedMap title={t('fixes.photoLocation')} location={location} />
+      <PlacesButton
+        title={t('common.save')}
+        disabled={!location}
+        onPress={() => onConfirm(location)}
+      />
+      <PlacesButton title={t('fixes.removeLocation')} secondary onPress={() => onConfirm(null)} />
+      <PlacesButton title={t('common.cancel')} secondary onPress={onClose} />
+    </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surfaceCream,
-    gap: spacing.s4,
-  },
-  text: { fontFamily: fonts.sansRegular, color: colors.secondary300 },
-  btn: { padding: spacing.s3 },
-});
+export function LocationPickerModal(props: Props) {
+  return (
+    <Modal visible={props.visible} onRequestClose={props.onClose}>
+      {props.visible && (
+        <Editor key={props.resetKey ?? JSON.stringify(props.initialLocation)} {...props} />
+      )}
+    </Modal>
+  );
+}

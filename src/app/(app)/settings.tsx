@@ -1,5 +1,16 @@
+import { LoadNotice } from '@/components/ui/LoadNotice';
+import { accountVersion, assertAccount } from '@/services/account-session';
 import { useCallback, useState } from 'react';
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Alert,
+  Linking,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -14,7 +25,11 @@ import { Toggle } from '@/components/ui/Toggle';
 import { SettingsSection } from '@/components/settings/SettingsSection';
 import { SettingsRow } from '@/components/settings/SettingsRow';
 import { useTripStore } from '@/store/tripStore';
-import { ensureNotificationPermissions, resyncNotifications } from '@/services/notifications';
+import {
+  ensureNotificationPermissions,
+  resyncNotifications,
+  useNotificationStatus,
+} from '@/services/notifications';
 import { File, Paths } from 'expo-file-system';
 import { exportUserData } from '@/services/dataExport';
 import { syncLanguage } from '@/i18n';
@@ -50,6 +65,7 @@ export default function SettingsScreen() {
   const trips = useTripStore((s) => s.trips);
 
   const [exporting, setExporting] = useState(false);
+  const notificationError = useNotificationStatus((s) => s.error);
 
   const ui = useUIStore();
 
@@ -61,24 +77,43 @@ export default function SettingsScreen() {
     LANGUAGES.find((l) => l.code === profile?.preferredLanguage)?.label ?? 'Español';
 
   const performDelete = useCallback(async () => {
-    const { error } = await supabase.functions.invoke('delete-user');
-    if (error) {
+    const { data, error } = await supabase.functions.invoke('delete-user');
+    if (error || data?.status !== 'pending') {
       Alert.alert(t('common.error'), t('settings.deleteAccount.error'));
       return;
     }
-    clearProfile();
+    // Bloquear la app de inmediato aunque falle después la salida local.
+    const current = useProfileStore.getState().profile;
+    if (current)
+      useProfileStore.setState({
+        profile: { ...current, deletionRequestedAt: new Date().toISOString() },
+      });
+    Alert.alert(t('settings.deleteAccount.title'), t('fixes.accountPending'));
     try {
-      await signOut(); // la sesión ya es inválida en servidor; esto limpia el cliente
+      await signOut();
     } catch {
-      // esperable: el usuario ya no existe; el layout redirige igual al caer la sesión
+      /* AccountBoundary conserva la pantalla de borrado pendiente. */
     }
-  }, [clearProfile, signOut, t]);
+  }, [signOut, t]);
 
   const handleExport = useCallback(async () => {
     if (!user || exporting) return;
     setExporting(true);
     try {
+      const started = accountVersion();
       const data = await exportUserData(user.id);
+      assertAccount(started);
+      if (Platform.OS === 'web') {
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'tripmate-export.json';
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 30_000);
+        return;
+      }
+      if (!(await Sharing.isAvailableAsync())) throw new Error('SHARING_UNAVAILABLE');
       const file = new File(
         Paths.cache,
         `tripmate-export-${format(new Date(), 'yyyy-MM-dd')}.json`,
@@ -86,10 +121,15 @@ export default function SettingsScreen() {
       if (file.exists) file.delete();
       file.create();
       file.write(JSON.stringify(data, null, 2));
-      await Sharing.shareAsync(file.uri, {
-        mimeType: 'application/json',
-        dialogTitle: t('settings.export.dialogTitle'),
-      });
+      try {
+        assertAccount(started);
+        await Sharing.shareAsync(file.uri, {
+          mimeType: 'application/json',
+          dialogTitle: t('settings.export.dialogTitle'),
+        });
+      } finally {
+        if (file.exists) file.delete();
+      }
     } catch {
       Alert.alert(t('common.error'), t('settings.export.error'));
     } finally {
@@ -107,7 +147,10 @@ export default function SettingsScreen() {
         if (!ok) {
           Alert.alert(t('common.permissionNeeded'), t('settings.notifications.permissionMessage'), [
             { text: t('common.cancel'), style: 'cancel' },
-            { text: t('settings.notifications.openSettings'), onPress: () => Linking.openSettings() },
+            {
+              text: t('settings.notifications.openSettings'),
+              onPress: () => Linking.openSettings(),
+            },
           ]);
           return;
         }
@@ -118,7 +161,7 @@ export default function SettingsScreen() {
         tripReminders: s.notifTripReminders,
         budgetSummary: s.notifBudgetSummary,
         weeklyInspiration: s.notifWeeklyInspiration,
-      });
+      }).catch(() => Alert.alert(t('common.error'), t('fixes.notificationsError')));
     },
     [trips, ui, t],
   );
@@ -152,18 +195,26 @@ export default function SettingsScreen() {
   const handleSelectLanguage = useCallback(
     async (code: string) => {
       if (!user) return;
-      await updateProfile(user.id, { preferredLanguage: code });
-      syncLanguage(code);
+      try {
+        await updateProfile(user.id, { preferredLanguage: code });
+        syncLanguage(code);
+      } catch {
+        Alert.alert(t('common.error'), t('common.tryAgain'));
+      }
     },
-    [user, updateProfile],
+    [user, updateProfile, t],
   );
 
   const handleSelectCurrency = useCallback(
     async (code: string) => {
       if (!user) return;
-      await updateProfile(user.id, { defaultCurrency: code });
+      try {
+        await updateProfile(user.id, { defaultCurrency: code });
+      } catch {
+        Alert.alert(t('common.error'), t('common.tryAgain'));
+      }
     },
-    [user, updateProfile],
+    [user, updateProfile, t],
   );
 
   const pickLanguage = useCallback(() => {
@@ -181,8 +232,12 @@ export default function SettingsScreen() {
         text: t('settings.signOut.title'),
         style: 'destructive',
         onPress: async () => {
-          clearProfile();
-          await signOut();
+          try {
+            await signOut();
+            clearProfile();
+          } catch {
+            Alert.alert(t('common.error'), t('common.tryAgain'));
+          }
         },
       },
     ]);
@@ -216,6 +271,17 @@ export default function SettingsScreen() {
           />
         </SettingsSection>
 
+        <LoadNotice
+          error={notificationError}
+          message={notificationError ? t('fixes.notificationsError') : undefined}
+          onRetry={() => {
+            void resyncNotifications(trips, {
+              tripReminders: ui.notifTripReminders,
+              budgetSummary: ui.notifBudgetSummary,
+              weeklyInspiration: ui.notifWeeklyInspiration,
+            }).catch(() => {});
+          }}
+        />
         <SettingsSection label={t('settings.sections.notifications')}>
           <SettingsRow
             title={t('settings.notifications.tripReminders')}

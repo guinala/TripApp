@@ -1,56 +1,62 @@
-import { useEffect, useMemo, useState } from 'react';
-import { getRateOn } from '@/services/exchangeRates';
-
-type LiveConversion = {
-  converted: number | null;
-  rateDate: string | null;
-  loading: boolean;
-};
-
-type ConversionResult = {
-  key: string;
-  converted: number;
-  rateDate: string | null;
-};
-
-// Sin setState síncrono en el efecto (react-hooks/set-state-in-effect):
-// el efecto solo guarda el resultado con la clave de su petición y
-// `loading` se deriva en el render comparando claves.
-const IDLE: LiveConversion = { converted: null, rateDate: null, loading: false };
+import { useCallback, useEffect, useState } from "react";
+import { getRateOn } from "@/services/exchangeRates";
 
 export function useLiveConversion(
   amount: number,
-  fromCurrency: string,
-  targetCurrency: string,
-  date: string, // YYYY-MM-DD
+  from: string,
+  to: string,
+  date: string,
   debounceMs = 400,
-): LiveConversion {
-  const [result, setResult] = useState<ConversionResult | null>(null);
-
-  const idle = fromCurrency === targetCurrency || !amount || amount <= 0;
-  const key = idle ? null : `${amount}|${fromCurrency}|${targetCurrency}|${date}`;
+) {
+  const [attempt, setAttempt] = useState(0);
+  const retry = useCallback(() => setAttempt((n) => n + 1), []);
+  const key = JSON.stringify([amount, from, to, date, attempt]);
+  const enabled = Number.isFinite(amount) && amount > 0 && from !== to;
+  const [result, setResult] = useState<
+    {
+      key: string;
+      converted: number | null;
+      rateDate: string | null;
+      error: boolean;
+    } | null
+  >(null);
 
   useEffect(() => {
-    if (key == null) return;
-
+    if (!enabled) return;
     let cancelled = false;
-    const t = setTimeout(async () => {
-      const { rate, rateDate } = await getRateOn(fromCurrency, targetCurrency, date);
-      if (cancelled) return;
-      setResult({ key, converted: amount * rate, rateDate });
+    const timer = setTimeout(() => {
+      void getRateOn(from, to, date).then(
+        ({ rate, rateDate }) => {
+          if (!cancelled) {
+            setResult({
+              key,
+              converted: amount * rate,
+              rateDate,
+              error: false,
+            });
+          }
+        },
+        () => {
+          if (!cancelled) {
+            setResult({ key, converted: null, rateDate: null, error: true });
+          }
+        },
+      );
     }, debounceMs);
 
     return () => {
       cancelled = true;
-      clearTimeout(t);
+      clearTimeout(timer);
     };
-  }, [key, amount, fromCurrency, targetCurrency, date, debounceMs]);
+  }, [enabled, key, from, to, date, amount, debounceMs]);
 
-  return useMemo(() => {
-    if (key == null) return IDLE;
-    if (result == null || result.key !== key) {
-      return { converted: null, rateDate: null, loading: true };
-    }
-    return { converted: result.converted, rateDate: result.rateDate, loading: false };
-  }, [key, result]);
+  const current = enabled && result?.key === key ? result : null;
+
+  return {
+    converted: current?.converted ?? null,
+    rateDate: current?.rateDate ?? null,
+    error: current?.error ?? false,
+    loading: enabled && !current,
+    retry,
+  };
 }

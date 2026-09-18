@@ -1,3 +1,4 @@
+import { tripStatus } from "@/utils/tripStatus";
 import { supabase } from "@/services/supabase";
 import { Database } from "@/types/database";
 import type { Trip, TripType } from "@/types/trip";
@@ -16,6 +17,7 @@ export type CreateTripInput = {
 
 // Datos de Supabase
 type TripRow = Database["public"]["Tables"]["trips"]["Row"];
+
 export async function getTripById(id: string): Promise<Trip | null> {
   const { data, error } = await supabase.from("trips").select("*").eq("id", id)
     .maybeSingle();
@@ -36,7 +38,7 @@ function mapRowToTrip(row: TripRow): Trip {
     endDate: row.end_date,
     budget: row.budget,
     currency: row.currency,
-    status: row.status as Trip["status"],
+    status: tripStatus(row.start_date, row.end_date),
     tripType: row.trip_type as TripType | null,
     createdAt: row.created_at,
   };
@@ -50,6 +52,7 @@ export async function listTrips(userId: string): Promise<Trip[]> {
     .order("created_at", { ascending: false });
 
   if (error) throw error;
+
   return (data ?? []).map(mapRowToTrip);
 }
 
@@ -58,6 +61,7 @@ export async function getTrip(id: string): Promise<Trip> {
     .single();
 
   if (error) throw error;
+
   return mapRowToTrip(data);
 }
 
@@ -83,6 +87,7 @@ export async function createTrip(
     .single();
 
   if (error) throw error;
+
   return mapRowToTrip(data);
 }
 
@@ -111,6 +116,7 @@ export async function updateTrip(
     .single();
 
   if (error) throw error;
+
   return mapRowToTrip(data);
 }
 

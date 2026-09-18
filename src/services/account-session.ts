@@ -4,7 +4,9 @@ let initialized = false;
 const listeners = new Set<() => void>();
 
 export const accountVersion = () => version;
+
 export const accountOwner = () => owner;
+
 export const isCurrentAccount = (started: number) =>
     owner !== null && started === version;
 
@@ -14,6 +16,7 @@ export function assertAccount(started: number) {
 
 export function setAccountOwner(next: string | null) {
     if (initialized && owner === next) return;
+
     initialized = true;
     owner = next;
     version++;
@@ -22,6 +25,7 @@ export function setAccountOwner(next: string | null) {
 
 export function subscribeAccount(listener: () => void) {
     listeners.add(listener);
+
     return () => {
         listeners.delete(listener);
     };

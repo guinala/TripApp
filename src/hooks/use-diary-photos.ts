@@ -1,8 +1,9 @@
-import { useEffect, useMemo } from 'react';
-import { usePhotoStore } from '@/store/photoStore';
-import { useSignedUrls } from '@/hooks/use-signed-urls';
-import type { Photo } from '@/types/photo';
-import type { Day } from '@/types/day';
+import { useCallback, useMemo } from "react";
+import { useFocusEffect } from "expo-router";
+import { usePhotoStore } from "@/store/photoStore";
+import { useSignedUrls } from "@/hooks/use-signed-urls";
+import type { Photo } from "@/types/photo";
+import type { Day } from "@/types/day";
 
 const EMPTY_PHOTOS: Photo[] = [];
 
@@ -18,7 +19,7 @@ function groupByDay(photos: DiaryPhoto[], days: Day[]): DiaryDayGroup[] {
   const unassigned: DiaryPhoto[] = [];
 
   for (const photo of photos) {
-    if (!photo.dayId) {
+    if (!photo.dayId || !days.some((day) => day.id === photo.dayId)) {
       unassigned.push(photo);
       continue;
     }
@@ -43,24 +44,38 @@ export function useDiaryPhotos(tripId: string, days: Day[]) {
   const loading = usePhotoStore((s) => s.loadingByTrip[tripId] ?? false);
   const loadPhotos = usePhotoStore((s) => s.loadPhotos);
 
-  useEffect(() => {
-    loadPhotos(tripId);
-  }, [tripId, loadPhotos]);
+  const error = usePhotoStore((s) => s.errorByTrip[tripId]);
+  const loaded = usePhotoStore((s) => s.byTrip[tripId] !== undefined);
+  useFocusEffect(
+    useCallback(() => {
+      void loadPhotos(tripId);
+    }, [tripId, loadPhotos]),
+  );
 
   const paths = useMemo(() => photos.map((p) => p.uri), [photos]);
-  const { urls, loading: urlsLoading } = useSignedUrls(paths);
+  const { urls, loading: urlsLoading, error: urlsError, retry: retryUrls } =
+    useSignedUrls(paths);
 
   const photosWithUrl = useMemo<DiaryPhoto[]>(
     () => photos.map((p) => ({ ...p, url: urls.get(p.uri) ?? null })),
     [photos, urls],
   );
 
-  const groups = useMemo(() => groupByDay(photosWithUrl, days), [photosWithUrl, days]);
+  const groups = useMemo(() => groupByDay(photosWithUrl, days), [
+    photosWithUrl,
+    days,
+  ]);
 
   return {
     photos: photosWithUrl,
     groups,
     loading,
     urlsLoading,
+    error: !!error || urlsError,
+    loaded,
+    retry: () => {
+      void loadPhotos(tripId);
+      retryUrls();
+    },
   };
 }

@@ -1,3 +1,5 @@
+import { LoadNotice } from '@/components/ui/LoadNotice';
+import { accountVersion, assertAccount } from '@/services/account-session';
 import { useCallback, useState } from 'react';
 import {
   ActionSheetIOS,
@@ -45,7 +47,10 @@ export default function DiaryScreen() {
   const userId = useAuthStore((s) => s.user?.id);
   const addPhoto = usePhotoStore((s) => s.addPhoto);
 
-  const { photos, groups, loading, urlsLoading } = useDiaryPhotos(trip.id, days);
+  const { photos, groups, loading, urlsLoading, error, loaded, retry } = useDiaryPhotos(
+    trip.id,
+    days,
+  );
   const [view, setView] = useState<DiaryView>('grid');
   const [uploading, setUploading] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
@@ -58,9 +63,11 @@ export default function DiaryScreen() {
   const uploadAndSavePhoto = useCallback(
     async (photo: PickedPhoto, dayId: string | null) => {
       if (!userId) return;
+      const started = accountVersion();
       setUploading(true);
       try {
         const path = await uploadPhotoFile(userId, trip.id, photo.base64);
+        assertAccount(started);
         await addPhoto({
           tripId: trip.id,
           dayId,
@@ -149,6 +156,10 @@ export default function DiaryScreen() {
   );
 
   const handleExportPdf = useCallback(async () => {
+    if (error || loading || urlsLoading || !loaded) {
+      retry();
+      return;
+    }
     if (groups.length === 0) {
       Alert.alert(t('diary.nothingToExport'), t('diary.nothingToExportMessage'));
       return;
@@ -164,12 +175,12 @@ export default function DiaryScreen() {
         },
         groups,
       );
-    } catch {
-      Alert.alert(t('diary.exportError'), t('common.tryAgain'));
+    } catch (e) {
+      Alert.alert(t('diary.exportError'), e instanceof Error ? e.message : t('common.tryAgain'));
     } finally {
       setExportingPdf(false);
     }
-  }, [groups, trip, t]);
+  }, [groups, trip, t, error, loading, urlsLoading, loaded, retry]);
 
   if ((loading || urlsLoading) && groups.length === 0) {
     return (
@@ -182,6 +193,7 @@ export default function DiaryScreen() {
   return (
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <LoadNotice error={error} onRetry={retry} />
         <DiaryViewSelector
           active={view}
           onChange={setView}
@@ -189,7 +201,7 @@ export default function DiaryScreen() {
           exportingPdf={exportingPdf}
         />
 
-        {groups.length === 0 ? (
+        {error && groups.length === 0 ? null : groups.length === 0 ? (
           <View style={styles.empty}>
             <Text style={styles.emptyTitle}>{t('diary.emptyTitle')}</Text>
             <Text style={styles.emptyText}>{t('diary.emptyText')}</Text>

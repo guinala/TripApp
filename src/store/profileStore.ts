@@ -1,6 +1,16 @@
-import { create } from 'zustand';
-import { getProfile, updateProfile, type UpdateProfileInput } from '@/services/profiles';
-import type { Profile } from '@/types/profile';
+import {
+  accountVersion,
+  assertAccount,
+  isCurrentAccount,
+  subscribeAccount,
+} from "@/services/account-session";
+import { create } from "zustand";
+import {
+  getProfile,
+  updateProfile,
+  type UpdateProfileInput,
+} from "@/services/profiles";
+import type { Profile } from "@/types/profile";
 
 type ProfileState = {
   profile: Profile | null;
@@ -18,24 +28,42 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
   error: null,
 
   load: async (userId) => {
+    const started = accountVersion();
+    if (!isCurrentAccount(started)) return;
+
     set({ loading: true, error: null });
     try {
       const profile = await getProfile(userId);
+      if (!isCurrentAccount(started)) return;
       set({ profile, loading: false });
     } catch (e) {
-      set({ error: e instanceof Error ? e.message : 'Error cargando perfil', loading: false });
+      if (!isCurrentAccount(started)) return;
+
+      set({
+        error: e instanceof Error ? e.message : "Error cargando perfil",
+        loading: false,
+      });
     }
   },
 
   update: async (userId, input) => {
+    const started = accountVersion();
+    assertAccount(started);
+
     const snapshot = get().profile;
     if (!snapshot) return;
     set({ profile: { ...snapshot, ...input } as Profile });
     try {
       const updated = await updateProfile(userId, input);
+      assertAccount(started);
       set({ profile: updated });
     } catch (e) {
-      set({ profile: snapshot, error: e instanceof Error ? e.message : 'Error guardando' });
+      assertAccount(started);
+
+      set({
+        profile: snapshot,
+        error: e instanceof Error ? e.message : "Error guardando",
+      });
       throw e;
     }
   },
@@ -47,3 +75,7 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
 
   clear: () => set({ profile: null, error: null }),
 }));
+
+subscribeAccount(() =>
+  useProfileStore.setState({ profile: null, loading: false, error: null })
+);

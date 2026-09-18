@@ -1,53 +1,45 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
 
-/** Borra recursivamente un prefijo del bucket (list no es recursivo) */
-async function removeFolder(admin: SupabaseClient, bucket: string, prefix: string) {
-  const { data: entries } = await admin.storage.from(bucket).list(prefix, { limit: 1000 });
-  if (!entries || entries.length === 0) return;
-
-  const files: string[] = [];
-  for (const entry of entries) {
-    if (entry.id) files.push(`${prefix}/${entry.name}`);
-    else await removeFolder(admin, bucket, `${prefix}/${entry.name}`);
-  }
-  if (files.length > 0) await admin.storage.from(bucket).remove(files);
-}
+const headers = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Content-Type": "application/json",
+};
 
 Deno.serve(async (req) => {
-  try {
-    // 1. Identificar al llamante con SU token 
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) return new Response('Unauthorized', { status: 401 });
+  if (req.method === "OPTIONS") return new Response(null, { headers });
+  if (req.method !== "POST") {
+    return new Response("{}", { status: 405, headers });
+  }
+  const authorization = req.headers.get("Authorization");
+  if (!authorization) return new Response("{}", { status: 401, headers });
+  const client = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!,
+    {
+      global: { headers: { Authorization: authorization } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    },
+  );
+  const {
+    data: { user },
+    error,
+  } = await client.auth.getUser();
+  if (error || !user) return new Response("{}", { status: 401, headers });
+  const result = await client.rpc("request_account_deletion");
 
-    const userClient = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_ANON_KEY')!,
-      { global: { headers: { Authorization: authHeader } } },
-    );
-    const { data: { user }, error: userError } = await userClient.auth.getUser();
-    if (userError || !user) return new Response('Unauthorized', { status: 401 });
-
-    // 2. Cliente admin con service_role 
-    const admin = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-    );
-
-    // 3. Storage primero
-    await admin.storage.from('user-avatars').remove([`avatars/${user.id}.jpg`]);
-    await removeFolder(admin, 'trip-photos', user.id);
-
-    // 4. Borrar el usuario 
-    const { error: deleteError } = await admin.auth.admin.deleteUser(user.id);
-    if (deleteError) throw deleteError;
-
-    return new Response(JSON.stringify({ ok: true }), {
-      headers: { 'Content-Type': 'application/json' },
-    });
-  } catch (e) {
-    return new Response(JSON.stringify({ error: String(e) }), {
+  if (result.error) {
+    return new Response(JSON.stringify({ error: "DELETE_REQUEST_FAILED" }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers,
     });
   }
+
+  // Worker elimina Storage y luego Auth.
+  return new Response(JSON.stringify({ status: "pending" }), {
+    status: 202,
+    headers,
+  });
 });

@@ -1,5 +1,5 @@
 import { Linking, Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
-import { Image } from 'expo-image';
+import { RemoteImage } from '@/components/ui/RemoteImage';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useUnsplashCover } from '@/hooks/use-unsplash-photos';
@@ -18,16 +18,13 @@ export function DestinationCard({
 }) {
   const { t } = useTranslation();
   const { photo } = useUnsplashCover(destination.coverQuery);
+
   return (
     <View style={[styles.card, style]}>
       <Pressable accessibilityRole="button" onPress={onPress}>
         <View style={styles.picture}>
           {photo ? (
-            <Image
-              source={{ uri: photo.smallUrl }}
-              style={StyleSheet.absoluteFill}
-              contentFit="cover"
-            />
+            <RemoteImage uri={photo.smallUrl} label={destination.name} />
           ) : (
             <Ionicons name="compass-outline" size={40} color={colors.primary700} />
           )}

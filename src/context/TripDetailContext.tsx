@@ -1,7 +1,9 @@
+import { accountVersion, assertAccount } from '@/services/account-session';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import {
   type ActivityInput,
   createActivity,
+  deleteActivity,
   listActivitiesByTrip,
   reorderActivities,
   updateActivity as saveActivity,
@@ -22,6 +24,7 @@ function useTripDetailValue(trip: Trip) {
     activities: Activity[];
     error: string | null;
   } | null>(null);
+
   const [attempt, setAttempt] = useState(0);
   const [selectedDayId, setSelectedDayId] = useState<string | null>(null);
   const revision = useItineraryRefreshStore((s) => s.revisions[trip.id] ?? 0);
@@ -38,12 +41,14 @@ function useTripDetailValue(trip: Trip) {
     [activities, selectedDayId],
   );
   const locations = useMapActivities(scoped, language);
+
   const reload = useCallback(async () => {
     setAttempt((value) => value + 1);
   }, []);
 
   useEffect(() => {
     let cancelled = false;
+
     void (async () => {
       try {
         const loadedDays = await ensureDays(trip);
@@ -61,6 +66,7 @@ function useTripDetailValue(trip: Trip) {
           });
       }
     })();
+
     return () => {
       cancelled = true;
     };
@@ -91,8 +97,24 @@ function useTripDetailValue(trip: Trip) {
       );
   };
 
+  const removeActivity = async (id: string) => {
+    const started = accountVersion();
+    const activity = activities.find((item) => item.id === id);
+    if (!activity) throw new Error('ACTIVITY_NOT_FOUND');
+
+    await deleteActivity(id);
+
+    assertAccount(started);
+    setResult((previous) =>
+      previous?.key === key
+        ? { ...previous, activities: previous.activities.filter((item) => item.id !== id) }
+        : previous,
+    );
+  };
+
   const reorder = async (dayId: string, orderedIds: string[]) => {
     const own = activities.filter((a) => a.dayId === dayId);
+
     if (
       new Set(orderedIds).size !== own.length ||
       orderedIds.length !== own.length ||
@@ -114,6 +136,7 @@ function useTripDetailValue(trip: Trip) {
     setSelectedDayId,
     addActivity,
     updateActivity,
+    removeActivity,
     reorder,
     destinationResolution,
     retryDestination: destinationResolution.retry,
@@ -133,11 +156,13 @@ const TripDetailContext = createContext<ReturnType<typeof useTripDetailValue> | 
 
 export function TripDetailProvider({ trip, children }: { trip: Trip; children: React.ReactNode }) {
   const value = useTripDetailValue(trip);
+
   return <TripDetailContext.Provider value={value}>{children}</TripDetailContext.Provider>;
 }
 
 export function useTripDetail() {
   const context = useContext(TripDetailContext);
   if (!context) throw new Error('useTripDetail requiere TripDetailProvider');
+
   return context;
 }

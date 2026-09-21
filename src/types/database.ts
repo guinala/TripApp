@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_delete_jobs: {
+        Row: {
+          attempts: number
+          created_at: string
+          last_error: string | null
+          next_attempt_at: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          last_error?: string | null
+          next_attempt_at?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          last_error?: string | null
+          next_attempt_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       activities: {
         Row: {
           address: string | null
@@ -170,10 +194,14 @@ export type Database = {
           cover_query: string
           description_en: string | null
           description_es: string
+          editorial_rating: number | null
           featured: boolean
           id: string
+          language_code: string | null
+          language_label: string | null
           name: string
           place_id: string | null
+          price_range: string | null
           published: boolean
           sort_order: number
           types: string[]
@@ -186,10 +214,14 @@ export type Database = {
           cover_query: string
           description_en?: string | null
           description_es?: string
+          editorial_rating?: number | null
           featured?: boolean
           id: string
+          language_code?: string | null
+          language_label?: string | null
           name: string
           place_id?: string | null
+          price_range?: string | null
           published?: boolean
           sort_order?: number
           types?: string[]
@@ -202,10 +234,14 @@ export type Database = {
           cover_query?: string
           description_en?: string | null
           description_es?: string
+          editorial_rating?: number | null
           featured?: boolean
           id?: string
+          language_code?: string | null
+          language_label?: string | null
           name?: string
           place_id?: string | null
+          price_range?: string | null
           published?: boolean
           sort_order?: number
           types?: string[]
@@ -324,6 +360,7 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           default_currency: string
+          deletion_requested_at: string | null
           display_name: string | null
           email: string
           id: string
@@ -334,6 +371,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           default_currency?: string
+          deletion_requested_at?: string | null
           display_name?: string | null
           email: string
           id: string
@@ -344,11 +382,42 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           default_currency?: string
+          deletion_requested_at?: string | null
           display_name?: string | null
           email?: string
           id?: string
           preferred_language?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      storage_delete_jobs: {
+        Row: {
+          attempts: number
+          bucket: string
+          created_at: string
+          id: string
+          last_error: string | null
+          next_attempt_at: string
+          path: string
+        }
+        Insert: {
+          attempts?: number
+          bucket: string
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          next_attempt_at?: string
+          path: string
+        }
+        Update: {
+          attempts?: number
+          bucket?: string
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          next_attempt_at?: string
+          path?: string
         }
         Relationships: []
       }
@@ -423,10 +492,36 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      account_is_active: { Args: never; Returns: boolean }
       consume_places_request: {
         Args: { p_action: string; p_user_id: string }
         Returns: boolean
       }
+      enqueue_trip_file: {
+        Args: { p_owner: string; p_path: string; p_trip: string }
+        Returns: undefined
+      }
+      ensure_trip_days: {
+        Args: { p_trip_id: string }
+        Returns: {
+          created_at: string
+          date: string
+          day_number: number
+          id: string
+          notes: string | null
+          title: string | null
+          trip_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "days"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      export_my_data: { Args: never; Returns: Json }
+      purge_account_rows: { Args: { p_user_id: string }; Returns: undefined }
+      reconcile_trip_days: { Args: { p_trip_id: string }; Returns: undefined }
       replace_packing_items: {
         Args: { p_items: Json; p_trip_id: string }
         Returns: {
@@ -444,6 +539,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      request_account_deletion: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

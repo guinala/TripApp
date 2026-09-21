@@ -1,4 +1,3 @@
-import { LoadNotice } from '@/components/ui/LoadNotice';
 import { useLocalToday } from '@/hooks/use-local-today';
 import { tripStatus } from '@/utils/tripStatus';
 import { View, Text, StyleSheet, FlatList, RefreshControl } from 'react-native';
@@ -6,7 +5,6 @@ import type { ViewToken } from 'react-native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useIsFocused, useRouter } from 'expo-router';
 import { useTripDestinationLabel } from '@/hooks/use-trip-destination-label';
-import { PlacesAttribution } from '@/components/explore/PlacesAttribution';
 import { PlacesStatus } from '@/components/explore/PlacesStatus';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/store/authStore';
@@ -72,7 +70,6 @@ export default function TripsScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
       <TopBar name={displayName} claim={claim} />
-      {destination.place && <PlacesAttribution attributions={destination.place.attributions} />}
       {error && <PlacesStatus error={error} onRetry={fetchTrips} />}
 
       <Text style={styles.heading}>
@@ -98,10 +95,8 @@ export default function TripsScreen() {
           <RefreshControl refreshing={loading} onRefresh={fetchTrips} tintColor={colors.primary} />
         }
         ListEmptyComponent={
-          loading || error ? null : trips.length > 0 ? (
-            <LoadNotice message={t('fixes.emptyFilter')} onRetry={() => setFilter('all')} />
-          ) : (
-            <TripsEmptyState />
+          loading || error ? null : (
+            <TripsEmptyState filtered={trips.length > 0} onClearFilter={() => setFilter('all')} />
           )
         }
       />

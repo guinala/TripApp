@@ -1,6 +1,6 @@
-export type Continent = "Europa" | "Asia" | "África" | "América" | "Oceanía";
+export type Continent = 'Europa' | 'Asia' | 'África' | 'América' | 'Oceanía';
 
-export type DestinationType = "cultural" | "gastro" | "aventura" | "relax";
+export type DestinationType = 'cultural' | 'gastro' | 'aventura' | 'relax';
 
 export type EditorialDestination = {
   id: string;
@@ -11,8 +11,11 @@ export type EditorialDestination = {
   continent: Continent;
   types: DestinationType[];
   description: string;
-  descriptionLanguage: "es" | "en";
+  descriptionLanguage: 'es' | 'en';
   coverQuery: string;
   featured: boolean;
   sortOrder: number;
+  editorialRating?: number | null;
+  priceRange?: 'low' | 'mid' | 'high' | null;
+  language?: { code: string; label: string } | null;
 };

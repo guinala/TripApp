@@ -24,6 +24,9 @@ import { type PickedCover, CoverImagePicker } from '@/components/trips/CoverImag
 import { deleteTripCover, uploadTripCover } from '@/services/storage';
 import { useCoverPickerStore } from '@/store/coverPickerStore';
 import * as ImageManipulator from 'expo-image-manipulator';
+import { useProfileStore } from '@/store/profileStore';
+import { parseAmount } from '@/utils/parseAmount';
+import { accountVersion, assertAccount, isCurrentAccount } from '@/services/account-session';
 
 function toISODate(d: Date): string {
   const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -74,7 +77,9 @@ export default function NewTripScreen() {
   const submitting = useRef(false);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
-  const [currency, setCurrency] = useState('EUR');
+  const [currency, setCurrency] = useState(
+    () => useProfileStore.getState().profile?.defaultCurrency ?? 'EUR',
+  );
   const [budget, setBudget] = useState('');
   const [tripType, setTripType] = useState<TripType | null>(null);
   const [picker, setPicker] = useState<'start' | 'end' | null>(null);
@@ -88,17 +93,21 @@ export default function NewTripScreen() {
       const selected = consumeCover();
       if (!selected) return undefined;
       let cancelled = false;
+      const started = accountVersion();
       ImageManipulator.manipulateAsync(selected.regularUrl, [{ resize: { width: 1600 } }], {
         compress: 0.8,
         format: ImageManipulator.SaveFormat.JPEG,
         base64: true,
       })
         .then((result) => {
-          if (!cancelled && result.base64)
+          if (!cancelled && isCurrentAccount(started) && result.base64) {
             setPickedCover({ uri: result.uri, base64: result.base64 });
+            setCoverRemoved(false);
+          }
         })
         .catch(() => {
-          if (!cancelled) Alert.alert(t('common.error'), t('places.coverError'));
+          if (!cancelled && isCurrentAccount(started))
+            Alert.alert(t('common.error'), t('places.coverError'));
         });
       return () => {
         cancelled = true;
@@ -147,14 +156,17 @@ export default function NewTripScreen() {
     if (endDate < startDate)
       return Alert.alert(t('trips.form.invalidDatesTitle'), t('trips.form.invalidDates'));
 
-    const budgetNum = budget ? Number(budget.replace(',', '.')) : null;
-    if (budgetNum !== null && (!Number.isFinite(budgetNum) || budgetNum < 0)) {
+    const budgetNum = budget.trim() ? parseAmount(budget) : null;
+    if (budget.trim() && budgetNum === null) {
       return Alert.alert(t('trips.form.invalidBudgetTitle'), t('trips.form.invalidBudget'));
     }
 
     submitting.current = true;
     setSaving(true);
+    const started = accountVersion();
+    let coreSaved = false;
     try {
+      assertAccount(started);
       const payload = {
         title: title.trim() || t('trips.form.defaultTitle', { destination: destination.trim() }),
         destination: destinationPlaceId
@@ -178,14 +190,16 @@ export default function NewTripScreen() {
         tripId = created.id;
         savedTripId.current = created.id;
       }
+      assertAccount(started);
+      coreSaved = true;
 
       if (pickedCover && userId && tripId) {
         const url = await uploadTripCover(userId, tripId, pickedCover.base64);
+        assertAccount(started);
         await editTrip(tripId, { coverImage: url });
-      }
-
-      if (isEdit && id && coverRemoved) {
+      } else if (isEdit && id && coverRemoved) {
         await editTrip(id, { coverImage: null });
+        assertAccount(started);
 
         if (userId) {
           try {
@@ -196,9 +210,21 @@ export default function NewTripScreen() {
         }
       }
 
+      assertAccount(started);
       router.back();
     } catch (e) {
-      Alert.alert(t('trips.form.saveError'), (e as Error).message);
+      if (!isCurrentAccount(started)) return;
+      const message = (e as { message?: string })?.message ?? '';
+      Alert.alert(
+        t('trips.form.saveError'),
+        message.includes('TRIP_DAYS_HAVE_CONTENT')
+          ? t('fixes.daysWithContent')
+          : message.includes('INVALID_TRIP_RANGE')
+            ? t('fixes.tripRange')
+            : coreSaved
+              ? t('fixes.coverSavedPartially')
+              : message || t('common.tryAgain'),
+      );
       submitting.current = false;
       setSaving(false);
     }

@@ -5,7 +5,13 @@ import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, radius } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 
-export default function TripsEmptyState() {
+export default function TripsEmptyState({
+  filtered = false,
+  onClearFilter,
+}: {
+  filtered?: boolean;
+  onClearFilter?: () => void;
+}) {
   const { t } = useTranslation();
   const router = useRouter();
 
@@ -16,14 +22,27 @@ export default function TripsEmptyState() {
       </View>
 
       <Text style={styles.title}>
-        {t('home.empty.titleStart')}
-        <Text style={styles.titleAccent}>{t('home.empty.titleAccent')}</Text>
+        {filtered ? (
+          t('fixes.emptyFilter')
+        ) : (
+          <>
+            {t('home.empty.titleStart')}
+            <Text style={styles.titleAccent}>{t('home.empty.titleAccent')}</Text>
+          </>
+        )}
       </Text>
-      <Text style={styles.subtitle}>{t('home.empty.subtitle')}</Text>
+      <Text style={styles.subtitle}>
+        {t(filtered ? 'placesUI.emptyFilterHint' : 'home.empty.subtitle')}
+      </Text>
 
-      <Pressable style={styles.primaryBtn} onPress={() => router.push('/trips/new')}>
-        <Ionicons name="add" size={20} color={colors.surfacePaper} />
-        <Text style={styles.primaryLabel}>{t('home.empty.createFirst')}</Text>
+      <Pressable
+        style={styles.primaryBtn}
+        onPress={filtered ? onClearFilter : () => router.push('/trips/new')}
+      >
+        <Ionicons name={filtered ? 'list-outline' : 'add'} size={20} color={colors.surfacePaper} />
+        <Text style={styles.primaryLabel}>
+          {t(filtered ? 'placesUI.showAllTrips' : 'home.empty.createFirst')}
+        </Text>
       </Pressable>
 
       <Pressable style={styles.secondaryBtn} onPress={() => router.push('/explore')}>

@@ -32,6 +32,8 @@ function PickerContent({
   const mapRef = useRef<MapView>(null);
   const [picked, setPicked] = useState<LatLng | null>(initialLocation);
   const [locating, setLocating] = useState(false);
+  const [topBarHeight, setTopBarHeight] = useState(80);
+  const [bottomBarHeight, setBottomBarHeight] = useState(180);
 
   const handleMapPress = useCallback(
     (e: { nativeEvent: { coordinate: { latitude: number; longitude: number } } }) => {
@@ -84,6 +86,8 @@ function PickerContent({
         ref={mapRef}
         style={StyleSheet.absoluteFill}
         provider={PROVIDER_DEFAULT}
+        // Reserva el área visible del mapa y deja libre la atribución del SDK.
+        mapPadding={{ top: topBarHeight + 8, right: 12, bottom: bottomBarHeight + 12, left: 12 }}
         initialRegion={initialRegion}
         onPress={handleMapPress}
       >
@@ -95,7 +99,12 @@ function PickerContent({
         ) : null}
       </MapView>
 
-      <SafeAreaView style={styles.topBar} edges={['top']} pointerEvents="box-none">
+      <SafeAreaView
+        style={styles.topBar}
+        edges={['top']}
+        pointerEvents="box-none"
+        onLayout={(event) => setTopBarHeight(Math.ceil(event.nativeEvent.layout.height))}
+      >
         <Pressable style={styles.iconBtn} onPress={onClose} hitSlop={10}>
           <Ionicons name="close" size={22} color={colors.secondary} />
         </Pressable>
@@ -103,7 +112,11 @@ function PickerContent({
         <View style={styles.iconBtnSpacer} />
       </SafeAreaView>
 
-      <SafeAreaView style={styles.bottomBar} edges={['bottom']}>
+      <SafeAreaView
+        style={styles.bottomBar}
+        edges={['bottom']}
+        onLayout={(event) => setBottomBarHeight(Math.ceil(event.nativeEvent.layout.height))}
+      >
         <Pressable
           style={styles.currentLocationBtn}
           onPress={handleUseCurrentLocation}

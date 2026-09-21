@@ -3,6 +3,7 @@ import { FlatList, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useIsFocused, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import { colors, fonts } from '@/constants/theme';
 import { usePlaceLanguage } from '@/hooks/use-place-details';
 import { usePlacesAutocomplete } from '@/hooks/use-places-autocomplete';
 import { usePlaceSearch } from '@/hooks/use-place-search';
@@ -87,6 +88,7 @@ function ExploreContent({ initialQuery }: { initialQuery?: string }) {
           value={query}
           onChangeText={changeText}
           placeholder={t('places.searchPlaceholder')}
+          placeholderTextColor={colors.textSecondary}
           returnKeyType="search"
           onSubmitEditing={() =>
             mode === 'places' ? search.search(query) : cities.changeQuery(query)
@@ -116,13 +118,13 @@ function ExploreContent({ initialQuery }: { initialQuery?: string }) {
           data={filtered.rest}
           numColumns={2}
           keyExtractor={(item) => item.id}
-          columnWrapperStyle={{ gap: 12 }}
-          contentContainerStyle={ui.body}
+          columnWrapperStyle={{ justifyContent: 'space-between' }}
+          contentContainerStyle={[ui.body, { paddingHorizontal: 25, paddingBottom: 120, gap: 28 }]}
           renderItem={({ item }) => (
             <DestinationCard
               destination={item}
               onPress={() => openEditorial(item.id)}
-              style={{ flex: 1, maxWidth: '49%' }}
+              style={{ width: '45%' }}
             />
           )}
           ListHeaderComponent={
@@ -152,6 +154,19 @@ function ExploreContent({ initialQuery }: { initialQuery?: string }) {
                   destination={filtered.featured}
                   onPress={() => openEditorial(filtered.featured!.id)}
                 />
+              )}
+              {filtered.rest.length > 0 && (
+                <Text
+                  style={{
+                    fontFamily: fonts.serifItalic,
+                    fontSize: 30,
+                    color: colors.secondary,
+                    marginTop: 8,
+                  }}
+                >
+                  {t('explore.sectionTitleStart')}
+                  <Text style={{ color: colors.primary }}>{t('explore.sectionTitleAccent')}</Text>
+                </Text>
               )}
             </View>
           }
@@ -186,7 +201,7 @@ function ExploreContent({ initialQuery }: { initialQuery?: string }) {
           keyboardShouldPersistTaps="handled"
           data={search.places}
           keyExtractor={(item) => item.placeId}
-          contentContainerStyle={ui.body}
+          contentContainerStyle={[ui.body, { paddingHorizontal: 25, paddingBottom: 120, gap: 28 }]}
           renderItem={({ item }) => (
             <PlaceResultRow
               place={item}

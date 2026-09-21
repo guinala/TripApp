@@ -47,6 +47,7 @@ export default function PackingScreen() {
   const items = usePackingItems(tripId);
   const loading = usePackingLoading(tripId);
   const error = usePackingStore((s) => s.errorByTrip[tripId]);
+  const loaded = usePackingStore((s) => s.byTrip[tripId] !== undefined);
   const fetchItems = usePackingStore((s) => s.fetchItems);
   const toggle = usePackingStore((s) => s.toggle);
   const addItem = usePackingStore((s) => s.addItem);
@@ -166,9 +167,13 @@ export default function PackingScreen() {
 
   return (
     <View style={styles.screen}>
-      {loading && items.length === 0 ? (
+      {!loaded && !error ? (
         <View style={styles.centered}>
           <ActivityIndicator color={colors.primary} />
+        </View>
+      ) : !loaded ? (
+        <View style={styles.centered}>
+          <LoadNotice error loading={loading} onRetry={() => void fetchItems(tripId)} />
         </View>
       ) : (
         <ScrollView

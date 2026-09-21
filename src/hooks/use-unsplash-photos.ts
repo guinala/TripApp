@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { UnsplashPhoto, getCoverPhoto, searchPhotos } from '@/services/unsplash';
 import i18n from '@/i18n';
 
@@ -59,17 +59,21 @@ export function useUnsplashPhotos(query: string | null, perPage = 5): PhotosStat
 type CoverState = {
   photo: UnsplashPhoto | null;
   loading: boolean;
+  error: string | null;
+  retry: () => void;
 };
 
 type CoverResult = {
   key: string;
   photo: UnsplashPhoto | null;
+  error: string | null;
 };
-
-const IDLE_COVER: CoverState = { photo: null, loading: false };
 
 export function useUnsplashCover(query: string | null): CoverState {
   const [result, setResult] = useState<CoverResult | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  const retry = useCallback(() => setAttempt((n) => n + 1), []);
+  const key = JSON.stringify([query, attempt]);
 
   useEffect(() => {
     if (!query) return;
@@ -77,20 +81,26 @@ export function useUnsplashCover(query: string | null): CoverState {
     let cancelled = false;
     getCoverPhoto(query)
       .then((photo) => {
-        if (!cancelled) setResult({ key: query, photo });
+        if (!cancelled) setResult({ key, photo, error: null });
       })
-      .catch(() => {
-        if (!cancelled) setResult({ key: query, photo: null });
+      .catch((error: unknown) => {
+        if (!cancelled)
+          setResult({
+            key,
+            photo: null,
+            error: error instanceof Error ? error.message : i18n.t('errors.loadPhotos'),
+          });
       });
 
     return () => {
       cancelled = true;
     };
-  }, [query]);
+  }, [query, key]);
 
   return useMemo(() => {
-    if (!query) return IDLE_COVER;
-    if (result == null || result.key !== query) return { photo: null, loading: true };
-    return { photo: result.photo, loading: false };
-  }, [query, result]);
+    if (!query) return { photo: null, loading: false, error: null, retry };
+    if (result == null || result.key !== key)
+      return { photo: null, loading: true, error: null, retry };
+    return { photo: result.photo, loading: false, error: result.error, retry };
+  }, [query, key, result, retry]);
 }

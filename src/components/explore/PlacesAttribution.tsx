@@ -1,17 +1,17 @@
 import { Linking, Pressable, Text, View } from 'react-native';
-import { colors, fonts } from '@/constants/theme';
+import { colors } from '@/constants/theme';
 import type { PlaceDetails } from '@/types/place';
 
 export function PlacesAttribution({
   attributions = [],
+  light = false,
 }: {
   attributions?: PlaceDetails['attributions'];
+  light?: boolean;
 }) {
+  if (attributions.length === 0) return null;
   return (
-    <View style={{ gap: 4, paddingVertical: 8 }}>
-      <Text style={{ color: colors.secondary, fontFamily: fonts.sansMedium, fontSize: 12 }}>
-        Google Maps
-      </Text>
+    <View style={{ gap: 2, paddingVertical: 4 }}>
       {attributions.map((a, index) => {
         const allowed = a.providerUri && /^https?:\/\//i.test(a.providerUri) ? a.providerUri : null;
         return (
@@ -25,7 +25,7 @@ export function PlacesAttribution({
           >
             <Text
               style={{
-                color: colors.textSecondary,
+                color: light ? colors.white : colors.textSecondary,
                 fontSize: 12,
                 textDecorationLine: allowed ? 'underline' : 'none',
               }}

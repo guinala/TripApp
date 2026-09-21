@@ -1,5 +1,5 @@
 import { LoadNotice } from '@/components/ui/LoadNotice';
-import { accountVersion, assertAccount } from '@/services/account-session';
+import { accountVersion, assertAccount, isCurrentAccount } from '@/services/account-session';
 import { useCallback, useState } from 'react';
 import {
   Alert,
@@ -77,7 +77,11 @@ export default function SettingsScreen() {
     LANGUAGES.find((l) => l.code === profile?.preferredLanguage)?.label ?? 'Español';
 
   const performDelete = useCallback(async () => {
+    const started = accountVersion();
+    if (!isCurrentAccount(started)) return;
     const { data, error } = await supabase.functions.invoke('delete-user');
+    // La petición pertenece a la cuenta que la inició, incluso si esta pantalla se desmontó.
+    if (!isCurrentAccount(started)) return;
     if (error || data?.status !== 'pending') {
       Alert.alert(t('common.error'), t('settings.deleteAccount.error'));
       return;

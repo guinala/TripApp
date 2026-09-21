@@ -310,7 +310,7 @@
       "title": "Cerrar sesión",
       "message": "¿Seguro que quieres salir?"
     },
-    "footer": "hecho con ♥ para viajeros"
+    "footer": "Made by Guill23"
   },
   "tripDetail": {
     "viewFullMap": "Ver mapa completo",
@@ -620,7 +620,7 @@
     "tripNotFound": "No encontramos este viaje o no tienes acceso.",
     "locateExplanation": "Busca y confirma el destino. Tus fechas, actividades y nombre del viaje se conservarán.",
     "nearbyScope": "Elige una categoría para ver hasta 10 lugares a menos de 5 km de este centro.",
-    "currentWeather": "Clima actual · OpenWeather",
+    "currentWeather": "Clima actual obtenido en OpenWeather",
     "editorial": "Selección de TripMate",
     "textLanguage": "Texto editorial en {{language}}",
     "destinationType": "Destino",
@@ -705,12 +705,12 @@
     "deleteActivityConfirm": "¿Quieres eliminar esta actividad?",
     "straightLine": "estimación en línea recta",
     "chooseTrip": "Elige un viaje",
-    "emptyFilter": "No hay viajes con este filtro. Reintenta para verlos todos.",
+    "emptyFilter": "No hay viajes en esta categoría",
     "accountPending": "El borrado de tu cuenta está solicitado y el acceso a tus datos está bloqueado. El servidor continuará hasta eliminar archivos y cuenta. Puedes cerrar sesión.",
     "notificationsError": "No se pudieron actualizar los recordatorios. Reintenta.",
     "startupError": "No se pudo iniciar la aplicación. Comprueba la conexión y reintenta.",
     "noLocation": "Todavía no hay una ubicación válida.",
-    "webMapExternal": "Puedes consultar esta ubicación en Google Maps.",
+    "webMapExternal": "Puedes consultar esta ubicación en un mapa externo.",
     "openMap": "Abrir en Google Maps",
     "photoLocation": "Ubicación de la foto",
     "openPhoto": "Abrir foto",
@@ -720,5 +720,13 @@
     "removeLocation": "Quitar ubicación",
     "imageError": "No se pudo cargar la imagen.",
     "imageRetry": "Reintentar imagen"
+  },
+  "placesUI": {
+    "emptyFilterHint": "Prueba otra categoría o vuelve a ver todos tus viajes.",
+    "showAllTrips": "Ver todos los viajes",
+    "share": "Compartir destino",
+    "discoverArea": "Descubre qué ver y hacer en {{name}}.",
+    "photoCredit": "Foto: {{author}}",
+    "nearbyScope": "Lugares a menos de 5 km del centro."
   }
 }

@@ -11,6 +11,7 @@ import { colors, fonts, fontSize, radius } from '@/constants/theme';
 import type { Trip } from '@/types/trip';
 import { useTripDestinationLabel } from '@/hooks/use-trip-destination-label';
 import { PlacesAttribution } from '@/components/explore/PlacesAttribution';
+import { LinearGradient } from 'expo-linear-gradient';
 
 type TripCardProps = {
   trip: Trip;
@@ -62,6 +63,12 @@ export function TripCard({ trip, resolveDestination = false }: TripCardProps) {
       ) : (
         <View style={[StyleSheet.absoluteFill, styles.placeholder]} />
       )}
+      {hasCover && (
+        <LinearGradient
+          colors={['transparent', 'rgba(15,27,51,0.78)']}
+          style={StyleSheet.absoluteFill}
+        />
+      )}
 
       <View style={styles.badge}>
         <Ionicons name="time-outline" size={10} color={badge.color} />
@@ -72,19 +79,29 @@ export function TripCard({ trip, resolveDestination = false }: TripCardProps) {
         <Text style={[styles.title, !hasCover && { color: colors.secondary, textShadowRadius: 0 }]}>
           {trip.title}
         </Text>
-        <Text style={{ fontFamily: fonts.sansRegular, color: colors.secondary }}>
+        <Text
+          style={{
+            fontFamily: fonts.sansRegular,
+            color: hasCover ? colors.white : colors.secondary,
+          }}
+        >
           {destination.label}
         </Text>
-        <Text style={{ fontFamily: fonts.sansRegular, color: colors.textSecondary }}>
+        <Text
+          style={{
+            fontFamily: fonts.sansRegular,
+            color: hasCover ? colors.white : colors.textSecondary,
+          }}
+        >
           {format(parseISO(trip.startDate), 'd MMM', { locale: dateLocale() })} –{' '}
           {format(parseISO(trip.endDate), 'd MMM yyyy', { locale: dateLocale() })}
         </Text>
         {destination.place && (
-          <View
-            style={{ backgroundColor: colors.surfacePaper, borderRadius: 6, paddingHorizontal: 4 }}
-          >
-            <PlacesAttribution attributions={destination.place.attributions} />
-          </View>
+          <PlacesAttribution
+            attributions={destination.place.attributions}
+
+            light={hasCover}
+          />
         )}
       </View>
     </Pressable>
@@ -123,16 +140,15 @@ const styles = StyleSheet.create({
   badgeText: { fontFamily: fonts.sansBold, fontSize: fontSize.sm, letterSpacing: 0.3 },
   titleWrap: {
     alignItems: 'flex-start',
-    backgroundColor: colors.surfacePaper,
-    padding: 12,
-    borderRadius: 12,
+    backgroundColor: 'transparent',
+    padding: 8,
     gap: 4,
   },
   title: {
     fontFamily: fonts.serifItalic,
     fontSize: fontSize.title,
-    color: colors.secondary,
-    textShadowColor: 'transparent',
+    color: colors.white,
+    textShadowColor: 'rgba(0,0,0,0.4)',
     textShadowOffset: { width: 0, height: 4 },
     textShadowRadius: 4,
   },

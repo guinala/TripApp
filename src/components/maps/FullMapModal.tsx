@@ -52,6 +52,7 @@ export function FullMapModal({ visible, onClose }: { visible: boolean; onClose: 
   const [mapType, setMapType] = useState<'standard' | 'satellite'>('standard');
 
   const [mapReady, setMapReady] = useState(false);
+  const [sheetHeight, setSheetHeight] = useState(280);
 
   const dayById = useMemo(() => new Map(days.map((d) => [d.id, d])), [days]);
   const selectedDay = selectedDayId ? (dayById.get(selectedDayId) ?? null) : null;
@@ -148,7 +149,9 @@ export function FullMapModal({ visible, onClose }: { visible: boolean; onClose: 
             mapType={mapType}
             initialRegion={initialRegion}
             onMapReady={() => setMapReady(true)}
-            mapPadding={{ top: 150, right: 0, bottom: 280, left: 0 }}
+            // El SDK desplaza su logotipo por encima del panel, también si crece
+            // al mostrar avisos o con un tamaño de letra mayor.
+            mapPadding={{ top: insets.top + 128, right: 12, bottom: sheetHeight + 12, left: 12 }}
             onRegionChangeComplete={(r) => {
               regionRef.current = r;
             }}
@@ -239,7 +242,7 @@ export function FullMapModal({ visible, onClose }: { visible: boolean; onClose: 
           })}
         </ScrollView>
 
-        <View style={styles.controls}>
+        <View style={[styles.controls, { bottom: sheetHeight + 48 }]}>
           <Pressable style={styles.controlBtn} onPress={() => zoomBy(0.5)}>
             <Ionicons name="add" size={22} color={colors.secondary} />
           </Pressable>
@@ -251,7 +254,10 @@ export function FullMapModal({ visible, onClose }: { visible: boolean; onClose: 
           </Pressable>
         </View>
 
-        <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.s3 }]}>
+        <View
+          style={[styles.sheet, { paddingBottom: insets.bottom + spacing.s3 }]}
+          onLayout={(event) => setSheetHeight(Math.ceil(event.nativeEvent.layout.height))}
+        >
           <View style={styles.sheetHandle} />
           {initialRegion && <PlaceMapStatus compact onNavigate={onClose} />}
           <PlacesAttribution attributions={mapAttributions} />
@@ -462,7 +468,6 @@ const styles = StyleSheet.create({
   controls: {
     position: 'absolute',
     right: 14,
-    bottom: 300,
     gap: spacing.s2,
   },
   controlBtn: {

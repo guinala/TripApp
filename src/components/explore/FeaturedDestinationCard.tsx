@@ -15,7 +15,7 @@ export function FeaturedDestinationCard({
   return (
     <View style={{ gap: 10 }}>
       <Text style={ui.title}>{t('explore.featured')}</Text>
-      <DestinationCard destination={destination} onPress={onPress} />
+      <DestinationCard featured destination={destination} onPress={onPress} />
     </View>
   );
 }

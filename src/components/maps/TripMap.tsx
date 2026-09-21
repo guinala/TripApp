@@ -38,6 +38,8 @@ export default function TripMap() {
             ref={ref}
             style={{ flex: 1 }}
             provider={PROVIDER_GOOGLE}
+            // Mantiene el logotipo del SDK dentro de las esquinas redondeadas.
+            mapPadding={{ top: 8, right: 8, bottom: 8, left: 8 }}
             initialRegion={region}
             onMapReady={() => setReady(true)}
             toolbarEnabled={false}

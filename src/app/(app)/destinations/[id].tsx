@@ -1,73 +1,25 @@
 import { useEffect, useState } from 'react';
-import { Share, Text } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { getEditorialDestination } from '@/services/editorial-destinations';
 import type { EditorialDestination } from '@/types/destination';
-import { usePlaceDetails, usePlaceLanguage } from '@/hooks/use-place-details';
-import { PlacesScreen, PlacesButton, ui } from '@/components/explore/PlacesUI';
+import { usePlaceLanguage } from '@/hooks/use-place-details';
+import { PlacesScreen } from '@/components/explore/PlacesUI';
 import { PlacesStatus } from '@/components/explore/PlacesStatus';
 import { PlaceDetailContent } from '@/components/explore/PlaceDetailContent';
-import { DestinationCard } from '@/components/explore/DestinationCard';
+import { useEditorialPlace } from '@/hooks/use-editorial-place';
 import { useAuthStore } from '@/store/authStore';
 
 function EditorialBody({ destination }: { destination: EditorialDestination }) {
-  const { t } = useTranslation();
-  const resolution = usePlaceDetails(destination.placeId, usePlaceLanguage());
-  const [shareError, setShareError] = useState<string | null>(null);
+  const resolution = useEditorialPlace(destination);
   return (
-    <>
-      <DestinationCard
-        destination={destination}
-        onPress={() => {
-          void Share.share({ message: `${destination.name}, ${destination.country}` }).catch(() =>
-            setShareError('share'),
-          );
-        }}
-      />
-      <PlacesStatus error={shareError} />
-      {resolution.place ? (
-        <PlaceDetailContent place={resolution.place} editorial={destination} />
-      ) : (
-        <>
-          <Text style={ui.text} accessibilityLanguage={destination.descriptionLanguage}>
-            {destination.description}
-          </Text>
-          <Text style={ui.text}>
-            {t('places.textLanguage', { language: destination.descriptionLanguage.toUpperCase() })}
-          </Text>
-          <PlacesStatus
-            loading={resolution.status === 'loading'}
-            error={resolution.error}
-            onRetry={resolution.error ? resolution.retry : undefined}
-          />
-          <PlacesButton
-            title={t('places.createTrip')}
-            onPress={() =>
-              router.push({
-                pathname: '/trips/new',
-                params: destination.placeId
-                  ? { placeId: destination.placeId }
-                  : { destination: `${destination.name}, ${destination.country}` },
-              })
-            }
-          />
-          <PlacesButton
-            title={t('places.searchCity')}
-            secondary
-            onPress={() =>
-              router.push({
-                pathname: '/(app)/(tabs)/explore',
-                params: {
-                  query: `${destination.name}, ${destination.country}`,
-                  queryKey: String(Date.now()),
-                },
-              })
-            }
-          />
-        </>
-      )}
-    </>
+    <PlaceDetailContent
+      place={resolution.place}
+      editorial={destination}
+      locating={resolution.loading}
+      locationError={!!resolution.error}
+      onRetryLocation={resolution.retry}
+    />
   );
 }
 
@@ -101,18 +53,15 @@ export default function EditorialScreen() {
 
   const current = result?.key === key ? result : null;
 
+  if (current?.destination) return <EditorialBody key={key} destination={current.destination} />;
   return (
     <PlacesScreen title={t('places.editorial')}>
-      {current?.destination ? (
-        <EditorialBody key={id} destination={current.destination} />
-      ) : (
-        <PlacesStatus
-          loading={!current}
-          error={current?.error}
-          message={current && !current.error ? t('places.notPublished') : undefined}
-          onRetry={current?.error ? () => setAttempt((a) => a + 1) : undefined}
-        />
-      )}
+      <PlacesStatus
+        loading={!current}
+        error={current?.error}
+        message={current && !current.error ? t('places.notPublished') : undefined}
+        onRetry={current?.error ? () => setAttempt((a) => a + 1) : undefined}
+      />
     </PlacesScreen>
   );
 }

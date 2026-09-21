@@ -23,7 +23,10 @@ export default function RootLayout() {
 function Layout({ onRetry }: { onRetry: () => void }) {
   const { t } = useTranslation();
   const segments = useSegments();
-  const light = segments.some((segment) => segment === 'welcome' || segment === 'photo');
+  const light =
+    segments.some((segment) => segment === 'welcome' || segment === 'photo') ||
+    (segments.some((segment) => segment === 'places') && segments.at(-1) === '[placeId]') ||
+    (segments.some((segment) => segment === 'destinations') && segments.at(-1) === '[id]');
   const [authError, setAuthError] = useState(false);
   const initialize = useAuthStore((s) => s.initialize);
 

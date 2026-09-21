@@ -3,19 +3,19 @@ import {
   assertAccount,
   isCurrentAccount,
   subscribeAccount,
-} from "@/services/account-session";
-import { create } from "zustand";
-import type { Expense } from "@/types/expense";
+} from '@/services/account-session';
+import { create } from 'zustand';
+import type { Expense } from '@/types/expense';
 import {
   createExpense,
   type CreateExpenseInput,
   deleteExpense,
   listExpenses,
   updateExpense,
-} from "@/services/expenses";
-import i18n from "@/i18n";
+} from '@/services/expenses';
+import i18n from '@/i18n';
 
-type EditPatch = Partial<Omit<CreateExpenseInput, "tripId">>;
+type EditPatch = Partial<Omit<CreateExpenseInput, 'tripId'>>;
 
 type ExpenseState = {
   // Gastos indexados por tripId
@@ -33,6 +33,37 @@ type ExpenseState = {
 const sortByDateDesc = (list: Expense[]): Expense[] =>
   [...list].sort((a, b) => b.date.localeCompare(a.date));
 
+type TripRequests = {
+  request: number;
+  revision: number;
+  pending: number;
+  idle: Promise<void>;
+  release?: () => void;
+};
+const requests = new Map<string, TripRequests>();
+
+function requestsFor(tripId: string): TripRequests {
+  let state = requests.get(tripId);
+  if (!state) {
+    state = { request: 0, revision: 0, pending: 0, idle: Promise.resolve() };
+    requests.set(tripId, state);
+  }
+  return state;
+}
+
+function beginMutation(tripId: string) {
+  const state = requestsFor(tripId);
+  state.revision++;
+  if (state.pending++ === 0) {
+    state.idle = new Promise<void>((resolve) => {
+      state.release = resolve;
+    });
+  }
+  return () => {
+    if (--state.pending === 0) state.release?.();
+  };
+}
+
 export const useExpenseStore = create<ExpenseState>((set, get) => ({
   errorByTrip: {},
   byTrip: {},
@@ -42,6 +73,9 @@ export const useExpenseStore = create<ExpenseState>((set, get) => ({
   loadExpenses: async (tripId) => {
     const started = accountVersion();
     if (!isCurrentAccount(started)) return;
+    const state = requestsFor(tripId);
+    const request = ++state.request;
+    const current = () => isCurrentAccount(started) && request === state.request;
 
     set((s) => ({
       loadingByTrip: { ...s.loadingByTrip, [tripId]: true },
@@ -49,25 +83,32 @@ export const useExpenseStore = create<ExpenseState>((set, get) => ({
       error: null,
     }));
 
-    try {
-      const expenses = await listExpenses(tripId);
-
-      if (!isCurrentAccount(started)) return;
-
-      set((s) => ({
-        byTrip: { ...s.byTrip, [tripId]: expenses },
-        loadingByTrip: { ...s.loadingByTrip, [tripId]: false },
-      }));
-    } catch (err) {
-      if (!isCurrentAccount(started)) return;
-
-      set((s) => ({
-        loadingByTrip: { ...s.loadingByTrip, [tripId]: false },
-        error: err instanceof Error
-          ? err.message
-          : i18n.t("errors.loadExpenses"),
-        errorByTrip: { ...s.errorByTrip, [tripId]: "load" },
-      }));
+    while (current()) {
+      // No leer una instantánea a medio guardar. Si hubo cambios durante la lectura,
+      // repetirla tras terminar las escrituras, sin retirar los elementos optimistas.
+      while (state.pending && current()) await state.idle;
+      if (!current()) return;
+      const revision = state.revision;
+      try {
+        const expenses = await listExpenses(tripId);
+        if (!current()) return;
+        if (revision !== state.revision || state.pending) continue;
+        set((s) => ({
+          byTrip: { ...s.byTrip, [tripId]: expenses },
+          loadingByTrip: { ...s.loadingByTrip, [tripId]: false },
+          errorByTrip: { ...s.errorByTrip, [tripId]: null },
+        }));
+        return;
+      } catch (err) {
+        if (!current()) return;
+        if (revision !== state.revision || state.pending) continue;
+        set((s) => ({
+          loadingByTrip: { ...s.loadingByTrip, [tripId]: false },
+          error: err instanceof Error ? err.message : i18n.t('errors.loadExpenses'),
+          errorByTrip: { ...s.errorByTrip, [tripId]: 'load' },
+        }));
+        return;
+      }
     }
   },
 
@@ -76,6 +117,7 @@ export const useExpenseStore = create<ExpenseState>((set, get) => ({
     assertAccount(started);
 
     const { tripId } = input;
+    const finish = beginMutation(tripId);
     const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const optimistic: Expense = {
       id: tempId,
@@ -117,25 +159,24 @@ export const useExpenseStore = create<ExpenseState>((set, get) => ({
           ...s.byTrip,
           [tripId]: (s.byTrip[tripId] ?? []).filter((e) => e.id !== tempId),
         },
-        error: err instanceof Error
-          ? err.message
-          : i18n.t("errors.createExpense"),
+        error: err instanceof Error ? err.message : i18n.t('errors.createExpense'),
       }));
       throw err;
+    } finally {
+      finish();
     }
   },
 
   editExpense: async (tripId, id, patch) => {
     const started = accountVersion();
     assertAccount(started);
+    const finish = beginMutation(tripId);
 
     const snapshot = get().byTrip[tripId] ?? [];
     set((s) => ({
       byTrip: {
         ...s.byTrip,
-        [tripId]: sortByDateDesc(
-          snapshot.map((e) => (e.id === id ? { ...e, ...patch } : e)),
-        ),
+        [tripId]: sortByDateDesc(snapshot.map((e) => (e.id === id ? { ...e, ...patch } : e))),
       },
       error: null,
     }));
@@ -146,9 +187,7 @@ export const useExpenseStore = create<ExpenseState>((set, get) => ({
       set((s) => ({
         byTrip: {
           ...s.byTrip,
-          [tripId]: sortByDateDesc(
-            (s.byTrip[tripId] ?? []).map((e) => (e.id === id ? saved : e)),
-          ),
+          [tripId]: sortByDateDesc((s.byTrip[tripId] ?? []).map((e) => (e.id === id ? saved : e))),
         },
       }));
     } catch (err) {
@@ -156,17 +195,18 @@ export const useExpenseStore = create<ExpenseState>((set, get) => ({
 
       set((s) => ({
         byTrip: { ...s.byTrip, [tripId]: snapshot },
-        error: err instanceof Error
-          ? err.message
-          : i18n.t("errors.updateExpense"),
+        error: err instanceof Error ? err.message : i18n.t('errors.updateExpense'),
       }));
       throw err;
+    } finally {
+      finish();
     }
   },
 
   removeExpense: async (tripId, id) => {
     const started = accountVersion();
     assertAccount(started);
+    const finish = beginMutation(tripId);
 
     const snapshot = get().byTrip[tripId] ?? [];
     set((s) => ({
@@ -182,20 +222,22 @@ export const useExpenseStore = create<ExpenseState>((set, get) => ({
 
       set((s) => ({
         byTrip: { ...s.byTrip, [tripId]: snapshot },
-        error: err instanceof Error
-          ? err.message
-          : i18n.t("errors.deleteExpense"),
+        error: err instanceof Error ? err.message : i18n.t('errors.deleteExpense'),
       }));
       throw err;
+    } finally {
+      finish();
     }
   },
 }));
 
-subscribeAccount(() =>
+subscribeAccount(() => {
+  requests.forEach((state) => state.release?.());
+  requests.clear();
   useExpenseStore.setState({
     byTrip: {},
     loadingByTrip: {},
     error: null,
     errorByTrip: {},
-  })
-);
+  });
+});

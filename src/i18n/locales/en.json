@@ -307,7 +307,7 @@
       "title": "Sign out",
       "message": "Are you sure you want to leave?"
     },
-    "footer": "made with ♥ for travelers"
+    "footer": "Made by Guill23"
   },
   "tripDetail": {
     "viewFullMap": "View full map",
@@ -617,7 +617,7 @@
     "tripNotFound": "This trip was not found or you do not have access.",
     "locateExplanation": "Search for and confirm the destination. Your dates, activities and trip name will be kept.",
     "nearbyScope": "Choose a category to see up to 10 places within 5 km of this center.",
-    "currentWeather": "Current weather · OpenWeather",
+    "currentWeather": "Current weather by OpenWeather",
     "editorial": "TripMate selection",
     "textLanguage": "Editorial text in {{language}}",
     "destinationType": "Destination",
@@ -702,12 +702,12 @@
     "deleteActivityConfirm": "Delete this activity?",
     "straightLine": "straight-line estimate",
     "chooseTrip": "Choose a trip",
-    "emptyFilter": "No trips match this filter. Retry to show all trips.",
+    "emptyFilter": "No trips in this category",
     "accountPending": "Account deletion has been requested and access to your data is blocked. The server will continue deleting your files and account. You can sign out.",
     "notificationsError": "Reminders could not be updated. Try again.",
     "startupError": "The app could not start. Check your connection and try again.",
     "noLocation": "No valid location yet.",
-    "webMapExternal": "You can view this location in Google Maps.",
+    "webMapExternal": "You can view this location on an external map.",
     "openMap": "Open in Google Maps",
     "photoLocation": "Photo location",
     "openPhoto": "Open photo",
@@ -717,5 +717,13 @@
     "removeLocation": "Remove location",
     "imageError": "The image could not be loaded.",
     "imageRetry": "Retry image"
+  },
+  "placesUI": {
+    "emptyFilterHint": "Try another category or view all your trips.",
+    "showAllTrips": "View all trips",
+    "share": "Share destination",
+    "discoverArea": "Discover what to see and do in {{name}}.",
+    "photoCredit": "Photo: {{author}}",
+    "nearbyScope": "Places within 5 km of the centre."
   }
 }

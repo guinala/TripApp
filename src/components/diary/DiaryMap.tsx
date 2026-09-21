@@ -48,6 +48,7 @@ export function DiaryMap({ photos, onPressPhoto, style }: DiaryMapProps) {
       <MapView
         style={styles.map}
         provider={PROVIDER_DEFAULT}
+        mapPadding={{ top: 8, right: 8, bottom: 8, left: 8 }}
         initialRegion={initialRegion}
         toolbarEnabled={false}
       >

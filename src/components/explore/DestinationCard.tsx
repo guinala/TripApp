@@ -1,4 +1,6 @@
-import { Linking, Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { LoadNotice } from '@/components/ui/LoadNotice';
 import { RemoteImage } from '@/components/ui/RemoteImage';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -11,64 +13,121 @@ export function DestinationCard({
   destination,
   onPress,
   style,
+  featured = false,
 }: {
   destination: EditorialDestination;
   onPress: () => void;
   style?: ViewStyle;
+  featured?: boolean;
 }) {
-  const { t } = useTranslation();
-  const { photo } = useUnsplashCover(destination.coverQuery);
-
+  const { t, i18n } = useTranslation();
+  const { photo, loading, error, retry } = useUnsplashCover(destination.coverQuery);
+  const rating =
+    destination.editorialRating == null
+      ? null
+      : new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 }).format(
+          destination.editorialRating,
+        );
+  const price = destination.priceRange
+    ? { low: '€', mid: '€€', high: '€€€' }[destination.priceRange]
+    : null;
+  const ratingView = rating && (
+    <View style={styles.rating} accessibilityLabel={`${t('destination.stats.rating')}: ${rating}`}>
+      <Ionicons
+        name="star"
+        size={featured ? 16 : 13}
+        color={featured ? colors.white : colors.accent}
+      />
+      <Text style={[styles.ratingText, featured && styles.light]}>{rating}</Text>
+    </View>
+  );
   return (
-    <View style={[styles.card, style]}>
-      <Pressable accessibilityRole="button" onPress={onPress}>
-        <View style={styles.picture}>
-          {photo ? (
-            <RemoteImage uri={photo.smallUrl} label={destination.name} />
-          ) : (
-            <Ionicons name="compass-outline" size={40} color={colors.primary700} />
-          )}
-        </View>
-        <View style={styles.body}>
-          <Text style={styles.name}>{destination.name}</Text>
-          <Text style={styles.country}>{destination.country}</Text>
-          <Text style={styles.tags}>
-            {destination.types.map((type) => t(DESTINATION_TYPE_LABELS[type])).join(' · ')}
-          </Text>
-        </View>
-      </Pressable>
-      {photo && (
+    <View style={[styles.shadow, style]}>
+      <View style={styles.card}>
         <Pressable
-          accessibilityRole="link"
-          onPress={() => {
-            void Linking.openURL(photo.authorLink).catch(() => undefined);
-          }}
-          style={styles.credit}
+          accessibilityRole="button"
+          accessibilityLabel={`${destination.name}, ${destination.country}`}
+          onPress={onPress}
+          style={({ pressed }) => [{ flex: 1 }, pressed && { opacity: 0.85 }]}
         >
-          <Text style={styles.country}>{photo.authorName} · Unsplash</Text>
+          <View style={[styles.picture, featured && styles.featuredPicture]}>
+            {loading ? (
+              <ActivityIndicator color={colors.primary} />
+            ) : photo ? (
+              <RemoteImage
+                uri={featured ? photo.regularUrl : photo.smallUrl}
+                label={destination.name}
+              />
+            ) : (
+              <Ionicons name="compass-outline" size={40} color={colors.primary700} />
+            )}
+            {featured && (
+              <>
+                <LinearGradient
+                  pointerEvents="none"
+                  colors={['transparent', 'rgba(15,27,51,0.78)']}
+                  style={StyleSheet.absoluteFill}
+                />
+                <View pointerEvents="none" style={styles.featuredBody}>
+                  <Text style={styles.featuredName}>{destination.name}</Text>
+                  <View style={styles.featuredMeta}>
+                    {ratingView}
+                    <Text style={styles.featuredTags}>
+                      {destination.types
+                        .map((type) => t(DESTINATION_TYPE_LABELS[type]))
+                        .join(' · ')}
+                    </Text>
+                  </View>
+                </View>
+              </>
+            )}
+          </View>
+          {!featured && (
+            <View style={styles.body}>
+              <View style={styles.row}>
+                <Text numberOfLines={1} style={styles.name}>
+                  {destination.name}
+                </Text>
+                {ratingView}
+              </View>
+              <View style={styles.row}>
+                <Text numberOfLines={1} style={styles.country}>
+                  {destination.country} · {t(`places.continents.${destination.continent}`)}
+                </Text>
+                {price && <Text style={styles.price}>{price}</Text>}
+              </View>
+            </View>
+          )}
         </Pressable>
-      )}
+        <LoadNotice error={!!error} onRetry={retry} />
+      </View>
     </View>
   );
 }
-
 const styles = StyleSheet.create({
-  card: {
-    borderRadius: 18,
+  shadow: {
+    borderRadius: 16,
     backgroundColor: colors.surfacePaper,
-    borderWidth: 1,
-    borderColor: colors.secondary100,
-    overflow: 'hidden',
+    boxShadow: '0 5px 9px rgba(27,45,79,0.20)',
   },
+  card: { flex: 1, borderRadius: 16, backgroundColor: colors.surfacePaper, overflow: 'hidden' },
   picture: {
-    height: 124,
+    aspectRatio: 1.16,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.surfaceAlt,
   },
-  body: { padding: 12, gap: 6 },
-  name: { fontFamily: fonts.serifItalic, fontSize: 24, color: colors.secondary },
-  country: { fontFamily: fonts.sansRegular, fontSize: 12, color: colors.textSecondary },
-  tags: { color: colors.primary700, fontFamily: fonts.sansMedium, fontSize: 12 },
-  credit: { paddingHorizontal: 12, minHeight: 44, justifyContent: 'center' },
+  featuredPicture: { aspectRatio: undefined, minHeight: 206 },
+  body: { padding: 10, paddingBottom: 12, gap: 10 },
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 5 },
+  name: { flex: 1, fontFamily: fonts.serifItalic, fontSize: 23, color: colors.secondary },
+  rating: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 0 },
+  ratingText: { fontFamily: fonts.sansMedium, fontSize: 12, color: colors.secondary },
+  country: { flex: 1, fontFamily: fonts.sansRegular, fontSize: 11, color: colors.secondary300 },
+  price: { fontFamily: fonts.sansRegular, fontSize: 11, color: colors.secondary300 },
+  featuredBody: { position: 'absolute', bottom: 14, left: 14, right: 14, gap: 8 },
+  featuredName: { fontFamily: fonts.serifItalic, fontSize: 34, color: colors.white },
+  featuredMeta: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 },
+  featuredTags: { fontFamily: fonts.sansRegular, fontSize: 12, color: colors.white, flexShrink: 1 },
+  light: { color: colors.white },
 });

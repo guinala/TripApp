@@ -14,9 +14,9 @@
       "versionCode": 14,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "foregroundImage": "./assets/images/TripMateIcon-foreground.png",
+        "backgroundImage": "./assets/images/TripMateIcon-background.png",
+        "monochromeImage": "./assets/images/TripMateIcon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.guill23.tripmate"

@@ -223,7 +223,10 @@ test('Update parcial conserva la referencia; null la desvincula explícitamente'
       },
     }),
   };
-  const service = load('src/services/trips.ts', { '@/services/supabase': { supabase } });
+  const service = load('src/services/trips.ts', {
+    '@/services/supabase': { supabase },
+    '@/utils/tripStatus': load('src/utils/tripStatus.ts', { 'date-fns': require('date-fns') }),
+  });
   await service.updateTrip('trip', { title: 'Otro título' });
   await service.updateTrip('trip', { destinationPlaceId: null });
   assert.equal(Object.hasOwn(patches[0], 'destination_place_id'), false);

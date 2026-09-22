@@ -354,45 +354,13 @@ test('Google Sign-In 8 envía idToken a Supabase, no user.id', async () => {
   assert.equal(sent.token, 'signed-id-token');
   assert.equal(sent.provider, 'google');
 });
-const editorial = {
-  id: 'lisboa',
-  name: 'Lisboa',
-  country: 'Portugal',
-  countryCode: 'PT',
-  placeId: null,
-};
-const lisboa = {
-  placeId: 'google-lisboa',
-  name: 'Lisboa',
-  countryName: 'Portugal',
-  countryCode: 'PT',
-  types: ['locality'],
-};
-test('el catálogo sin Place ID se vincula por ciudad y país, tolerando acentos', () => {
-  const { matchesEditorialPlace } = loader()('src/utils/editorial-place.ts');
-  assert.equal(matchesEditorialPlace(editorial, lisboa), true);
-  assert.equal(
-    matchesEditorialPlace(
-      { ...editorial, name: 'Málaga', countryCode: 'ES' },
-      { ...lisboa, name: 'Malaga', countryCode: 'ES' },
-    ),
-    true,
-  );
-});
-test('no se vincula una ciudad homónima de otro país ni un comercio del mismo nombre', () => {
-  const { matchesEditorialPlace } = loader()('src/utils/editorial-place.ts');
-  assert.equal(matchesEditorialPlace(editorial, { ...lisboa, countryCode: 'BR' }), false);
-  assert.equal(matchesEditorialPlace(editorial, { ...lisboa, types: ['restaurant'] }), false);
-  assert.equal(
-    matchesEditorialPlace(editorial, { ...lisboa, countryCode: null, countryName: null }),
-    false,
-  );
-});
-test('un Place ID editorial explícito prevalece sobre el nombre traducido', () => {
-  const { matchesEditorialPlace } = loader()('src/utils/editorial-place.ts');
-  assert.equal(
-    matchesEditorialPlace({ ...editorial, placeId: lisboa.placeId }, { ...lisboa, name: 'Lisbon' }),
-    true,
-  );
-  assert.equal(matchesEditorialPlace({ ...editorial, placeId: 'other' }, lisboa), false);
+test('la clasificación geográfica distingue ciudades, países y comercios', () => {
+  const { isCity, isGeographicDestination, supportsNearbyPlaces } =
+    loader()('src/utils/place-kind.ts');
+  assert.equal(isCity(['locality']), true);
+  assert.equal(isCity(['restaurant']), false);
+  assert.equal(isGeographicDestination(['country']), true);
+  assert.equal(isGeographicDestination(['restaurant', 'political']), false);
+  assert.equal(supportsNearbyPlaces(['administrative_area_level_1']), true);
+  assert.equal(supportsNearbyPlaces(['country']), false);
 });

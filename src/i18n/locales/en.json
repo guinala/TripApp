@@ -676,6 +676,39 @@
       "Oceanía": "Oceania"
     }
   },
+  "dynamicExplore": {
+    "missingValue": "-",
+    "descriptionUnavailable": "Description unavailable",
+    "exploringIn": "Exploring {{area}}",
+    "changeArea": "Change area",
+    "automaticArea": "Automatic",
+    "searchHint": "Press Search",
+    "newCities": "Cities for your next trip",
+    "nearbyCities": "Nearby cities",
+    "forTrip": "Places for your trip",
+    "basedOnHistory": "Ideas based on your trips",
+    "popularInArea": "Places to discover",
+    "emptyCities": "We found no cities for this area",
+    "emptyPlaces": "We found no places for this area",
+    "partial": "Some recommendations could not be loaded",
+    "refreshFailed": "Could not refresh. You can try again.",
+    "ratingUnavailable": "Rating unavailable",
+    "reviews": "{{formattedCount}} reviews",
+    "reviews_one": "{{formattedCount}} review",
+    "reviews_other": "{{formattedCount}} reviews",
+    "legacyLink": "This link belongs to an earlier version. Search for the destination in Explore.",
+    "openExplore": "Open Explore",
+    "photoCredit": "Photo: {{author}}",
+    "photoUnavailable": "Image unavailable",
+    "priceHint": "Price level",
+    "price": {
+      "free": "Free",
+      "inexpensive": "Inexpensive",
+      "moderate": "Moderate",
+      "expensive": "Expensive",
+      "very_expensive": "Very expensive"
+    }
+  },
   "fixes": {
     "loading": "Loading…",
     "loadError": "Could not load the data.",

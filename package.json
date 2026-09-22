@@ -86,6 +86,7 @@
     "typecheck": "tsc --noEmit",
     "test:places": "node --test tests/places.test.cjs",
     "test:regressions": "node --test tests/regressions.test.cjs",
+    "test:explore": "node --test tests/explore.test.cjs",
     "lint:fix": "expo lint --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

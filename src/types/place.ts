@@ -1,3 +1,5 @@
+import type { ExploreDataByAction, ExploreRequest } from './explore.ts';
+
 export type LatLng = { lat: number; lng: number };
 export type PlaceLanguage = 'es' | 'en';
 export type PlaceViewport = { low: LatLng; high: LatLng };
@@ -32,7 +34,7 @@ export type PlaceSummary = {
   attributions: PlaceDetails['attributions'];
 };
 
-export type PlacesRequest =
+export type BasePlacesRequest =
   | {
       action: 'autocomplete';
       input: string;
@@ -61,7 +63,7 @@ export type PlacesRequest =
       pageToken?: string;
     };
 
-export type PlacesDataByAction = {
+export type BasePlacesDataByAction = {
   autocomplete: { suggestions: PlaceSuggestion[] };
   details: { place: PlaceDetails };
   nearby: { places: PlaceSummary[] };
@@ -76,3 +78,6 @@ export type PlacesErrorCode =
 export type PlacesErrorBody = {
   error: { code: PlacesErrorCode; retryable: boolean };
 };
+
+export type PlacesRequest = BasePlacesRequest | ExploreRequest;
+export type PlacesDataByAction = BasePlacesDataByAction & ExploreDataByAction;

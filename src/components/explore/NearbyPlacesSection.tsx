@@ -1,27 +1,29 @@
-import { useState } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { useCallback, useState } from 'react';
+import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { router } from 'expo-router';
-import type { InterestCategory, LatLng, PlaceSummary } from '@/types/place';
+import type { InterestCategory, LatLng, PlaceLanguage } from '@/types/place';
+import type { ExplorePlace } from '@/types/explore';
 import { colors, fonts } from '@/constants/theme';
 import { usePlaceLanguage } from '@/hooks/use-place-details';
 import { useNearbyPlaces } from '@/hooks/use-nearby-places';
-import { useUnsplashCover } from '@/hooks/use-unsplash-photos';
-import { RemoteImage } from '@/components/ui/RemoteImage';
+import { PlacePhoto } from '@/components/explore/PlacePhoto';
+import { formatPlaceRating, MISSING_PLACE_VALUE } from '@/utils/place-presentation';
 import { PlacesStatus } from './PlacesStatus';
 import { PlacesAttribution } from './PlacesAttribution';
 
-function NearbyCard({ place, cityName }: { place: PlaceSummary; cityName: string }) {
-  const cover = useUnsplashCover(`${place.name} ${cityName}`);
+function NearbyCard({
+  place,
+  cityName,
+  languageCode,
+  photoEnabled,
+}: {
+  place: ExplorePlace;
+  cityName: string;
+  languageCode: PlaceLanguage;
+  photoEnabled: boolean;
+}) {
+  const { i18n } = useTranslation();
   return (
     <Pressable
       accessibilityRole="button"
@@ -31,30 +33,51 @@ function NearbyCard({ place, cityName }: { place: PlaceSummary; cityName: string
       }
     >
       <View style={styles.image}>
-        {cover.photo ? (
-          <RemoteImage uri={cover.photo.smallUrl} label={place.name} />
-        ) : cover.loading ? (
-          <ActivityIndicator color={colors.primary} />
-        ) : (
-          <Ionicons name="location-outline" size={34} color={colors.primary} />
-        )}
+        <PlacePhoto
+          placeId={place.placeId}
+          name={place.name}
+          localityName={place.localityName ?? cityName}
+          countryName={place.countryName}
+          size="card"
+          languageCode={languageCode}
+          enabled={photoEnabled}
+          style={StyleSheet.absoluteFill}
+        />
       </View>
       <View style={styles.cardBody}>
-        <Text numberOfLines={2} style={styles.cardTitle}>
-          {place.name}
-        </Text>
+        <View style={styles.titleRow}>
+          <Text numberOfLines={2} style={styles.cardTitle}>{place.name}</Text>
+          <Text style={styles.rating}>{formatPlaceRating(place.rating, i18n.language)}</Text>
+        </View>
         <Text numberOfLines={2} style={styles.address}>
-          {place.address}
+          {place.address ?? MISSING_PLACE_VALUE}
         </Text>
         <PlacesAttribution attributions={place.attributions} />
       </View>
     </Pressable>
   );
 }
-export function NearbyPlacesSection({ center, cityName }: { center: LatLng; cityName: string }) {
+
+export function NearbyPlacesSection({
+  center,
+  cityName,
+  enabled = true,
+}: {
+  center: LatLng;
+  cityName: string;
+  enabled?: boolean;
+}) {
   const { t } = useTranslation();
+  const languageCode = usePlaceLanguage();
   const [category, setCategory] = useState<InterestCategory>('visit');
-  const state = useNearbyPlaces(center, category, usePlaceLanguage(), true);
+  const [visible, setVisible] = useState(() => new Set<string>());
+  const state = useNearbyPlaces(center, category, languageCode, enabled);
+  const onViewableItemsChanged = useCallback(
+    ({ viewableItems }: { viewableItems: { item: ExplorePlace; isViewable?: boolean }[] }) => {
+      setVisible(new Set(viewableItems.filter((item) => item.isViewable).map((item) => item.item.placeId)));
+    },
+    [],
+  );
   return (
     <View style={{ gap: 14 }}>
       <Text style={styles.heading}>{t('destination.highlights')}</Text>
@@ -83,11 +106,7 @@ export function NearbyPlacesSection({ center, cityName }: { center: LatLng; city
           <PlacesStatus
             loading={state.loading}
             error={state.error}
-            message={
-              !state.loading && !state.error && !state.places.length
-                ? t('places.noResults')
-                : undefined
-            }
+            message={!state.loading && !state.error && !state.places.length ? t('places.noResults') : undefined}
             onRetry={state.error ? state.retry : undefined}
           />
         </View>
@@ -100,24 +119,29 @@ export function NearbyPlacesSection({ center, cityName }: { center: LatLng; city
         contentContainerStyle={styles.cards}
         initialNumToRender={3}
         windowSize={3}
-        renderItem={({ item }) => <NearbyCard place={item} cityName={cityName} />}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={{ itemVisiblePercentThreshold: 10 }}
+        renderItem={({ item, index }) => (
+          <NearbyCard
+            place={item}
+            cityName={cityName}
+            languageCode={languageCode}
+            photoEnabled={enabled && (visible.has(item.placeId) || (visible.size === 0 && index < 3))}
+          />
+        )}
       />
+      {state.places.length > 0 && (
+        <View style={{ paddingHorizontal: 25 }}>
+          <PlacesAttribution showGoogle />
+        </View>
+      )}
     </View>
   );
 }
+
 const styles = StyleSheet.create({
-  heading: {
-    fontFamily: fonts.serifItalic,
-    fontSize: 32,
-    color: colors.secondary,
-    paddingHorizontal: 25,
-  },
-  scope: {
-    fontFamily: fonts.sansRegular,
-    fontSize: 12,
-    color: colors.textSecondary,
-    paddingHorizontal: 25,
-  },
+  heading: { fontFamily: fonts.serifItalic, fontSize: 32, color: colors.secondary, paddingHorizontal: 25 },
+  scope: { fontFamily: fonts.sansRegular, fontSize: 12, color: colors.textSecondary, paddingHorizontal: 25 },
   categories: { paddingHorizontal: 25, gap: 8 },
   chip: {
     minHeight: 40,
@@ -131,18 +155,10 @@ const styles = StyleSheet.create({
   chipText: { fontFamily: fonts.sansSemiBold, fontSize: 12, color: colors.secondary },
   cards: { paddingHorizontal: 25, gap: 12, paddingBottom: 4 },
   card: { width: 190, borderRadius: 16, overflow: 'hidden', backgroundColor: colors.surfacePaper },
-  image: {
-    height: 165,
-    backgroundColor: colors.surfaceAlt,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  image: { height: 165, backgroundColor: colors.surfaceAlt },
   cardBody: { padding: 12, gap: 6 },
-  cardTitle: { fontFamily: fonts.sansBold, fontSize: 14, color: colors.secondary },
-  address: {
-    fontFamily: fonts.sansRegular,
-    fontSize: 12,
-    lineHeight: 18,
-    color: colors.secondary300,
-  },
+  titleRow: { flexDirection: 'row', gap: 6, alignItems: 'flex-start' },
+  cardTitle: { flex: 1, fontFamily: fonts.sansBold, fontSize: 14, color: colors.secondary },
+  rating: { fontFamily: fonts.sansSemiBold, fontSize: 12, color: colors.primary700 },
+  address: { fontFamily: fonts.sansRegular, fontSize: 12, lineHeight: 18, color: colors.secondary300 },
 });

@@ -679,6 +679,39 @@
       "Oceanía": "Oceanía"
     }
   },
+  "dynamicExplore": {
+    "missingValue": "-",
+    "descriptionUnavailable": "Descripción no disponible",
+    "exploringIn": "Explorando en {{area}}",
+    "changeArea": "Cambiar zona",
+    "automaticArea": "Automático",
+    "searchHint": "Pulsa Buscar",
+    "newCities": "Ciudades para tu próximo viaje",
+    "nearbyCities": "Ciudades cercanas",
+    "forTrip": "Lugares para tu viaje",
+    "basedOnHistory": "Ideas basadas en tus viajes",
+    "popularInArea": "Lugares para descubrir",
+    "emptyCities": "No encontramos ciudades para esta zona",
+    "emptyPlaces": "No encontramos lugares para esta zona",
+    "partial": "No se han podido cargar todas las recomendaciones",
+    "refreshFailed": "No se ha podido actualizar. Puedes volver a intentarlo.",
+    "ratingUnavailable": "Valoración no disponible",
+    "reviews": "{{formattedCount}} opiniones",
+    "reviews_one": "{{formattedCount}} opinión",
+    "reviews_other": "{{formattedCount}} opiniones",
+    "legacyLink": "Este enlace pertenece a una versión anterior. Busca el destino en Explorar.",
+    "openExplore": "Ir a Explorar",
+    "photoCredit": "Foto: {{author}}",
+    "photoUnavailable": "Imagen no disponible",
+    "priceHint": "Nivel de precio",
+    "price": {
+      "free": "Gratis",
+      "inexpensive": "Económico",
+      "moderate": "Medio",
+      "expensive": "Alto",
+      "very_expensive": "Muy alto"
+    }
+  },
   "fixes": {
     "loading": "Cargando…",
     "loadError": "No se pudieron cargar los datos.",

@@ -5,14 +5,26 @@ import type { PlaceDetails } from '@/types/place';
 export function PlacesAttribution({
   attributions = [],
   light = false,
+  showGoogle = false,
 }: {
   attributions?: PlaceDetails['attributions'];
   light?: boolean;
+  showGoogle?: boolean;
 }) {
-  if (attributions.length === 0) return null;
+  const entries = [
+    ...(showGoogle ? [{ provider: 'Google Maps', providerUri: 'https://maps.google.com' }] : []),
+    ...attributions,
+  ].filter(
+    (entry, index, all) =>
+      all.findIndex(
+        (candidate) =>
+          candidate.provider === entry.provider && candidate.providerUri === entry.providerUri,
+      ) === index,
+  );
+  if (entries.length === 0) return null;
   return (
     <View style={{ gap: 2, paddingVertical: 4 }}>
-      {attributions.map((a, index) => {
+      {entries.map((a, index) => {
         const allowed = a.providerUri && /^https?:\/\//i.test(a.providerUri) ? a.providerUri : null;
         return (
           <Pressable

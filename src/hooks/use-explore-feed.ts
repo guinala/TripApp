@@ -1,0 +1,135 @@
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { discoverPlaces, isPlacesCancelled, PlacesError } from '@/services/places';
+import {
+  placeSessionEnabled,
+  placeSessionVersion,
+  subscribePlaceSession,
+} from '@/services/place-session';
+import type {
+  DiscoveryReason,
+  ExploreArea,
+  ExploreMode,
+  ExplorePlace,
+  ResolvedExploreArea,
+} from '@/types/explore';
+import type { PlaceLanguage } from '@/types/place';
+
+type FeedResult = {
+  key: string;
+  revision: number;
+  places: ExplorePlace[];
+  area: ResolvedExploreArea;
+  reason: DiscoveryReason;
+  partial: boolean;
+  error: PlacesError | null;
+};
+
+export function useExploreFeed({
+  mode,
+  languageCode,
+  area,
+  fallbackCountryCode,
+  timeZone,
+  enabled,
+}: {
+  mode: ExploreMode;
+  languageCode: PlaceLanguage;
+  area?: ExploreArea;
+  fallbackCountryCode?: string;
+  timeZone?: string;
+  enabled: boolean;
+}) {
+  const epoch = useSyncExternalStore(
+    subscribePlaceSession,
+    placeSessionVersion,
+    placeSessionVersion,
+  );
+  const [revision, setRevision] = useState(0);
+  const [result, setResult] = useState<FeedResult | null>(null);
+  const request = useRef<AbortController | null>(null);
+  const identity = JSON.stringify([
+    mode,
+    languageCode,
+    area ?? null,
+    fallbackCountryCode ?? null,
+    timeZone ?? 'UTC',
+    epoch,
+  ]);
+  const active = enabled && placeSessionEnabled();
+  const loadKey = active ? JSON.stringify([identity, revision]) : null;
+
+  useEffect(() => {
+    if (!loadKey) {
+      request.current?.abort();
+      return;
+    }
+    const controller = new AbortController();
+    request.current?.abort();
+    request.current = controller;
+    discoverPlaces(
+      {
+        mode,
+        languageCode,
+        ...(area ? { area } : {}),
+        ...(fallbackCountryCode ? { fallbackCountryCode } : {}),
+        ...(timeZone ? { timeZone } : {}),
+      },
+      { signal: controller.signal },
+    )
+      .then((data) => {
+        if (controller.signal.aborted) return;
+        setResult({ key: identity, revision, ...data, error: null });
+      })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted || isPlacesCancelled(error)) return;
+        const next = error instanceof PlacesError
+          ? error
+          : new PlacesError('NETWORK_ERROR', true);
+        setResult((previous) =>
+          previous?.key === identity
+            ? { ...previous, revision, error: next }
+            : {
+                key: identity,
+                revision,
+                places: [],
+                area: {
+                  label: '',
+                  countryCode: null,
+                  countryName: null,
+                  center: null,
+                  source: 'default',
+                },
+                reason: mode === 'cities' ? 'new_cities' : 'popular_in_area',
+                partial: false,
+                error: next,
+              },
+        );
+      })
+    return () => controller.abort();
+  }, [
+    active,
+    area,
+    fallbackCountryCode,
+    identity,
+    languageCode,
+    loadKey,
+    mode,
+    revision,
+    timeZone,
+  ]);
+
+  const refresh = useCallback(() => setRevision((value) => value + 1), []);
+  const current = active && result?.key === identity ? result : null;
+  const loading = active && !current;
+  const refreshing = active && !!current && current.revision !== revision;
+  return {
+    places: current?.places ?? [],
+    area: current?.area.label ? current.area : null,
+    reason: current?.reason ?? null,
+    partial: current?.partial ?? false,
+    error: current?.error ?? null,
+    loading,
+    refreshing,
+    refresh,
+  };
+}

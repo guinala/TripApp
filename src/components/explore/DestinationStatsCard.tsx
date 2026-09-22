@@ -2,79 +2,71 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useWeather } from '@/hooks/use-weather';
 import { colors, fonts } from '@/constants/theme';
-import type { LatLng } from '@/types/place';
-import type { EditorialDestination } from '@/types/destination';
+import type { PlaceContent } from '@/types/explore';
+import {
+  formatPlaceRating,
+  MISSING_PLACE_VALUE,
+  priceTranslationKey,
+} from '@/utils/place-presentation';
 
-export function DestinationStatsCard({
-  location,
-  editorial,
-}: {
-  location: LatLng | null;
-  editorial?: EditorialDestination;
-}) {
+export function DestinationStatsCard({ content }: { content: PlaceContent }) {
   const { t, i18n } = useTranslation();
+  const location = content.place.location;
   const state = useWeather(location?.lat ?? null, location?.lng ?? null);
-  const rating = editorial?.editorialRating;
-  const price = editorial?.priceRange;
-  const noData = t('destination.stats.noData');
+  const priceKey = priceTranslationKey(content.priceLevel);
+  const ratingCount = content.ratingCount == null
+    ? MISSING_PLACE_VALUE
+    : t('dynamicExplore.reviews', {
+        count: content.ratingCount,
+        formattedCount: new Intl.NumberFormat(i18n.language).format(content.ratingCount),
+      });
   const cells = [
     {
       label: t('destination.stats.rating'),
-      value:
-        rating != null
-          ? new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 }).format(rating)
-          : '—',
-      hint:
-        rating == null
-          ? noData
-          : t(
-              `destination.rating.${rating >= 4.8 ? 'outstanding' : rating >= 4.5 ? 'great' : rating >= 4 ? 'good' : 'ok'}`,
-            ),
+      value: formatPlaceRating(content.rating, i18n.language),
+      hint: ratingCount,
     },
     {
       label: t('destination.stats.weather'),
-      value: state.weather ? `${Math.round(state.weather.temp)}°C` : '—',
-      hint: state.weather?.description ?? noData,
+      value: state.weather ? `${Math.round(state.weather.temp)}°C` : MISSING_PLACE_VALUE,
+      hint: state.weather?.description ?? MISSING_PLACE_VALUE,
       loading: state.loading,
     },
     {
       label: t('destination.stats.cost'),
-      value: price ? { low: '€', mid: '€€', high: '€€€' }[price] : '—',
-      hint: price ? t(`destination.price.${price}`) : noData,
+      value: priceKey ? t(priceKey) : MISSING_PLACE_VALUE,
+      hint: priceKey ? t('dynamicExplore.priceHint') : MISSING_PLACE_VALUE,
     },
     {
       label: t('destination.stats.language'),
-      value: editorial?.language?.code ?? '—',
-      hint: editorial?.language?.label ?? noData,
+      value: MISSING_PLACE_VALUE,
+      hint: MISSING_PLACE_VALUE,
     },
   ];
   return (
-    <View>
-      <View style={styles.card}>
-        {cells.map((cell, index) => (
-          <View key={cell.label} style={[styles.cell, index > 0 && styles.divider]}>
-            <Text style={styles.label}>{cell.label.toUpperCase()}</Text>
-            {cell.loading ? (
-              <ActivityIndicator color={colors.primary} style={{ height: 25 }} />
-            ) : (
-              <Text
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.75}
-                style={[styles.value, index === 0 && { color: colors.primary }]}
-              >
-                {cell.value}
-              </Text>
-            )}
-            <Text numberOfLines={1} style={styles.hint}>
-              {cell.hint}
+    <View style={styles.card}>
+      {cells.map((cell, index) => (
+        <View key={cell.label} style={[styles.cell, index > 0 && styles.divider]}>
+          <Text style={styles.label}>{cell.label.toUpperCase()}</Text>
+          {cell.loading ? (
+            <ActivityIndicator color={colors.primary} style={{ height: 25 }} />
+          ) : (
+            <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.7}
+              style={[styles.value, index === 0 && { color: colors.primary }]}
+            >
+              {cell.value}
             </Text>
-          </View>
-        ))}
-      </View>
+          )}
+          <Text numberOfLines={1} style={styles.hint}>{cell.hint}</Text>
+        </View>
+      ))}
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surfacePaper,
@@ -92,8 +84,8 @@ const styles = StyleSheet.create({
   value: { fontFamily: fonts.serifItalic, fontSize: 20, color: colors.secondary },
   hint: {
     fontFamily: fonts.sansRegular,
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 10,
+    lineHeight: 14,
     color: colors.secondary300,
     textAlign: 'center',
   },

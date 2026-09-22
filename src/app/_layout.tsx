@@ -25,8 +25,7 @@ function Layout({ onRetry }: { onRetry: () => void }) {
   const segments = useSegments();
   const light =
     segments.some((segment) => segment === 'welcome' || segment === 'photo') ||
-    (segments.some((segment) => segment === 'places') && segments.at(-1) === '[placeId]') ||
-    (segments.some((segment) => segment === 'destinations') && segments.at(-1) === '[id]');
+    (segments.some((segment) => segment === 'places') && segments.at(-1) === '[placeId]');
   const [authError, setAuthError] = useState(false);
   const initialize = useAuthStore((s) => s.initialize);
 

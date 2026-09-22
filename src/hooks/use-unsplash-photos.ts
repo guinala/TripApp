@@ -28,7 +28,8 @@ export function useUnsplashPhotos(query: string | null, perPage = 5): PhotosStat
     if (!key || !query) return;
 
     let cancelled = false;
-    searchPhotos(query, perPage)
+    const controller = new AbortController();
+    searchPhotos(query, perPage, { signal: controller.signal })
       .then((photos) => {
         if (!cancelled) setResult({ key, photos, error: null });
       })
@@ -44,6 +45,7 @@ export function useUnsplashPhotos(query: string | null, perPage = 5): PhotosStat
 
     return () => {
       cancelled = true;
+      controller.abort();
     };
   }, [key, query, perPage]);
 
@@ -79,7 +81,8 @@ export function useUnsplashCover(query: string | null): CoverState {
     if (!query) return;
 
     let cancelled = false;
-    getCoverPhoto(query)
+    const controller = new AbortController();
+    getCoverPhoto(query, { signal: controller.signal, bypassCache: attempt > 0 })
       .then((photo) => {
         if (!cancelled) setResult({ key, photo, error: null });
       })
@@ -94,8 +97,9 @@ export function useUnsplashCover(query: string | null): CoverState {
 
     return () => {
       cancelled = true;
+      controller.abort();
     };
-  }, [query, key]);
+  }, [attempt, query, key]);
 
   return useMemo(() => {
     if (!query) return { photo: null, loading: false, error: null, retry };

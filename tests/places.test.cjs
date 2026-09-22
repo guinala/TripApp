@@ -283,8 +283,11 @@ test('Los kilómetros incluyen actividades que guardaron solo un Place ID', asyn
   assert.equal(value.kilometersPartial, false);
 });
 
-const google = load('supabase/functions/places/google.ts');
-function edge({ allowed = true, limitError = null, saveError = null } = {}) {
+const placeKind = load('src/utils/place-kind.ts');
+const google = load('supabase/functions/places/google.ts', {
+  '../../../src/utils/place-kind.ts': placeKind,
+});
+function edge({ allowed = true, limitError = null, saveError = null, discover } = {}) {
   const calls = [];
   const api = load('supabase/functions/places/index.ts', {
     '@supabase/supabase-js': {
@@ -310,6 +313,13 @@ function edge({ allowed = true, limitError = null, saveError = null } = {}) {
         calls.push({ google: true });
         return { place: place('resolved-id') };
       },
+    },
+    './discovery.ts': {
+      discoverPlacesOnServer:
+        discover ??
+        (async () => {
+          throw new Error('No se usa en estas pruebas');
+        }),
     },
   });
   return { ...api, calls };
@@ -339,6 +349,10 @@ test('El backend rechaza acciones, idiomas, tokens y coordenadas inválidos', ()
     },
     { action: 'nearby', languageCode: 'es', category: 'museum', center: { lat: 91, lng: 0 } },
     { action: 'nearby', languageCode: 'es', category: 'museum', center: { lat: 0, lng: NaN } },
+    { action: 'discover', languageCode: 'es', mode: 'cities', fallbackCountryCode: 'ZZ' },
+    { action: 'browse', languageCode: 'es', search: { kind: 'text', mode: 'cities', query: 'ab' } },
+    { action: 'photo', languageCode: 'es', placeId: 'x', size: 'original' },
+    { action: 'photo', languageCode: 'es', placeId: 'https://example.test/photo', size: 'card', url: 'https://example.test' },
   ];
   for (const input of invalid)
     assert.throws(() => parsePlacesRequest(input), { code: 'INVALID_INPUT' });
@@ -354,6 +368,26 @@ test('El backend acepta coordenadas cero y conserva el token de paginación', ()
     pageToken: 'page-2',
   };
   assert.deepEqual(parsePlacesRequest(input), input);
+});
+
+test('El backend normaliza país, zona horaria y acciones dinámicas válidas', () => {
+  const { parsePlacesRequest } = edge();
+  assert.deepEqual(
+    parsePlacesRequest({
+      action: 'discover',
+      languageCode: 'es',
+      mode: 'places',
+      fallbackCountryCode: 'mx',
+      timeZone: 'America/Mexico_City',
+    }),
+    {
+      action: 'discover',
+      languageCode: 'es',
+      mode: 'places',
+      fallbackCountryCode: 'MX',
+      timeZone: 'America/Mexico_City',
+    },
+  );
 });
 
 test('Sin autorización no se consulta Google ni se escribe en la base de datos', async () => {
@@ -390,6 +424,46 @@ test('Un fallo al registrar la referencia no presenta Details como un éxito', a
   const response = await api.handler(detailsRequest());
   assert.equal(response.status, 503);
   assert.equal((await response.json()).error.code, 'REFERENCE_SAVE_FAILED');
+});
+
+test('Discover consume cuota exterior e interior con el usuario autenticado', async () => {
+  const api = edge({
+    discover: async ({ consume }) => {
+      await consume('details');
+      return {
+        area: {
+          label: 'México',
+          countryCode: 'MX',
+          countryName: 'México',
+          center: null,
+          source: 'device',
+        },
+        reason: 'popular_in_area',
+        places: [],
+        partial: false,
+      };
+    },
+  });
+  const response = await api.handler(
+    new Request('https://example.test/places', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test-token' },
+      body: JSON.stringify({
+        action: 'discover',
+        languageCode: 'es',
+        mode: 'places',
+        fallbackCountryCode: 'MX',
+      }),
+    }),
+  );
+  assert.equal(response.status, 200);
+  assert.deepEqual(
+    api.calls.filter((call) => call.name === 'consume_places_request').map((call) => call.args),
+    [
+      { p_user_id: 'user-A', p_action: 'discover' },
+      { p_user_id: 'user-A', p_action: 'details' },
+    ],
+  );
 });
 
 test('El adaptador conserva países y viewports que cruzan el antimeridiano', () => {

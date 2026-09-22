@@ -1,62 +1,41 @@
 import { useState } from 'react';
-import {
-  ActivityIndicator,
-  Linking,
-  Pressable,
-  ScrollView,
-  Share,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
+import { router, useIsFocused } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
-import type { PlaceDetails } from '@/types/place';
-import type { EditorialDestination } from '@/types/destination';
+import type { PlaceContent } from '@/types/explore';
 import { colors, fonts } from '@/constants/theme';
-import { useUnsplashCover } from '@/hooks/use-unsplash-photos';
-import { isDestination } from '@/utils/editorial-place';
-import { RemoteImage } from '@/components/ui/RemoteImage';
+import { usePlaceLanguage } from '@/hooks/use-place-details';
+import { descriptionText, MISSING_PLACE_VALUE } from '@/utils/place-presentation';
+import { supportsNearbyPlaces } from '@/utils/place-kind';
+import { PlacePhoto } from './PlacePhoto';
 import { PlacesAttribution } from './PlacesAttribution';
 import { PlacesStatus } from './PlacesStatus';
 import { NearbyPlacesSection } from './NearbyPlacesSection';
 import { DestinationStatsCard } from './DestinationStatsCard';
 
-export function PlaceDetailContent({
-  place,
-  editorial,
-  locating = false,
-  locationError,
-  onRetryLocation,
-}: {
-  place: PlaceDetails | null;
-  editorial?: EditorialDestination;
-  locating?: boolean;
-  locationError?: boolean;
-  onRetryLocation?: () => void;
-}) {
+export function PlaceDetailContent({ content }: { content: PlaceContent }) {
   const { t } = useTranslation();
+  const languageCode = usePlaceLanguage();
+  const focused = useIsFocused();
   const insets = useSafeAreaInsets();
   const [actionError, setActionError] = useState<string | null>(null);
-  const name = place?.name ?? editorial?.name ?? '';
-  const country = place?.countryName ?? editorial?.country ?? '';
-  const destination = !!editorial || (!!place && isDestination(place.types));
-  const cover = useUnsplashCover(editorial?.coverQuery ?? `${name} ${country}`);
+  const place = content.place;
+  const name = place.name;
+  const country = place.countryName ?? MISSING_PLACE_VALUE;
+  const description = descriptionText(
+    content.description,
+    t('dynamicExplore.descriptionUnavailable'),
+  );
   const createTrip = () =>
-    router.push({
-      pathname: '/trips/new',
-      params: place ? { placeId: place.placeId } : { destination: `${name}, ${country}` },
-    });
+    router.push({ pathname: '/trips/new', params: { placeId: place.placeId } });
   const addToTrip = () =>
-    place
-      ? router.push({ pathname: '/places/[placeId]/trips', params: { placeId: place.placeId } })
-      : createTrip();
+    router.push({ pathname: '/places/[placeId]/trips', params: { placeId: place.placeId } });
   const share = () => {
     void Share.share({
-      message: [name, country, place?.googleMapsUri].filter(Boolean).join(' · '),
+      message: [name, country, place.googleMapsUri].filter(Boolean).join(' · '),
     }).catch(() => setActionError('share'));
   };
   const openLink = (url: string) => {
@@ -64,12 +43,17 @@ export function PlaceDetailContent({
   };
   return (
     <View style={styles.screen}>
-      <ScrollView
-        contentContainerStyle={{ paddingBottom: 28 }}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerStyle={{ paddingBottom: 28 }} showsVerticalScrollIndicator={false}>
         <View style={[styles.hero, { paddingTop: insets.top + 64 }]}>
-          {cover.photo && <RemoteImage uri={cover.photo.regularUrl} label={name} />}
+          <PlacePhoto
+            placeId={place.placeId}
+            name={name}
+            countryName={place.countryName}
+            size="hero"
+            languageCode={languageCode}
+            enabled={focused}
+            style={StyleSheet.absoluteFill}
+          />
           <LinearGradient
             pointerEvents="none"
             colors={['rgba(15,27,51,0.12)', 'rgba(15,27,51,0.72)']}
@@ -95,57 +79,41 @@ export function PlaceDetailContent({
               <Ionicons name="share-outline" size={27} color={colors.white} />
             </Pressable>
           </View>
-          {cover.loading && <ActivityIndicator style={styles.photoStatus} color={colors.white} />}
-          {cover.error && (
-            <Pressable accessibilityRole="button" onPress={cover.retry} style={styles.photoStatus}>
-              <Text style={styles.heroCaption}>{t('fixes.imageRetry')}</Text>
-            </Pressable>
-          )}
           <View pointerEvents="none" style={styles.heroInfo}>
-            <Text style={styles.heroCaption}>
-              {[editorial && t(`places.continents.${editorial.continent}`), country]
-                .filter(Boolean)
-                .join(' · ')}
-            </Text>
+            <Text style={styles.heroCaption}>{country}</Text>
             <Text style={styles.heroTitle}>{name}</Text>
           </View>
         </View>
         <View style={styles.stats}>
-          <DestinationStatsCard location={place?.location ?? null} editorial={editorial} />
+          <DestinationStatsCard content={content} />
         </View>
         <View style={styles.body}>
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
               {t('destination.about')} <Text style={{ color: colors.primary }}>{name}</Text>
             </Text>
-            {editorial?.description ? (
-              <Text
-                style={styles.description}
-                accessibilityLanguage={editorial.descriptionLanguage}
-              >
-                {editorial.description}
-              </Text>
-            ) : (
-              <Text style={styles.description}>
-                {place?.address ?? t('placesUI.discoverArea', { name })}
-              </Text>
-            )}
-            {locating && <PlacesStatus loading />}
-            {locationError && (
-              <PlacesStatus message={t('places.locationUnavailable')} onRetry={onRetryLocation} />
+            <Text
+              style={styles.description}
+              accessibilityLanguage={content.description?.languageCode ?? undefined}
+            >
+              {description}
+            </Text>
+            {place.address && (
+              <View style={styles.addressRow}>
+                <Ionicons name="location-outline" size={20} color={colors.primary700} />
+                <Text style={styles.address}>{place.address}</Text>
+              </View>
             )}
           </View>
-          {destination && place?.location && (
-            <NearbyPlacesSection center={place.location} cityName={name} />
+          {focused && place.location && supportsNearbyPlaces(place.types) && (
+            <NearbyPlacesSection center={place.location} cityName={name} enabled={focused} />
           )}
           <View style={styles.actions}>
-            {place && (
-              <Pressable accessibilityRole="button" onPress={createTrip} style={styles.textButton}>
-                <Ionicons name="airplane-outline" size={20} color={colors.primary700} />
-                <Text style={styles.actionLabel}>{t('places.createTrip')}</Text>
-              </Pressable>
-            )}
-            {place?.googleMapsUri && /^https:\/\//i.test(place.googleMapsUri) && (
+            <Pressable accessibilityRole="button" onPress={createTrip} style={styles.textButton}>
+              <Ionicons name="airplane-outline" size={20} color={colors.primary700} />
+              <Text style={styles.actionLabel}>{t('places.createTrip')}</Text>
+            </Pressable>
+            {place.googleMapsUri && /^https:\/\//i.test(place.googleMapsUri) && (
               <Pressable
                 accessibilityRole="link"
                 onPress={() => openLink(place.googleMapsUri!)}
@@ -158,19 +126,8 @@ export function PlaceDetailContent({
           </View>
           <PlacesStatus error={actionError} />
           <View style={styles.credits}>
-            {place?.location && <Text style={styles.creditText}>{t('places.currentWeather')}</Text>}
-            {place && <PlacesAttribution attributions={place.attributions} />}
-            {cover.photo && (
-              <Pressable
-                accessibilityRole="link"
-                onPress={() => openLink(cover.photo!.authorLink)}
-                style={{ minHeight: 44, justifyContent: 'center' }}
-              >
-                <Text style={styles.creditText}>
-                  {t('placesUI.photoCredit', { author: cover.photo.authorName })}
-                </Text>
-              </Pressable>
-            )}
+            {place.location && <Text style={styles.creditText}>{t('places.currentWeather')}</Text>}
+            <PlacesAttribution attributions={place.attributions} showGoogle />
           </View>
         </View>
       </ScrollView>
@@ -181,24 +138,17 @@ export function PlaceDetailContent({
           onPress={addToTrip}
         >
           <Ionicons name="add" size={22} color={colors.white} />
-          <Text style={styles.primaryLabel}>
-            {t(place ? 'places.addToTrip' : 'places.createTrip')}
-          </Text>
+          <Text style={styles.primaryLabel}>{t('places.addToTrip')}</Text>
         </Pressable>
       </View>
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.surfaceCream },
   hero: { minHeight: 315, backgroundColor: colors.secondary700, justifyContent: 'flex-end' },
-  controls: {
-    position: 'absolute',
-    left: 18,
-    right: 18,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
+  controls: { position: 'absolute', left: 18, right: 18, flexDirection: 'row', justifyContent: 'space-between' },
   iconButton: {
     width: 46,
     height: 46,
@@ -210,25 +160,16 @@ const styles = StyleSheet.create({
   heroInfo: { paddingHorizontal: 24, paddingTop: 70, paddingBottom: 68, gap: 8 },
   heroCaption: { fontFamily: fonts.sansMedium, fontSize: 15, color: colors.white },
   heroTitle: { fontFamily: fonts.serifItalic, fontSize: 44, color: colors.white },
-  photoStatus: { position: 'absolute', top: 120, alignSelf: 'center', padding: 12 },
   stats: { marginTop: -40, paddingHorizontal: 21 },
   body: { paddingTop: 28, gap: 28 },
   section: { paddingHorizontal: 25, gap: 12 },
   sectionTitle: { fontFamily: fonts.serifItalic, fontSize: 32, color: colors.secondary },
-  description: {
-    fontFamily: fonts.sansRegular,
-    fontSize: 15,
-    lineHeight: 24,
-    color: colors.secondary300,
-  },
+  description: { fontFamily: fonts.sansRegular, fontSize: 15, lineHeight: 24, color: colors.secondary300 },
+  addressRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  address: { flex: 1, fontFamily: fonts.sansRegular, fontSize: 13, lineHeight: 20, color: colors.textSecondary },
   actions: { paddingHorizontal: 25, gap: 4 },
   textButton: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  actionLabel: {
-    fontFamily: fonts.sansSemiBold,
-    fontSize: 14,
-    color: colors.primary700,
-    flexShrink: 1,
-  },
+  actionLabel: { fontFamily: fonts.sansSemiBold, fontSize: 14, color: colors.primary700, flexShrink: 1 },
   credits: { paddingHorizontal: 25 },
   creditText: { fontFamily: fonts.sansRegular, fontSize: 12, color: colors.textSecondary },
   footer: { backgroundColor: colors.surfaceCream, paddingHorizontal: 25, paddingTop: 12 },

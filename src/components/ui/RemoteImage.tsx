@@ -1,9 +1,19 @@
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Image } from 'expo-image';
+import { Image, type ImageProps } from 'expo-image';
 import { useTranslation } from 'react-i18next';
 import { colors } from '@/constants/theme';
-export function RemoteImage({ uri, label }: { uri: string; label: string }) {
+export function RemoteImage({
+  uri,
+  label,
+  onImageError,
+  cachePolicy,
+}: {
+  uri: string;
+  label: string;
+  onImageError?: () => void;
+  cachePolicy?: ImageProps['cachePolicy'];
+}) {
   const { t } = useTranslation();
   const [attempt, setAttempt] = useState(0);
   const key = `${uri}:${attempt}`;
@@ -22,11 +32,15 @@ export function RemoteImage({ uri, label }: { uri: string; label: string }) {
         accessibilityLabel={label}
         style={StyleSheet.absoluteFill}
         contentFit="cover"
+        cachePolicy={cachePolicy}
         onLoad={() => setState({ key, status: 'ready' })}
-        onError={() => setState({ key, status: 'error' })}
+        onError={() => {
+          setState({ key, status: 'error' });
+          onImageError?.();
+        }}
       />
       {status === 'loading' && <ActivityIndicator color={colors.primary} />}
-      {status === 'error' && (
+      {status === 'error' && !onImageError && (
         <Pressable
           accessibilityRole="button"
           onPress={(event) => {

@@ -19,9 +19,9 @@ export function PlacesStatus({
   const key = error && typeof error !== 'string' ? error.code : null;
 
   return (
-    <View style={styles.box} accessibilityLiveRegion="polite">
+    <View style={[styles.box, loading && styles.loading]} accessibilityLiveRegion="polite">
       {loading && <ActivityIndicator color={colors.primary700} />}
-      <Text style={styles.text}>
+      <Text style={[styles.text, loading && styles.loadingText]}>
         {loading
           ? t('places.searching')
           : key
@@ -47,6 +47,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceAlt,
   },
   text: { color: colors.secondary, fontFamily: fonts.sansRegular },
+  loading: { backgroundColor: 'transparent', alignItems: 'center' },
+  loadingText: { alignSelf: 'stretch', textAlign: 'center' },
   button: { minHeight: 44, justifyContent: 'center' },
   action: { color: colors.primary700, fontFamily: fonts.sansBold },
 });

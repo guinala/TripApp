@@ -10,6 +10,15 @@ import {
   PlaceSuggestion,
   PlaceSummary,
 } from "@/types/place";
+import type {
+  BrowseResponse,
+  BrowseSpec,
+  DiscoveryResponse,
+  ExplorePlace,
+  ExploreRequest,
+  GooglePlacePhoto,
+  PlaceContent,
+} from '@/types/explore';
 import { supabase } from "./supabase";
 import { FunctionsHttpError } from "@supabase/supabase-js";
 
@@ -26,6 +35,7 @@ export class PlacesError extends Error {
     public readonly code: ClientCode,
     public readonly retryable = false,
     public readonly status = 0,
+    public readonly retryAfter?: number,
   ) {
     super(code);
     this.name = "PlacesError";
@@ -79,6 +89,100 @@ function summary(value: unknown): boolean {
   );
 }
 
+const priceLevels = new Set([
+  'free',
+  'inexpensive',
+  'moderate',
+  'expensive',
+  'very_expensive',
+]);
+
+function metrics(value: Record<string, unknown>): boolean {
+  return (
+    (value.rating === null ||
+      (typeof value.rating === 'number' &&
+        Number.isFinite(value.rating) &&
+        value.rating >= 1 &&
+        value.rating <= 5)) &&
+    (value.ratingCount === null ||
+      (typeof value.ratingCount === 'number' &&
+        Number.isInteger(value.ratingCount) &&
+        value.ratingCount >= 0)) &&
+    (value.priceLevel === null ||
+      (typeof value.priceLevel === 'string' && priceLevels.has(value.priceLevel)))
+  );
+}
+
+function explorePlace(value: unknown): value is ExplorePlace {
+  return (
+    obj(value) &&
+    summary(value) &&
+    metrics(value) &&
+    nullableText(value.countryCode) &&
+    nullableText(value.countryName) &&
+    nullableText(value.localityName) &&
+    nullableText(value.primaryType)
+  );
+}
+
+function placeDetails(value: unknown): boolean {
+  if (!obj(value)) return false;
+  return (
+    summary(value) &&
+    nullableText(value.countryCode) &&
+    nullableText(value.countryName) &&
+    nullableText(value.googleMapsUri) &&
+    (value.viewport === null ||
+      (obj(value.viewport) && point(value.viewport.low) && point(value.viewport.high)))
+  );
+}
+
+function resolvedArea(value: unknown): boolean {
+  return (
+    obj(value) &&
+    typeof value.label === 'string' &&
+    !!value.label &&
+    (value.countryCode === null ||
+      (typeof value.countryCode === 'string' && /^[A-Z]{2}$/.test(value.countryCode))) &&
+    nullableText(value.countryName) &&
+    (value.center === null || point(value.center)) &&
+    ['manual', 'active_trip', 'upcoming_trip', 'past_trip', 'device', 'default'].includes(
+      String(value.source),
+    )
+  );
+}
+
+function content(value: unknown): value is PlaceContent {
+  return (
+    obj(value) &&
+    placeDetails(value.place) &&
+    metrics(value) &&
+    (value.description === null ||
+      (obj(value.description) &&
+        typeof value.description.text === 'string' &&
+        !!value.description.text.trim() &&
+        nullableText(value.description.languageCode)))
+  );
+}
+
+function photo(value: unknown): value is GooglePlacePhoto {
+  return (
+    obj(value) &&
+    typeof value.placeId === 'string' &&
+    !!value.placeId &&
+    typeof value.uri === 'string' &&
+    value.uri.startsWith('https://') &&
+    (value.widthPx === null ||
+      (typeof value.widthPx === 'number' && Number.isInteger(value.widthPx) && value.widthPx >= 0)) &&
+    (value.heightPx === null ||
+      (typeof value.heightPx === 'number' && Number.isInteger(value.heightPx) && value.heightPx >= 0)) &&
+    Array.isArray(value.credits) &&
+    value.credits.every(
+      (credit) => obj(credit) && typeof credit.name === 'string' && nullableText(credit.uri),
+    )
+  );
+}
+
 function validData(action: PlacesRequest["action"], value: unknown): boolean {
   if (!obj(value)) return false;
 
@@ -97,17 +201,32 @@ function validData(action: PlacesRequest["action"], value: unknown): boolean {
   }
 
   if (action === "details") {
-    const p = value.place;
+    return placeDetails(value.place);
+  }
+
+  if (action === 'discover') {
     return (
-      obj(p) &&
-      summary(p) &&
-      nullableText(p.countryCode) &&
-      nullableText(p.countryName) &&
-      nullableText(p.googleMapsUri) &&
-      (p.viewport === null ||
-        (obj(p.viewport) && point(p.viewport.low) && point(p.viewport.high)))
+      resolvedArea(value.area) &&
+      ['new_cities', 'nearby_cities', 'for_trip', 'based_on_history', 'popular_in_area'].includes(
+        String(value.reason),
+      ) &&
+      Array.isArray(value.places) &&
+      value.places.every(explorePlace) &&
+      typeof value.partial === 'boolean'
     );
   }
+
+  if (action === 'browse') {
+    return (
+      Array.isArray(value.places) &&
+      value.places.every(explorePlace) &&
+      nullableText(value.nextPageToken)
+    );
+  }
+
+  if (action === 'content') return content(value.content);
+
+  if (action === 'photo') return value.photo === null || photo(value.photo);
 
   return (
     Array.isArray(value.places) &&
@@ -139,10 +258,13 @@ async function invoke<A extends PlacesRequest["action"]>(
         typeof payload.error.code === "string" &&
         codes.has(payload.error.code)
       ) {
+        const retryHeader = response.headers.get('Retry-After');
+        const retryAfter = retryHeader == null ? undefined : Number(retryHeader);
         throw new PlacesError(
           payload.error.code as PlacesErrorCode,
           payload.error.retryable === true,
           response.status,
+          retryAfter !== undefined && Number.isFinite(retryAfter) ? retryAfter : undefined,
         );
       }
 
@@ -248,4 +370,53 @@ export async function searchPlacesByText(
     },
     options,
   );
+}
+
+export async function discoverPlaces(
+  request: Omit<Extract<ExploreRequest, { action: 'discover' }>, 'action'>,
+  options: RequestOptions = {},
+): Promise<DiscoveryResponse> {
+  return invoke<'discover'>({ action: 'discover', ...request }, options);
+}
+
+export async function browsePlaces(
+  search: BrowseSpec,
+  languageCode: PlaceLanguage,
+  options: RequestOptions = {},
+): Promise<BrowseResponse> {
+  return invoke<'browse'>({ action: 'browse', languageCode, search }, options);
+}
+
+export async function getPlaceContent(
+  placeId: string,
+  languageCode: PlaceLanguage,
+  options: RequestOptions = {},
+): Promise<PlaceContent> {
+  const result = await invoke<'content'>({
+    action: 'content',
+    placeId,
+    languageCode,
+  }, options);
+  if (result.content.place.placeId !== placeId) {
+    throw new PlacesError('INVALID_RESPONSE', true);
+  }
+  return result.content;
+}
+
+export async function getPlacePhoto(
+  placeId: string,
+  size: 'card' | 'hero',
+  languageCode: PlaceLanguage,
+  options: RequestOptions = {},
+): Promise<GooglePlacePhoto | null> {
+  const result = await invoke<'photo'>({
+    action: 'photo',
+    placeId,
+    size,
+    languageCode,
+  }, options);
+  if (result.photo && result.photo.placeId !== placeId) {
+    throw new PlacesError('INVALID_RESPONSE', true);
+  }
+  return result.photo;
 }

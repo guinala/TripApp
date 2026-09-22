@@ -7,6 +7,6 @@
     "lib": ["deno.window"]
   },
   "tasks": {
-    "check": "deno check index.ts google.ts"
+    "check": "deno check index.ts google.ts discovery.ts"
   }
 }

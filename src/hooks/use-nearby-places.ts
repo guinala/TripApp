@@ -2,7 +2,7 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import {
     isPlacesCancelled,
     PlacesError,
-    searchNearbyPlaces,
+    browsePlaces,
 } from "@/services/places";
 import {
     placeSessionEnabled,
@@ -13,8 +13,8 @@ import type {
     InterestCategory,
     LatLng,
     PlaceLanguage,
-    PlaceSummary,
 } from "@/types/place";
+import type { ExplorePlace } from '@/types/explore';
 
 export function useNearbyPlaces(
     center: LatLng | null,
@@ -31,7 +31,7 @@ export function useNearbyPlaces(
     const [result, setResult] = useState<
         {
             key: string;
-            places: PlaceSummary[];
+            places: ExplorePlace[];
             error: PlacesError | null;
         } | null
     >(null);
@@ -43,11 +43,12 @@ export function useNearbyPlaces(
     useEffect(() => {
         if (!key || lat == null || lng == null) return;
         const controller = new AbortController();
-        searchNearbyPlaces({ lat, lng }, category, {
+        browsePlaces(
+            { kind: 'nearby', center: { lat, lng }, category },
             languageCode,
-            signal: controller.signal,
-        })
-            .then((places) => {
+            { signal: controller.signal },
+        )
+            .then(({ places }) => {
                 if (!controller.signal.aborted) {
                     setResult({ key, places, error: null });
                 }

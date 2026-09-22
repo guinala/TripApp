@@ -1,38 +1,53 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { LoadNotice } from '@/components/ui/LoadNotice';
-import { RemoteImage } from '@/components/ui/RemoteImage';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { useUnsplashCover } from '@/hooks/use-unsplash-photos';
-import type { EditorialDestination } from '@/types/destination';
+import { PlacePhoto } from '@/components/explore/PlacePhoto';
 import { colors, fonts } from '@/constants/theme';
-import { DESTINATION_TYPE_LABELS } from '@/constants/destinations';
+import { usePlaceLanguage } from '@/hooks/use-place-details';
+import type { ExplorePlace } from '@/types/explore';
+import {
+  formatPlaceRating,
+  MISSING_PLACE_VALUE,
+  priceTranslationKey,
+} from '@/utils/place-presentation';
+
+function categoryKey(place: ExplorePlace): string | null {
+  if (place.types.includes('restaurant')) return 'restaurant';
+  if (place.types.includes('museum')) return 'museum';
+  if (place.types.includes('park')) return 'park';
+  if (place.types.includes('tourist_attraction')) return 'visit';
+  return null;
+}
 
 export function DestinationCard({
-  destination,
+  place,
   onPress,
   style,
   featured = false,
+  photoEnabled = true,
 }: {
-  destination: EditorialDestination;
+  place: ExplorePlace;
   onPress: () => void;
   style?: ViewStyle;
   featured?: boolean;
+  photoEnabled?: boolean;
 }) {
   const { t, i18n } = useTranslation();
-  const { photo, loading, error, retry } = useUnsplashCover(destination.coverQuery);
-  const rating =
-    destination.editorialRating == null
-      ? null
-      : new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 1 }).format(
-          destination.editorialRating,
-        );
-  const price = destination.priceRange
-    ? { low: '€', mid: '€€', high: '€€€' }[destination.priceRange]
-    : null;
-  const ratingView = rating && (
-    <View style={styles.rating} accessibilityLabel={`${t('destination.stats.rating')}: ${rating}`}>
+  const languageCode = usePlaceLanguage();
+  const rating = formatPlaceRating(place.rating, i18n.language);
+  const priceKey = priceTranslationKey(place.priceLevel);
+  const price = priceKey ? t(priceKey) : MISSING_PLACE_VALUE;
+  const category = categoryKey(place);
+  const ratingView = (
+    <View
+      style={styles.rating}
+      accessibilityLabel={
+        place.rating == null
+          ? t('dynamicExplore.ratingUnavailable')
+          : `${t('destination.stats.rating')}: ${rating}`
+      }
+    >
       <Ionicons
         name="star"
         size={featured ? 16 : 13}
@@ -46,21 +61,21 @@ export function DestinationCard({
       <View style={styles.card}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`${destination.name}, ${destination.country}`}
+          accessibilityLabel={`${place.name}, ${place.countryName ?? MISSING_PLACE_VALUE}`}
           onPress={onPress}
           style={({ pressed }) => [{ flex: 1 }, pressed && { opacity: 0.85 }]}
         >
           <View style={[styles.picture, featured && styles.featuredPicture]}>
-            {loading ? (
-              <ActivityIndicator color={colors.primary} />
-            ) : photo ? (
-              <RemoteImage
-                uri={featured ? photo.regularUrl : photo.smallUrl}
-                label={destination.name}
-              />
-            ) : (
-              <Ionicons name="compass-outline" size={40} color={colors.primary700} />
-            )}
+            <PlacePhoto
+              placeId={place.placeId}
+              name={place.name}
+              localityName={place.localityName}
+              countryName={place.countryName}
+              size={featured ? 'hero' : 'card'}
+              languageCode={languageCode}
+              enabled={photoEnabled}
+              style={StyleSheet.absoluteFill}
+            />
             {featured && (
               <>
                 <LinearGradient
@@ -69,13 +84,13 @@ export function DestinationCard({
                   style={StyleSheet.absoluteFill}
                 />
                 <View pointerEvents="none" style={styles.featuredBody}>
-                  <Text style={styles.featuredName}>{destination.name}</Text>
+                  <Text numberOfLines={1} style={styles.featuredName}>{place.name}</Text>
                   <View style={styles.featuredMeta}>
                     {ratingView}
-                    <Text style={styles.featuredTags}>
-                      {destination.types
-                        .map((type) => t(DESTINATION_TYPE_LABELS[type]))
-                        .join(' · ')}
+                    <Text numberOfLines={1} style={styles.featuredTags}>
+                      {category ? t(`places.categories.${category}`) : MISSING_PLACE_VALUE}
+                      {' · '}
+                      {place.countryName ?? MISSING_PLACE_VALUE}
                     </Text>
                   </View>
                 </View>
@@ -85,25 +100,25 @@ export function DestinationCard({
           {!featured && (
             <View style={styles.body}>
               <View style={styles.row}>
-                <Text numberOfLines={1} style={styles.name}>
-                  {destination.name}
-                </Text>
+                <Text numberOfLines={1} style={styles.name}>{place.name}</Text>
                 {ratingView}
               </View>
               <View style={styles.row}>
                 <Text numberOfLines={1} style={styles.country}>
-                  {destination.country} · {t(`places.continents.${destination.continent}`)}
+                  {place.countryName ?? MISSING_PLACE_VALUE}
+                  {' · '}
+                  {category ? t(`places.categories.${category}`) : MISSING_PLACE_VALUE}
                 </Text>
-                {price && <Text style={styles.price}>{price}</Text>}
+                <Text numberOfLines={1} adjustsFontSizeToFit style={styles.price}>{price}</Text>
               </View>
             </View>
           )}
         </Pressable>
-        <LoadNotice error={!!error} onRetry={retry} />
       </View>
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   shadow: {
     borderRadius: 16,
@@ -124,8 +139,8 @@ const styles = StyleSheet.create({
   rating: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 0 },
   ratingText: { fontFamily: fonts.sansMedium, fontSize: 12, color: colors.secondary },
   country: { flex: 1, fontFamily: fonts.sansRegular, fontSize: 11, color: colors.secondary300 },
-  price: { fontFamily: fonts.sansRegular, fontSize: 11, color: colors.secondary300 },
-  featuredBody: { position: 'absolute', bottom: 14, left: 14, right: 14, gap: 8 },
+  price: { maxWidth: '42%', fontFamily: fonts.sansRegular, fontSize: 11, color: colors.secondary300 },
+  featuredBody: { position: 'absolute', bottom: 28, left: 14, right: 14, gap: 8 },
   featuredName: { fontFamily: fonts.serifItalic, fontSize: 34, color: colors.white },
   featuredMeta: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 },
   featuredTags: { fontFamily: fonts.sansRegular, fontSize: 12, color: colors.white, flexShrink: 1 },

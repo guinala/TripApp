@@ -1,14 +1,16 @@
-import type { PhotoCredit } from './explore.ts';
+import type { PhotoCredit } from "./explore.ts";
 
 export type PlacePhoto =
   | {
-      provider: 'unsplash';
-      uri: string;
-      credits: PhotoCredit[];
-      photoId: string;
-    }
+    provider: "unsplash";
+    uri: string;
+    smallUri: string;
+    heroUri: string;
+    credits: PhotoCredit[];
+    photoId: string;
+  }
   | {
-      provider: 'google';
-      uri: string;
-      credits: PhotoCredit[];
-    };
+    provider: "google";
+    uri: string;
+    credits: PhotoCredit[];
+  };

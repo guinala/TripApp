@@ -11,6 +11,9 @@ import { PlacePhoto } from '@/components/explore/PlacePhoto';
 import { formatPlaceRating, MISSING_PLACE_VALUE } from '@/utils/place-presentation';
 import { PlacesStatus } from './PlacesStatus';
 import { PlacesAttribution } from './PlacesAttribution';
+import { usePlacePhoto } from '@/hooks/use-place-photo';
+import { rememberPhotoForNavigation } from '@/services/place-photo-handoff';
+import { PhotoAttribution } from './PhotoAttribution';
 
 function NearbyCard({
   place,
@@ -24,29 +27,40 @@ function NearbyCard({
   photoEnabled: boolean;
 }) {
   const { i18n } = useTranslation();
+  const photoState = usePlacePhoto({
+    placeId: place.placeId,
+    name: place.name,
+    types: place.types,
+    localityName: place.localityName ?? cityName,
+    countryName: place.countryName,
+    location: place.location,
+    countryCode: place.countryCode,
+    size: 'card',
+    languageCode,
+    enabled: photoEnabled,
+  });
+
   return (
     <Pressable
       accessibilityRole="button"
       style={styles.card}
-      onPress={() =>
-        router.push({ pathname: '/places/[placeId]', params: { placeId: place.placeId } })
-      }
+      onPress={() => {
+        rememberPhotoForNavigation(place.placeId, languageCode, photoState.photo);
+
+        router.push({
+          pathname: '/places/[placeId]',
+          params: { placeId: place.placeId },
+        });
+      }}
     >
       <View style={styles.image}>
-        <PlacePhoto
-          placeId={place.placeId}
-          name={place.name}
-          localityName={place.localityName ?? cityName}
-          countryName={place.countryName}
-          size="card"
-          languageCode={languageCode}
-          enabled={photoEnabled}
-          style={StyleSheet.absoluteFill}
-        />
+        <PlacePhoto state={photoState} name={place.name} style={StyleSheet.absoluteFill} />
       </View>
       <View style={styles.cardBody}>
         <View style={styles.titleRow}>
-          <Text numberOfLines={2} style={styles.cardTitle}>{place.name}</Text>
+          <Text numberOfLines={2} style={styles.cardTitle}>
+            {place.name}
+          </Text>
           <Text style={styles.rating}>{formatPlaceRating(place.rating, i18n.language)}</Text>
         </View>
         <Text numberOfLines={2} style={styles.address}>
@@ -54,6 +68,7 @@ function NearbyCard({
         </Text>
         <PlacesAttribution attributions={place.attributions} />
       </View>
+      {photoState.photo && <PhotoAttribution credits={photoState.photo.credits} />}
     </Pressable>
   );
 }
@@ -74,7 +89,9 @@ export function NearbyPlacesSection({
   const state = useNearbyPlaces(center, category, languageCode, enabled);
   const onViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: { item: ExplorePlace; isViewable?: boolean }[] }) => {
-      setVisible(new Set(viewableItems.filter((item) => item.isViewable).map((item) => item.item.placeId)));
+      setVisible(
+        new Set(viewableItems.filter((item) => item.isViewable).map((item) => item.item.placeId)),
+      );
     },
     [],
   );
@@ -106,7 +123,11 @@ export function NearbyPlacesSection({
           <PlacesStatus
             loading={state.loading}
             error={state.error}
-            message={!state.loading && !state.error && !state.places.length ? t('places.noResults') : undefined}
+            message={
+              !state.loading && !state.error && !state.places.length
+                ? t('places.noResults')
+                : undefined
+            }
             onRetry={state.error ? state.retry : undefined}
           />
         </View>
@@ -126,7 +147,9 @@ export function NearbyPlacesSection({
             place={item}
             cityName={cityName}
             languageCode={languageCode}
-            photoEnabled={enabled && (visible.has(item.placeId) || (visible.size === 0 && index < 3))}
+            photoEnabled={
+              enabled && (visible.has(item.placeId) || (visible.size === 0 && index < 3))
+            }
           />
         )}
       />
@@ -140,8 +163,18 @@ export function NearbyPlacesSection({
 }
 
 const styles = StyleSheet.create({
-  heading: { fontFamily: fonts.serifItalic, fontSize: 32, color: colors.secondary, paddingHorizontal: 25 },
-  scope: { fontFamily: fonts.sansRegular, fontSize: 12, color: colors.textSecondary, paddingHorizontal: 25 },
+  heading: {
+    fontFamily: fonts.serifItalic,
+    fontSize: 32,
+    color: colors.secondary,
+    paddingHorizontal: 25,
+  },
+  scope: {
+    fontFamily: fonts.sansRegular,
+    fontSize: 12,
+    color: colors.textSecondary,
+    paddingHorizontal: 25,
+  },
   categories: { paddingHorizontal: 25, gap: 8 },
   chip: {
     minHeight: 40,
@@ -160,5 +193,10 @@ const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', gap: 6, alignItems: 'flex-start' },
   cardTitle: { flex: 1, fontFamily: fonts.sansBold, fontSize: 14, color: colors.secondary },
   rating: { fontFamily: fonts.sansSemiBold, fontSize: 12, color: colors.primary700 },
-  address: { fontFamily: fonts.sansRegular, fontSize: 12, lineHeight: 18, color: colors.secondary300 },
+  address: {
+    fontFamily: fonts.sansRegular,
+    fontSize: 12,
+    lineHeight: 18,
+    color: colors.secondary300,
+  },
 });

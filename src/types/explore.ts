@@ -4,16 +4,16 @@ import type {
   PlaceDetails,
   PlaceLanguage,
   PlaceSummary,
-} from './place.ts';
+} from "./place.ts";
 
-export type ExploreMode = 'cities' | 'places';
+export type ExploreMode = "cities" | "places";
 
 export type PriceLevel =
-  | 'free'
-  | 'inexpensive'
-  | 'moderate'
-  | 'expensive'
-  | 'very_expensive';
+  | "free"
+  | "inexpensive"
+  | "moderate"
+  | "expensive"
+  | "very_expensive";
 
 export type ExploreMetrics = {
   rating: number | null;
@@ -21,8 +21,10 @@ export type ExploreMetrics = {
   priceLevel: PriceLevel | null;
 };
 
-export type ExplorePlace = PlaceSummary &
-  ExploreMetrics & {
+export type ExplorePlace =
+  & PlaceSummary
+  & ExploreMetrics
+  & {
     countryCode: string | null;
     countryName: string | null;
     localityName: string | null;
@@ -30,23 +32,29 @@ export type ExplorePlace = PlaceSummary &
   };
 
 export type ExploreArea =
-  | { kind: 'country'; countryCode: string }
-  | { kind: 'place'; placeId: string };
+  | { kind: "country"; countryCode: string }
+  | { kind: "place"; placeId: string };
 
 export type ResolvedExploreArea = {
   label: string;
   countryCode: string | null;
   countryName: string | null;
   center: LatLng | null;
-  source: 'manual' | 'active_trip' | 'upcoming_trip' | 'past_trip' | 'device' | 'default';
+  source:
+    | "manual"
+    | "active_trip"
+    | "upcoming_trip"
+    | "past_trip"
+    | "device"
+    | "default";
 };
 
 export type DiscoveryReason =
-  | 'new_cities'
-  | 'nearby_cities'
-  | 'for_trip'
-  | 'based_on_history'
-  | 'popular_in_area';
+  | "new_cities"
+  | "nearby_cities"
+  | "for_trip"
+  | "based_on_history"
+  | "popular_in_area";
 
 export type DiscoveryResponse = {
   area: ResolvedExploreArea;
@@ -57,17 +65,19 @@ export type DiscoveryResponse = {
 
 export type BrowseSpec =
   | {
-      kind: 'text';
-      mode: ExploreMode;
-      query: string;
-      center?: LatLng;
-      pageToken?: string;
-    }
+    kind: "text";
+    mode: ExploreMode;
+    query: string;
+    center?: LatLng;
+    pageToken?: string;
+    areaLabel?: string;
+    countryCode?: string;
+  }
   | {
-      kind: 'nearby';
-      center: LatLng;
-      category: InterestCategory;
-    };
+    kind: "nearby";
+    center: LatLng;
+    category: InterestCategory;
+  };
 
 export type BrowseResponse = {
   places: ExplorePlace[];
@@ -94,21 +104,22 @@ export type GooglePlacePhoto = {
 
 export type ExploreRequest =
   | {
-      action: 'discover';
-      mode: ExploreMode;
-      languageCode: PlaceLanguage;
-      area?: ExploreArea;
-      fallbackCountryCode?: string;
-      timeZone?: string;
-    }
-  | { action: 'browse'; languageCode: PlaceLanguage; search: BrowseSpec }
-  | { action: 'content'; languageCode: PlaceLanguage; placeId: string }
+    action: "discover";
+    resolveOnly?: boolean;
+    mode: ExploreMode;
+    languageCode: PlaceLanguage;
+    area?: ExploreArea;
+    fallbackCountryCode?: string;
+    timeZone?: string;
+  }
+  | { action: "browse"; languageCode: PlaceLanguage; search: BrowseSpec }
+  | { action: "content"; languageCode: PlaceLanguage; placeId: string }
   | {
-      action: 'photo';
-      languageCode: PlaceLanguage;
-      placeId: string;
-      size: 'card' | 'hero';
-    };
+    action: "photo";
+    languageCode: PlaceLanguage;
+    placeId: string;
+    size: "card" | "hero";
+  };
 
 export type ExploreDataByAction = {
   discover: DiscoveryResponse;

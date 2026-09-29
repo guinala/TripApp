@@ -707,6 +707,17 @@
       "moderate": "Moderate",
       "expensive": "Expensive",
       "very_expensive": "Very expensive"
+    },
+    "creditLinkError": "The link could not be opened.",
+    "kind": {
+      "country": "Country",
+      "city": "City",
+      "region": "Region",
+      "cultural": "Culture",
+      "food": "Food",
+      "nature": "Nature",
+      "sight": "Attraction",
+      "place": "Place"
     }
   },
   "fixes": {

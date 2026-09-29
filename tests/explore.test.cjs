@@ -28,7 +28,10 @@ function loader(mocks = {}) {
       let local = name.startsWith('@/')
         ? `src/${name.slice(2)}`
         : name.startsWith('.')
-          ? path.relative(root, path.resolve(path.dirname(file), name)).split(path.sep).join('/')
+          ? path
+              .relative(root, path.resolve(path.dirname(file), name))
+              .split(path.sep)
+              .join('/')
           : null;
       if (!local) return require(name);
       if (!/\.(tsx?|json)$/.test(local)) local += '.ts';
@@ -86,7 +89,10 @@ test('los formateadores distinguen ausencia, cero y descripción vacía', () => 
   const presentation = loader()('src/utils/place-presentation.ts');
   assert.equal(presentation.formatPlaceRating(null, 'es'), '-');
   assert.equal(presentation.formatPlaceRating(0, 'en'), '0.0');
-  assert.equal(presentation.descriptionText(null, 'Descripción no disponible'), 'Descripción no disponible');
+  assert.equal(
+    presentation.descriptionText(null, 'Descripción no disponible'),
+    'Descripción no disponible',
+  );
   assert.equal(
     presentation.descriptionText({ text: '   ' }, 'Descripción no disponible'),
     'Descripción no disponible',
@@ -127,8 +133,14 @@ test('el ranking deduplica, excluye y reserva diversidad sin inventar afinidad',
     2,
   );
   assert.equal(new Set(ordered.map((place) => place.placeId)).size, ordered.length);
-  assert.equal(ordered.some((place) => place.placeId === 'excluido'), false);
-  assert.equal(ordered.some((place) => place.placeId === 'museo'), true);
+  assert.equal(
+    ordered.some((place) => place.placeId === 'excluido'),
+    false,
+  );
+  assert.equal(
+    ordered.some((place) => place.placeId === 'museo'),
+    true,
+  );
   assert.equal(ranking.chooseExploratoryCategory({ restaurant: 0, visit: 0, park: 0 }), 'museum');
 });
 
@@ -156,10 +168,7 @@ test('el adaptador conserva Gratis, usa null y no sustituye resumen por direcci�
   const content = google.mapGoogleContent(raw);
   assert.equal(content.description, null);
   assert.equal(content.place.address, 'Calle 1');
-  assert.equal(
-    google.mapGoogleExplorePlace({ ...raw, types: ['locality'] }).priceLevel,
-    null,
-  );
+  assert.equal(google.mapGoogleExplorePlace({ ...raw, types: ['locality'] }).priceLevel, null);
 });
 
 test('editorialSummary conserva el texto original y acepta idioma regional', () => {
@@ -266,22 +275,30 @@ test('Unsplash valida su respuesta y deduplica búsquedas simultáneas', async (
     __fetch: async () => {
       calls++;
       return new Promise((resolve) => {
-        finish = () => resolve(new Response(JSON.stringify({
-          results: [{
-            id: 'photo-1',
-            alt_description: null,
-            urls: {
-              thumb: 'https://images.test/thumb',
-              small: 'https://images.test/small',
-              regular: 'https://images.test/regular',
-            },
-            user: { name: 'Ana', links: { html: 'https://unsplash.com/@ana' } },
-            links: {
-              html: 'https://unsplash.com/photos/photo-1',
-              download_location: 'https://api.unsplash.com/photos/photo-1/download',
-            },
-          }],
-        }), { status: 200 }));
+        finish = () =>
+          resolve(
+            new Response(
+              JSON.stringify({
+                results: [
+                  {
+                    id: 'photo-1',
+                    alt_description: null,
+                    urls: {
+                      thumb: 'https://images.test/thumb',
+                      small: 'https://images.test/small',
+                      regular: 'https://images.test/regular',
+                    },
+                    user: { name: 'Ana', links: { html: 'https://unsplash.com/@ana' } },
+                    links: {
+                      html: 'https://unsplash.com/photos/photo-1',
+                      download_location: 'https://api.unsplash.com/photos/photo-1/download',
+                    },
+                  },
+                ],
+              }),
+              { status: 200 },
+            ),
+          );
       });
     },
   });
@@ -329,15 +346,39 @@ function emptyDiscoveryClient(log) {
     from(table) {
       const filters = [];
       const builder = {
-        select() { return builder; },
-        eq(column, value) { filters.push(['eq', column, value]); return builder; },
-        lte(column, value) { filters.push(['lte', column, value]); return builder; },
-        gte(column, value) { filters.push(['gte', column, value]); return builder; },
-        gt(column, value) { filters.push(['gt', column, value]); return builder; },
-        lt(column, value) { filters.push(['lt', column, value]); return builder; },
-        in(column, value) { filters.push(['in', column, value]); return builder; },
-        order() { return builder; },
-        limit() { return builder; },
+        select() {
+          return builder;
+        },
+        eq(column, value) {
+          filters.push(['eq', column, value]);
+          return builder;
+        },
+        lte(column, value) {
+          filters.push(['lte', column, value]);
+          return builder;
+        },
+        gte(column, value) {
+          filters.push(['gte', column, value]);
+          return builder;
+        },
+        gt(column, value) {
+          filters.push(['gt', column, value]);
+          return builder;
+        },
+        lt(column, value) {
+          filters.push(['lt', column, value]);
+          return builder;
+        },
+        in(column, value) {
+          filters.push(['in', column, value]);
+          return builder;
+        },
+        order() {
+          return builder;
+        },
+        limit() {
+          return builder;
+        },
         then(resolve) {
           log.push({ table, filters });
           resolve({ data: [], error: null });
@@ -359,7 +400,9 @@ test('el descubrimiento usa la región del dispositivo y filtra siempre por usua
         return { places: [makePlace(search.query)], nextPageToken: null };
       },
       googleBrowseNearby: async () => ({ places: [], nextPageToken: null }),
-      googleDetails: async () => { throw new Error('No debe resolver viajes'); },
+      googleDetails: async () => {
+        throw new Error('No debe resolver viajes');
+      },
       googleDiscoverCities: async () => [],
       googleNearbyCities: async () => [],
     },
@@ -387,7 +430,11 @@ test('el descubrimiento usa la región del dispositivo y filtra siempre por usua
   assert.equal(
     queryLog
       .filter((entry) => entry.table === 'trips')
-      .every((entry) => entry.filters.some((filter) => filter[0] === 'eq' && filter[1] === 'user_id' && filter[2] === 'user-A')),
+      .every((entry) =>
+        entry.filters.some(
+          (filter) => filter[0] === 'eq' && filter[1] === 'user_id' && filter[2] === 'user-A',
+        ),
+      ),
     true,
   );
 });
@@ -401,7 +448,9 @@ test('un fallo de una rama conserva la otra como resultado parcial', async () =>
         return { places: [makePlace('museo', { types: ['museum'] })], nextPageToken: null };
       },
       googleBrowseNearby: async () => ({ places: [], nextPageToken: null }),
-      googleDetails: async () => { throw new Error('No debe resolver viajes'); },
+      googleDetails: async () => {
+        throw new Error('No debe resolver viajes');
+      },
       googleDiscoverCities: async () => [],
       googleNearbyCities: async () => [],
     },
@@ -417,4 +466,186 @@ test('un fallo de una rama conserva la otra como resultado parcial', async () =>
   });
   assert.equal(result.partial, true);
   assert.equal(result.places[0].placeId, 'museo');
+});
+
+test('las entidades geográficas no muestran estrellas inventadas', () => {
+  const ui = loader()('src/utils/place-presentation.ts');
+
+  assert.equal(ui.shouldShowRating(['locality'], null), false);
+  assert.equal(ui.shouldShowRating(['country'], 4.8), false);
+  assert.equal(ui.shouldShowRating(['museum'], 4.8), true);
+  assert.equal(ui.shouldShowRating(['museum'], null), false);
+
+  assert.equal(ui.placeCategoryKey(['locality']), 'city');
+  assert.equal(ui.placeCategoryKey(['country']), 'country');
+
+  assert.equal(
+    ui.placeLocationLabel({
+      types: ['museum'],
+      localityName: 'Valencia',
+      countryName: 'España',
+    }),
+    'Valencia, España',
+  );
+});
+
+test('la búsqueda conserva candidatos y prioriza una coincidencia exacta', () => {
+  const ranking = loader()('src/utils/explore-ranking.ts');
+
+  const result = ranking.rankSearchPlaces(
+    [
+      makePlace('popular', {
+        name: 'Otro museo',
+        rating: 5,
+        ratingCount: 50000,
+      }),
+      makePlace('exacto', {
+        name: 'Museo del Prado',
+        rating: 4.5,
+        ratingCount: 100,
+      }),
+    ],
+    'Museo del Prado',
+    'places',
+  );
+
+  assert.equal(result.length, 2);
+  assert.equal(result[0].placeId, 'exacto');
+});
+
+test('una foto de otra ciudad o sin ubicación se rechaza', () => {
+  const { matchesPhotoGeography } = loader()('src/utils/photo-geography.ts');
+
+  const scope = {
+    kind: 'city',
+    name: 'Valencia',
+    center: { lat: 39.4699, lng: -0.3763 },
+    countryNames: ['España', 'Spain', 'ES'],
+  };
+
+  assert.equal(matchesPhotoGeography({}, scope), false);
+
+  assert.equal(
+    matchesPhotoGeography(
+      {
+        location: {
+          city: 'Madrid',
+          country: 'Spain',
+          position: { latitude: 40.4168, longitude: -3.7038 },
+        },
+      },
+      scope,
+    ),
+    false,
+  );
+
+  assert.equal(
+    matchesPhotoGeography(
+      {
+        location: {
+          city: 'València',
+          country: 'Spain',
+          position: { latitude: 39.47, longitude: -0.38 },
+        },
+      },
+      scope,
+    ),
+    true,
+  );
+});
+
+test('resolver la zona no consulta recomendaciones', async () => {
+  const discovery = loader({
+    './google.ts': {
+      PlacesHttpError: class extends Error {},
+      googleDetails: async () => {
+        throw new Error('No debe consultar detalles sin viajes');
+      },
+      googleDiscoverCities: async () => {
+        throw new Error('No debe descubrir ciudades');
+      },
+      googleBrowseText: async () => {
+        throw new Error('No debe buscar lugares');
+      },
+      googleBrowseNearby: async () => {
+        throw new Error('No debe buscar cercanos');
+      },
+      googleNearbyCities: async () => {
+        throw new Error('No debe buscar ciudades cercanas');
+      },
+    },
+  })('supabase/functions/places/discovery.ts');
+
+  const result = await discovery.discoverPlacesOnServer({
+    userClient: emptyDiscoveryClient([]),
+    userId: 'user-A',
+    apiKey: 'test',
+    request: {
+      action: 'discover',
+      mode: 'cities',
+      languageCode: 'es',
+      fallbackCountryCode: 'ES',
+      resolveOnly: true,
+    },
+    defaultCountryCode: 'ES',
+    consume: async () => {},
+  });
+
+  assert.equal(result.area.countryCode, 'ES');
+  assert.equal(result.area.center, null);
+  assert.equal(result.places.length, 0);
+});
+
+test('un timeout real de Unsplash permite el fallback a Google', async () => {
+  const previousKey = process.env.EXPO_PUBLIC_UNSPLASH_ACCESS_KEY;
+  process.env.EXPO_PUBLIC_UNSPLASH_ACCESS_KEY = 'test-key';
+
+  try {
+    const load = loader({
+      __fetch: (_url, options) =>
+        new Promise((_, reject) => {
+          const fail = () => {
+            const error = new Error('Aborted');
+            error.name = 'AbortError';
+            reject(error);
+          };
+
+          if (options.signal.aborted) {
+            fail();
+          } else {
+            options.signal.addEventListener('abort', fail, {
+              once: true,
+            });
+          }
+        }),
+    });
+
+    const unsplash = load('src/services/unsplash.ts');
+    const fallback = load('src/utils/place-photo-fallback.ts');
+    const consumer = new AbortController();
+    let googleCalls = 0;
+
+    const result = await fallback.resolveInitialPhoto(
+      () =>
+        unsplash.getCoverPhoto('timeout-regression', {
+          signal: consumer.signal,
+          bypassCache: true,
+        }),
+      async () => {
+        googleCalls += 1;
+        return { uri: 'https://images.test/google' };
+      },
+      () => consumer.signal.aborted,
+    );
+
+    assert.equal(result.provider, 'google');
+    assert.equal(googleCalls, 1);
+    assert.equal(consumer.signal.aborted, false);
+  } finally {
+    if (previousKey === undefined) {
+      delete process.env.EXPO_PUBLIC_UNSPLASH_ACCESS_KEY;
+    } else {
+      process.env.EXPO_PUBLIC_UNSPLASH_ACCESS_KEY = previousKey;
+    }
+  }
 });

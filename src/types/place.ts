@@ -1,10 +1,10 @@
-import type { ExploreDataByAction, ExploreRequest } from './explore.ts';
+import type { ExploreDataByAction, ExploreRequest } from "./explore.ts";
 
 export type LatLng = { lat: number; lng: number };
-export type PlaceLanguage = 'es' | 'en';
+export type PlaceLanguage = "es" | "en";
 export type PlaceViewport = { low: LatLng; high: LatLng };
-export type PlaceScope = 'destinations' | 'activities';
-export type InterestCategory = 'visit' | 'museum' | 'park' | 'restaurant';
+export type PlaceScope = "destinations" | "activities";
+export type InterestCategory = "visit" | "museum" | "park" | "restaurant";
 
 export type PlaceSuggestion = {
   placeId: string;
@@ -23,6 +23,7 @@ export type PlaceDetails = {
   types: string[];
   googleMapsUri: string | null;
   attributions: { provider: string; providerUri: string | null }[];
+  localityName?: string | null;
 };
 
 export type PlaceSummary = {
@@ -31,37 +32,37 @@ export type PlaceSummary = {
   address: string | null;
   location: LatLng | null;
   types: string[];
-  attributions: PlaceDetails['attributions'];
+  attributions: PlaceDetails["attributions"];
 };
 
 export type BasePlacesRequest =
   | {
-      action: 'autocomplete';
-      input: string;
-      scope: PlaceScope;
-      languageCode: PlaceLanguage;
-      sessionToken: string;
-      center?: LatLng;
-    }
+    action: "autocomplete";
+    input: string;
+    scope: PlaceScope;
+    languageCode: PlaceLanguage;
+    sessionToken: string;
+    center?: LatLng;
+  }
   | {
-      action: 'details';
-      placeId: string;
-      languageCode: PlaceLanguage;
-      sessionToken?: string;
-    }
+    action: "details";
+    placeId: string;
+    languageCode: PlaceLanguage;
+    sessionToken?: string;
+  }
   | {
-      action: 'nearby';
-      center: LatLng;
-      category: InterestCategory;
-      languageCode: PlaceLanguage;
-    }
+    action: "nearby";
+    center: LatLng;
+    category: InterestCategory;
+    languageCode: PlaceLanguage;
+  }
   | {
-      action: 'textSearch';
-      query: string;
-      languageCode: PlaceLanguage;
-      center?: LatLng;
-      pageToken?: string;
-    };
+    action: "textSearch";
+    query: string;
+    languageCode: PlaceLanguage;
+    center?: LatLng;
+    pageToken?: string;
+  };
 
 export type BasePlacesDataByAction = {
   autocomplete: { suggestions: PlaceSuggestion[] };
@@ -71,9 +72,13 @@ export type BasePlacesDataByAction = {
 };
 
 export type PlacesErrorCode =
-  | 'INVALID_INPUT' | 'UNAUTHENTICATED' | 'RATE_LIMITED'
-  | 'NOT_FOUND' | 'UPSTREAM_UNAVAILABLE' | 'TIMEOUT'
-  | 'REFERENCE_SAVE_FAILED';
+  | "INVALID_INPUT"
+  | "UNAUTHENTICATED"
+  | "RATE_LIMITED"
+  | "NOT_FOUND"
+  | "UPSTREAM_UNAVAILABLE"
+  | "TIMEOUT"
+  | "REFERENCE_SAVE_FAILED";
 
 export type PlacesErrorBody = {
   error: { code: PlacesErrorCode; retryable: boolean };

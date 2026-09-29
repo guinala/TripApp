@@ -9,16 +9,13 @@ import type { ExplorePlace } from '@/types/explore';
 import {
   formatPlaceRating,
   MISSING_PLACE_VALUE,
-  priceTranslationKey,
+  placeCategoryKey,
+  placeLocationLabel,
+  shouldShowRating,
 } from '@/utils/place-presentation';
-
-function categoryKey(place: ExplorePlace): string | null {
-  if (place.types.includes('restaurant')) return 'restaurant';
-  if (place.types.includes('museum')) return 'museum';
-  if (place.types.includes('park')) return 'park';
-  if (place.types.includes('tourist_attraction')) return 'visit';
-  return null;
-}
+import { usePlacePhoto } from '@/hooks/use-place-photo';
+import { PhotoAttribution } from './PhotoAttribution';
+import { rememberPhotoForNavigation } from '@/services/place-photo-handoff';
 
 export function DestinationCard({
   place,
@@ -36,18 +33,28 @@ export function DestinationCard({
   const { t, i18n } = useTranslation();
   const languageCode = usePlaceLanguage();
   const rating = formatPlaceRating(place.rating, i18n.language);
-  const priceKey = priceTranslationKey(place.priceLevel);
-  const price = priceKey ? t(priceKey) : MISSING_PLACE_VALUE;
-  const category = categoryKey(place);
-  const ratingView = (
-    <View
-      style={styles.rating}
-      accessibilityLabel={
-        place.rating == null
-          ? t('dynamicExplore.ratingUnavailable')
-          : `${t('destination.stats.rating')}: ${rating}`
-      }
-    >
+  const photoState = usePlacePhoto({
+    placeId: place.placeId,
+    name: place.name,
+    types: place.types,
+    localityName: place.localityName,
+    countryName: place.countryName,
+    location: place.location,
+    countryCode: place.countryCode,
+    size: featured ? 'hero' : 'card',
+    languageCode,
+    enabled: photoEnabled,
+  });
+
+  const subtitle = [
+    placeLocationLabel(place),
+    t(`dynamicExplore.kind.${placeCategoryKey(place.types)}`),
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
+  const ratingView = shouldShowRating(place.types, place.rating) ? (
+    <View style={styles.rating} accessibilityLabel={`${t('destination.stats.rating')}: ${rating}`}>
       <Ionicons
         name="star"
         size={featured ? 16 : 13}
@@ -55,27 +62,22 @@ export function DestinationCard({
       />
       <Text style={[styles.ratingText, featured && styles.light]}>{rating}</Text>
     </View>
-  );
+  ) : null;
+
   return (
     <View style={[styles.shadow, style]}>
       <View style={styles.card}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`${place.name}, ${place.countryName ?? MISSING_PLACE_VALUE}`}
-          onPress={onPress}
+          onPress={() => {
+            rememberPhotoForNavigation(place.placeId, languageCode, photoState.photo);
+            onPress();
+          }}
           style={({ pressed }) => [{ flex: 1 }, pressed && { opacity: 0.85 }]}
         >
           <View style={[styles.picture, featured && styles.featuredPicture]}>
-            <PlacePhoto
-              placeId={place.placeId}
-              name={place.name}
-              localityName={place.localityName}
-              countryName={place.countryName}
-              size={featured ? 'hero' : 'card'}
-              languageCode={languageCode}
-              enabled={photoEnabled}
-              style={StyleSheet.absoluteFill}
-            />
+            <PlacePhoto state={photoState} name={place.name} style={StyleSheet.absoluteFill} />
             {featured && (
               <>
                 <LinearGradient
@@ -84,13 +86,13 @@ export function DestinationCard({
                   style={StyleSheet.absoluteFill}
                 />
                 <View pointerEvents="none" style={styles.featuredBody}>
-                  <Text numberOfLines={1} style={styles.featuredName}>{place.name}</Text>
+                  <Text numberOfLines={1} style={styles.featuredName}>
+                    {place.name}
+                  </Text>
                   <View style={styles.featuredMeta}>
                     {ratingView}
-                    <Text numberOfLines={1} style={styles.featuredTags}>
-                      {category ? t(`places.categories.${category}`) : MISSING_PLACE_VALUE}
-                      {' · '}
-                      {place.countryName ?? MISSING_PLACE_VALUE}
+                    <Text numberOfLines={1} style={styles.country}>
+                      {subtitle}
                     </Text>
                   </View>
                 </View>
@@ -100,20 +102,20 @@ export function DestinationCard({
           {!featured && (
             <View style={styles.body}>
               <View style={styles.row}>
-                <Text numberOfLines={1} style={styles.name}>{place.name}</Text>
+                <Text numberOfLines={1} style={styles.name}>
+                  {place.name}
+                </Text>
                 {ratingView}
               </View>
               <View style={styles.row}>
                 <Text numberOfLines={1} style={styles.country}>
-                  {place.countryName ?? MISSING_PLACE_VALUE}
-                  {' · '}
-                  {category ? t(`places.categories.${category}`) : MISSING_PLACE_VALUE}
+                  {subtitle}
                 </Text>
-                <Text numberOfLines={1} adjustsFontSizeToFit style={styles.price}>{price}</Text>
               </View>
             </View>
           )}
         </Pressable>
+        {photoState.photo && <PhotoAttribution credits={photoState.photo.credits} />}
       </View>
     </View>
   );
@@ -139,7 +141,12 @@ const styles = StyleSheet.create({
   rating: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 0 },
   ratingText: { fontFamily: fonts.sansMedium, fontSize: 12, color: colors.secondary },
   country: { flex: 1, fontFamily: fonts.sansRegular, fontSize: 11, color: colors.secondary300 },
-  price: { maxWidth: '42%', fontFamily: fonts.sansRegular, fontSize: 11, color: colors.secondary300 },
+  price: {
+    maxWidth: '42%',
+    fontFamily: fonts.sansRegular,
+    fontSize: 11,
+    color: colors.secondary300,
+  },
   featuredBody: { position: 'absolute', bottom: 28, left: 14, right: 14, gap: 8 },
   featuredName: { fontFamily: fonts.serifItalic, fontSize: 34, color: colors.white },
   featuredMeta: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 },

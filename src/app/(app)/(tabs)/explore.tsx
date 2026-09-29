@@ -26,9 +26,10 @@ import { FeaturedDestinationCard } from '@/components/explore/FeaturedDestinatio
 import { ExploreAreaPicker } from '@/components/explore/ExploreAreaPicker';
 import { PlacesAttribution } from '@/components/explore/PlacesAttribution';
 
-type ManualArea = { value: ExploreArea; label: string };
-
 import { formatAreaLabel } from '@/utils/country-names';
+import { useExploreArea } from '@/hooks/use-explore-area';
+
+type ManualArea = { value: ExploreArea; label: string };
 
 const reasonKeys = {
   new_cities: 'dynamicExplore.newCities',
@@ -59,6 +60,15 @@ function ExploreContent({ initialQuery }: { initialQuery?: string }) {
   const [featuredVisible, setFeaturedVisible] = useState(true);
   const initialHandled = useRef(false);
   const queryEmpty = query.trim() === '';
+
+  const areaContext = useExploreArea({
+    languageCode,
+    area: manualArea?.value,
+    fallbackCountryCode,
+    timeZone,
+    enabled: focused,
+  });
+
   const feed = useExploreFeed({
     mode,
     languageCode,
@@ -67,18 +77,28 @@ function ExploreContent({ initialQuery }: { initialQuery?: string }) {
     timeZone,
     enabled: focused && queryEmpty,
   });
+
   const search = useExploreSearch(
     languageCode,
     mode,
-    feed.area?.center ?? null,
-    focused && !queryEmpty,
+    areaContext.area,
+    focused && !queryEmpty && !!areaContext.area,
   );
 
   useEffect(() => {
-    if (initialHandled.current || !focused || !initialQuery || initialQuery.trim().length < 3) return;
+    if (
+      initialHandled.current ||
+      !focused ||
+      !feed.area ||
+      !initialQuery ||
+      initialQuery.trim().length < 3
+    ) {
+      return;
+    }
+
     initialHandled.current = true;
     search.search(initialQuery);
-  }, [focused, initialQuery, search]);
+  }, [focused, feed.area, initialQuery, search]);
 
   const changeText = (text: string) => {
     setQuery(text);
@@ -97,7 +117,7 @@ function ExploreContent({ initialQuery }: { initialQuery?: string }) {
   const cards = queryEmpty ? feed.places.slice(1) : search.places;
   const areaLabel = formatAreaLabel(
     manualArea?.label,
-    feed.area?.countryName ?? feed.area?.label,
+    feed.area?.label,
     fallbackCountryCode,
     languageCode,
   );
@@ -105,9 +125,7 @@ function ExploreContent({ initialQuery }: { initialQuery?: string }) {
     ({ viewableItems }: { viewableItems: ViewToken<ExplorePlace>[] }) => {
       setVisiblePhotos(
         new Set(
-          viewableItems
-            .filter((token) => token.isViewable)
-            .map((token) => token.item.placeId),
+          viewableItems.filter((token) => token.isViewable).map((token) => token.item.placeId),
         ),
       );
     },
@@ -116,6 +134,33 @@ function ExploreContent({ initialQuery }: { initialQuery?: string }) {
   const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     setFeaturedVisible(event.nativeEvent.contentOffset.y < 340);
   };
+
+  const searchStatus = !areaContext.area ? (
+    <PlacesStatus
+      loading={areaContext.loading}
+      error={areaContext.error}
+      onRetry={areaContext.error ? areaContext.retry : undefined}
+    />
+  ) : (
+    <>
+      {query.trim().length < 3 ? (
+        <PlacesStatus message={t('places.minQuery')} />
+      ) : !search.searched && !search.loading ? (
+        <PlacesStatus message={t('dynamicExplore.searchHint')} />
+      ) : null}
+
+      <PlacesStatus
+        loading={search.loading}
+        error={search.error}
+        message={
+          search.searched && !search.loading && !search.error && search.places.length === 0
+            ? t('places.noResults')
+            : undefined
+        }
+        onRetry={search.error ? search.retry : undefined}
+      />
+    </>
+  );
 
   const status = queryEmpty ? (
     <>
@@ -142,30 +187,19 @@ function ExploreContent({ initialQuery }: { initialQuery?: string }) {
       {!feed.loading && !feed.error && feed.area && feed.places.length === 0 && (
         <View style={{ gap: 10 }}>
           <PlacesStatus
-            message={t(mode === 'cities' ? 'dynamicExplore.emptyCities' : 'dynamicExplore.emptyPlaces')}
+            message={t(
+              mode === 'cities' ? 'dynamicExplore.emptyCities' : 'dynamicExplore.emptyPlaces',
+            )}
           />
-          <PlacesButton title={t('dynamicExplore.changeArea')} onPress={() => setPickerOpen(true)} />
+          <PlacesButton
+            title={t('dynamicExplore.changeArea')}
+            onPress={() => setPickerOpen(true)}
+          />
         </View>
       )}
     </>
   ) : (
-    <>
-      {query.trim().length < 3 ? (
-        <PlacesStatus message={t('places.minQuery')} />
-      ) : !search.searched && !search.loading ? (
-        <PlacesStatus message={t('dynamicExplore.searchHint')} />
-      ) : null}
-      <PlacesStatus
-        loading={search.loading}
-        error={search.error}
-        message={
-          search.searched && !search.loading && !search.error && search.places.length === 0
-            ? t('places.noResults')
-            : undefined
-        }
-        onRetry={search.error ? search.retry : undefined}
-      />
-    </>
+    searchStatus
   );
 
   return (
@@ -191,13 +225,22 @@ function ExploreContent({ initialQuery }: { initialQuery?: string }) {
           placeholder={t('places.searchPlaceholder')}
           placeholderTextColor={colors.textSecondary}
           returnKeyType="search"
-          onSubmitEditing={() => search.search(query)}
+          onSubmitEditing={() => {
+            if (feed.area) search.search(query);
+          }}
         />
         {!!query.trim() && (
           <PlacesButton
             title={t('places.search')}
-            disabled={query.trim().length < 3 || search.loading}
+            disabled={query.trim().length < 3 || search.loading || !feed.area}
             onPress={() => search.search(query)}
+          />
+        )}
+        {!feed.area && (
+          <PlacesStatus
+            loading={feed.loading || feed.refreshing}
+            error={feed.error}
+            onRetry={feed.error ? feed.refresh : undefined}
           />
         )}
         <View style={styles.areaRow}>
@@ -220,7 +263,9 @@ function ExploreContent({ initialQuery }: { initialQuery?: string }) {
         columnWrapperStyle={styles.columns}
         contentContainerStyle={styles.list}
         refreshControl={
-          queryEmpty ? <RefreshControl refreshing={feed.refreshing} onRefresh={feed.refresh} /> : undefined
+          queryEmpty ? (
+            <RefreshControl refreshing={feed.refreshing} onRefresh={feed.refresh} />
+          ) : undefined
         }
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={{ itemVisiblePercentThreshold: 10 }}
@@ -232,7 +277,8 @@ function ExploreContent({ initialQuery }: { initialQuery?: string }) {
             onPress={() => openPlace(item.placeId)}
             style={styles.gridCard}
             photoEnabled={
-              focused && (visiblePhotos.has(item.placeId) || (visiblePhotos.size === 0 && index < 4))
+              focused &&
+              (visiblePhotos.has(item.placeId) || (visiblePhotos.size === 0 && index < 4))
             }
           />
         )}
@@ -250,12 +296,13 @@ function ExploreContent({ initialQuery }: { initialQuery?: string }) {
             )}
             {queryEmpty && cards.length > 0 && (
               <Text style={styles.sectionTitle}>
-                {mode === 'cities' ? t('dynamicExplore.newCities') : t('dynamicExplore.popularInArea')}
+                {mode === 'cities'
+                  ? t('dynamicExplore.newCities')
+                  : t('dynamicExplore.popularInArea')}
               </Text>
             )}
-            {((queryEmpty && feed.places.length > 0) || (!queryEmpty && search.places.length > 0)) && (
-              <PlacesAttribution showGoogle />
-            )}
+            {((queryEmpty && feed.places.length > 0) ||
+              (!queryEmpty && search.places.length > 0)) && <PlacesAttribution showGoogle />}
             {status}
           </View>
         }
@@ -290,7 +337,12 @@ const styles = StyleSheet.create({
   areaRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   areaText: { flex: 1, fontFamily: fonts.sansRegular, color: colors.secondary300, fontSize: 12 },
   reason: { fontFamily: fonts.sansSemiBold, color: colors.secondary300, fontSize: 13 },
-  sectionTitle: { fontFamily: fonts.serifItalic, fontSize: 30, color: colors.secondary, marginTop: 8 },
+  sectionTitle: {
+    fontFamily: fonts.serifItalic,
+    fontSize: 30,
+    color: colors.secondary,
+    marginTop: 8,
+  },
   footer: { paddingTop: 16 },
   skeletons: { gap: 18 },
   skeletonHero: { height: 206, borderRadius: 16, backgroundColor: colors.surfaceAlt },

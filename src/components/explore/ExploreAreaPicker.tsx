@@ -32,12 +32,24 @@ export function ExploreAreaPicker({
     try {
       const place = await search.selectPlace(placeId);
       if (!isGeographicDestination(place.types)) return;
-      onChange({ kind: 'place', placeId: place.placeId }, place.name);
+      const selectedArea: ExploreArea =
+        place.types.includes('country') && place.countryCode
+          ? {
+              kind: 'country',
+              countryCode: place.countryCode,
+            }
+          : {
+              kind: 'place',
+              placeId: place.placeId,
+            };
+
+      onChange(selectedArea, place.name);
       onClose();
     } catch {
-      // El hook presenta el error y conserva la búsqueda para reintentar.
+      // El hook presenta el error y conserva la búsqueda para reintentar
     }
   };
+
   return (
     <Modal visible={open} animationType="slide" onRequestClose={onClose}>
       <View style={styles.screen}>

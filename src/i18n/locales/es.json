@@ -710,6 +710,17 @@
       "moderate": "Medio",
       "expensive": "Alto",
       "very_expensive": "Muy alto"
+    },
+    "creditLinkError": "No se pudo abrir el enlace.",
+    "kind": {
+      "country": "País",
+      "city": "Ciudad",
+      "region": "Región",
+      "cultural": "Cultura",
+      "food": "Gastronomía",
+      "nature": "Naturaleza",
+      "sight": "Lugar de interés",
+      "place": "Lugar"
     }
   },
   "fixes": {

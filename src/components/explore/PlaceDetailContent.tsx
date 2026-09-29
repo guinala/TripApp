@@ -8,13 +8,22 @@ import { useTranslation } from 'react-i18next';
 import type { PlaceContent } from '@/types/explore';
 import { colors, fonts } from '@/constants/theme';
 import { usePlaceLanguage } from '@/hooks/use-place-details';
-import { descriptionText, MISSING_PLACE_VALUE } from '@/utils/place-presentation';
+import {
+  descriptionText,
+  MISSING_PLACE_VALUE,
+  placeCategoryKey,
+  placeLocationLabel,
+  shouldShowRating,
+  shouldShowWeather,
+} from '@/utils/place-presentation';
 import { supportsNearbyPlaces } from '@/utils/place-kind';
 import { PlacePhoto } from './PlacePhoto';
 import { PlacesAttribution } from './PlacesAttribution';
 import { PlacesStatus } from './PlacesStatus';
 import { NearbyPlacesSection } from './NearbyPlacesSection';
 import { DestinationStatsCard } from './DestinationStatsCard';
+import { usePlacePhoto } from '@/hooks/use-place-photo';
+import { PhotoAttribution } from './PhotoAttribution';
 
 export function PlaceDetailContent({ content }: { content: PlaceContent }) {
   const { t } = useTranslation();
@@ -23,6 +32,18 @@ export function PlaceDetailContent({ content }: { content: PlaceContent }) {
   const insets = useSafeAreaInsets();
   const [actionError, setActionError] = useState<string | null>(null);
   const place = content.place;
+  const photoState = usePlacePhoto({
+    placeId: place.placeId,
+    name: place.name,
+    types: place.types,
+    localityName: place.localityName,
+    countryName: place.countryName,
+    location: place.location,
+    countryCode: place.countryCode,
+    size: 'hero',
+    languageCode,
+    enabled: focused,
+  });
   const name = place.name;
   const country = place.countryName ?? MISSING_PLACE_VALUE;
   const description = descriptionText(
@@ -41,19 +62,25 @@ export function PlaceDetailContent({ content }: { content: PlaceContent }) {
   const openLink = (url: string) => {
     void Linking.openURL(url).catch(() => setActionError('link'));
   };
+
+  const showWeather = shouldShowWeather(place.types, place.location);
+
+  const showStats = shouldShowRating(place.types, content.rating) || showWeather;
+
+  const locationLabel = placeLocationLabel(place);
+
+  const detailSubtitle = [locationLabel, t(`dynamicExplore.kind.${placeCategoryKey(place.types)}`)]
+    .filter(Boolean)
+    .join(' · ');
+
   return (
     <View style={styles.screen}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 28 }} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 28 }}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={[styles.hero, { paddingTop: insets.top + 64 }]}>
-          <PlacePhoto
-            placeId={place.placeId}
-            name={name}
-            countryName={place.countryName}
-            size="hero"
-            languageCode={languageCode}
-            enabled={focused}
-            style={StyleSheet.absoluteFill}
-          />
+          <PlacePhoto state={photoState} name={place.name} style={StyleSheet.absoluteFill} />
           <LinearGradient
             pointerEvents="none"
             colors={['rgba(15,27,51,0.12)', 'rgba(15,27,51,0.72)']}
@@ -80,13 +107,15 @@ export function PlaceDetailContent({ content }: { content: PlaceContent }) {
             </Pressable>
           </View>
           <View pointerEvents="none" style={styles.heroInfo}>
-            <Text style={styles.heroCaption}>{country}</Text>
+            <Text style={styles.heroCaption}>{detailSubtitle}</Text>
             <Text style={styles.heroTitle}>{name}</Text>
           </View>
         </View>
-        <View style={styles.stats}>
-          <DestinationStatsCard content={content} />
-        </View>
+        {showStats && (
+          <View style={styles.stats}>
+            <DestinationStatsCard content={content} />
+          </View>
+        )}
         <View style={styles.body}>
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
@@ -98,6 +127,7 @@ export function PlaceDetailContent({ content }: { content: PlaceContent }) {
             >
               {description}
             </Text>
+            {photoState.photo && <PhotoAttribution credits={photoState.photo.credits} />}
             {place.address && (
               <View style={styles.addressRow}>
                 <Ionicons name="location-outline" size={20} color={colors.primary700} />
@@ -126,7 +156,7 @@ export function PlaceDetailContent({ content }: { content: PlaceContent }) {
           </View>
           <PlacesStatus error={actionError} />
           <View style={styles.credits}>
-            {place.location && <Text style={styles.creditText}>{t('places.currentWeather')}</Text>}
+            {showWeather && <Text style={styles.creditText}>{t('places.currentWeather')}</Text>}
             <PlacesAttribution attributions={place.attributions} showGoogle />
           </View>
         </View>
@@ -148,7 +178,13 @@ export function PlaceDetailContent({ content }: { content: PlaceContent }) {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.surfaceCream },
   hero: { minHeight: 315, backgroundColor: colors.secondary700, justifyContent: 'flex-end' },
-  controls: { position: 'absolute', left: 18, right: 18, flexDirection: 'row', justifyContent: 'space-between' },
+  controls: {
+    position: 'absolute',
+    left: 18,
+    right: 18,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
   iconButton: {
     width: 46,
     height: 46,
@@ -164,12 +200,28 @@ const styles = StyleSheet.create({
   body: { paddingTop: 28, gap: 28 },
   section: { paddingHorizontal: 25, gap: 12 },
   sectionTitle: { fontFamily: fonts.serifItalic, fontSize: 32, color: colors.secondary },
-  description: { fontFamily: fonts.sansRegular, fontSize: 15, lineHeight: 24, color: colors.secondary300 },
+  description: {
+    fontFamily: fonts.sansRegular,
+    fontSize: 15,
+    lineHeight: 24,
+    color: colors.secondary300,
+  },
   addressRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-  address: { flex: 1, fontFamily: fonts.sansRegular, fontSize: 13, lineHeight: 20, color: colors.textSecondary },
+  address: {
+    flex: 1,
+    fontFamily: fonts.sansRegular,
+    fontSize: 13,
+    lineHeight: 20,
+    color: colors.textSecondary,
+  },
   actions: { paddingHorizontal: 25, gap: 4 },
   textButton: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  actionLabel: { fontFamily: fonts.sansSemiBold, fontSize: 14, color: colors.primary700, flexShrink: 1 },
+  actionLabel: {
+    fontFamily: fonts.sansSemiBold,
+    fontSize: 14,
+    color: colors.primary700,
+    flexShrink: 1,
+  },
   credits: { paddingHorizontal: 25 },
   creditText: { fontFamily: fonts.sansRegular, fontSize: 12, color: colors.textSecondary },
   footer: { backgroundColor: colors.surfaceCream, paddingHorizontal: 25, paddingTop: 12 },

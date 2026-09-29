@@ -6,47 +6,62 @@ import type { PlaceContent } from '@/types/explore';
 import {
   formatPlaceRating,
   MISSING_PLACE_VALUE,
-  priceTranslationKey,
+  shouldShowRating,
+  shouldShowWeather,
 } from '@/utils/place-presentation';
 
 export function DestinationStatsCard({ content }: { content: PlaceContent }) {
   const { t, i18n } = useTranslation();
-  const location = content.place.location;
-  const state = useWeather(location?.lat ?? null, location?.lng ?? null);
-  const priceKey = priceTranslationKey(content.priceLevel);
-  const ratingCount = content.ratingCount == null
-    ? MISSING_PLACE_VALUE
-    : t('dynamicExplore.reviews', {
-        count: content.ratingCount,
-        formattedCount: new Intl.NumberFormat(i18n.language).format(content.ratingCount),
-      });
-  const cells = [
-    {
+  const place = content.place;
+
+  const showRating = shouldShowRating(place.types, content.rating);
+
+  const showWeather = shouldShowWeather(place.types, place.location);
+
+  const state = useWeather(
+    showWeather ? (place.location?.lat ?? null) : null,
+    showWeather ? (place.location?.lng ?? null) : null,
+  );
+
+  const cells: {
+    key: string;
+    label: string;
+    value: string;
+    hint: string;
+    loading?: boolean;
+  }[] = [];
+
+  if (showRating) {
+    cells.push({
+      key: 'rating',
       label: t('destination.stats.rating'),
       value: formatPlaceRating(content.rating, i18n.language),
-      hint: ratingCount,
-    },
-    {
+      hint:
+        content.ratingCount == null
+          ? MISSING_PLACE_VALUE
+          : t('dynamicExplore.reviews', {
+              count: content.ratingCount,
+              formattedCount: new Intl.NumberFormat(i18n.language).format(content.ratingCount),
+            }),
+    });
+  }
+
+  if (showWeather) {
+    cells.push({
+      key: 'weather',
       label: t('destination.stats.weather'),
       value: state.weather ? `${Math.round(state.weather.temp)}°C` : MISSING_PLACE_VALUE,
       hint: state.weather?.description ?? MISSING_PLACE_VALUE,
       loading: state.loading,
-    },
-    {
-      label: t('destination.stats.cost'),
-      value: priceKey ? t(priceKey) : MISSING_PLACE_VALUE,
-      hint: priceKey ? t('dynamicExplore.priceHint') : MISSING_PLACE_VALUE,
-    },
-    {
-      label: t('destination.stats.language'),
-      value: MISSING_PLACE_VALUE,
-      hint: MISSING_PLACE_VALUE,
-    },
-  ];
+    });
+  }
+
+  if (cells.length === 0) return null;
+
   return (
     <View style={styles.card}>
       {cells.map((cell, index) => (
-        <View key={cell.label} style={[styles.cell, index > 0 && styles.divider]}>
+        <View key={cell.key} style={[styles.cell, index > 0 && styles.divider]}>
           <Text style={styles.label}>{cell.label.toUpperCase()}</Text>
           {cell.loading ? (
             <ActivityIndicator color={colors.primary} style={{ height: 25 }} />
@@ -55,12 +70,14 @@ export function DestinationStatsCard({ content }: { content: PlaceContent }) {
               numberOfLines={1}
               adjustsFontSizeToFit
               minimumFontScale={0.7}
-              style={[styles.value, index === 0 && { color: colors.primary }]}
+              style={[styles.value, cell.key === 'rating' && { color: colors.primary }]}
             >
               {cell.value}
             </Text>
           )}
-          <Text numberOfLines={1} style={styles.hint}>{cell.hint}</Text>
+          <Text numberOfLines={1} style={styles.hint}>
+            {cell.hint}
+          </Text>
         </View>
       ))}
     </View>

@@ -1,9 +1,5 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
-import {
-  getPlacePhoto,
-  isPlacesCancelled,
-  PlacesError,
-} from "@/services/places";
+import { isPlacesCancelled, PlacesError } from "@/services/places";
 import { getVerifiedCoverPhoto } from "@/services/unsplash";
 import { getCountryDisplayName } from "@/utils/country-names";
 import { isCity } from "@/utils/place-kind";
@@ -23,6 +19,7 @@ import {
   clearPhotoHandoff,
   readPhotoForNavigation,
 } from "@/services/place-photo-handoff";
+import { cachedPlacePhoto } from "@/services/explore-requests";
 
 type Command = {
   revision: number;
@@ -155,12 +152,16 @@ export function usePlacePhoto({
   useEffect(() => {
     if (!active) return;
     const controller = new AbortController();
+
     const loadGoogle = () =>
       limitGoogle(() =>
-        getPlacePhoto(placeId, "hero", languageCode, {
+        cachedPlacePhoto(placeId, "hero", languageCode, {
           signal: controller.signal,
+          bypassCache: command.bypassCache ||
+            command.googleLoad === 2,
         })
       );
+
     const showGoogle = (
       value: Awaited<ReturnType<typeof loadGoogle>>,
       googleLoad: 1 | 2,

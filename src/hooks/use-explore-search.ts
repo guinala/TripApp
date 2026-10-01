@@ -1,15 +1,7 @@
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from "react";
-import {
-  browsePlaces,
-  isPlacesCancelled,
-  PlacesError,
-} from "@/services/places";
+import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
+import { create } from "zustand";
+import { cachedBrowsePlaces } from "@/services/explore-requests";
+import { isPlacesCancelled, PlacesError } from "@/services/places";
 import {
   placeSessionEnabled,
   placeSessionVersion,
@@ -32,12 +24,38 @@ type SubmittedSearch = {
 };
 
 type SearchState = {
+  requestId: number;
   identity: string;
+  parameters: SubmittedSearch;
+  rawPlaces: ExplorePlace[];
   places: ExplorePlace[];
   loading: boolean;
+  completed: boolean;
   error: PlacesError | null;
   nextPageToken: string | null;
+  failedPage?: string;
 };
+
+const useSearchState = create<{ value: SearchState | null }>(() => ({
+  value: null,
+}));
+
+let serial = 0;
+
+subscribePlaceSession(() => {
+  useSearchState.setState({ value: null });
+});
+
+function updateRequest(
+  requestId: number,
+  update: (previous: SearchState) => SearchState,
+) {
+  useSearchState.setState((state) => {
+    if (state.value?.requestId !== requestId) return state;
+
+    return { value: update(state.value) };
+  });
+}
 
 export function useExploreSearch(
   languageCode: PlaceLanguage,
@@ -51,14 +69,9 @@ export function useExploreSearch(
     placeSessionVersion,
   );
 
-  const [state, setState] = useState<SearchState | null>(null);
-
+  const state = useSearchState((value) => value.value);
   const request = useRef<AbortController | null>(null);
-  const version = useRef(0);
-  const submitted = useRef<SubmittedSearch | null>(null);
-  const failedPage = useRef<string | undefined>(undefined);
 
-  // Perder el foco no cambia la identidad de los resultados.
   const identity = JSON.stringify([
     languageCode,
     mode,
@@ -71,118 +84,162 @@ export function useExploreSearch(
     request.current = null;
   }, []);
 
-  const reset = useCallback(() => {
-    cancel();
-    version.current += 1;
-    submitted.current = null;
-    failedPage.current = undefined;
-    setState(null);
-  }, [cancel]);
-
   useEffect(() => {
     cancel();
     return cancel;
   }, [cancel, identity, enabled]);
 
-  const run = useCallback(async (
-    parameters: SubmittedSearch,
-    pageToken?: string,
-  ) => {
-    if (
-      !enabled ||
-      !placeSessionEnabled() ||
-      parameters.identity !== identity
-    ) {
-      return;
-    }
-
-    const own = ++version.current;
-    request.current?.abort();
-
-    const controller = new AbortController();
-    request.current = controller;
-    failedPage.current = pageToken;
-
-    setState((previous) => ({
-      identity,
-      places: pageToken && previous?.identity === identity
-        ? previous.places
-        : [],
-      nextPageToken: pageToken && previous?.identity === identity
-        ? previous.nextPageToken
-        : null,
-      loading: true,
-      error: null,
-    }));
-
-    try {
-      const data = await browsePlaces(
-        {
-          ...parameters.search,
-          ...(pageToken ? { pageToken } : {}),
-        },
-        languageCode,
-        { signal: controller.signal },
-      );
-
-      if (controller.signal.aborted || own !== version.current) {
-        return;
-      }
-
-      setState((previous) => {
-        const previousPlaces = pageToken && previous?.identity === identity
-          ? previous.places
-          : [];
-
-        const merged = [
-          ...new Map(
-            [...previousPlaces, ...data.places]
-              .map((place) => [place.placeId, place]),
-          ).values(),
-        ];
-
-        return {
-          identity,
-          places: rankSearchPlaces(
-            merged,
-            parameters.search.query,
-            parameters.search.mode,
-          ),
-          nextPageToken: data.nextPageToken,
-          loading: false,
-          error: null,
-        };
-      });
-    } catch (error: unknown) {
+  const run = useCallback(
+    async (
+      parameters: SubmittedSearch,
+      pageToken?: string,
+      bypassCache = false,
+    ) => {
       if (
-        controller.signal.aborted ||
-        own !== version.current ||
-        isPlacesCancelled(error)
+        !enabled ||
+        !placeSessionEnabled() ||
+        parameters.identity !== identity
       ) {
         return;
       }
 
-      setState((previous) =>
-        previous?.identity === identity
-          ? {
-            ...previous,
+      cancel();
+
+      const controller = new AbortController();
+      request.current = controller;
+
+      const requestId = ++serial;
+      const previous = useSearchState.getState().value;
+
+      const sameSearch = previous?.identity === identity &&
+        JSON.stringify(previous.parameters.search) ===
+          JSON.stringify(parameters.search);
+
+      const keepPrevious = sameSearch && (!!pageToken || bypassCache);
+
+      const invalid = parameters.search.query.length > 200;
+
+      useSearchState.setState({
+        value: {
+          requestId,
+          identity,
+          parameters,
+          rawPlaces: keepPrevious && previous ? previous.rawPlaces : [],
+          places: keepPrevious && previous ? previous.places : [],
+          nextPageToken: keepPrevious && previous
+            ? previous.nextPageToken
+            : null,
+          completed: keepPrevious && previous ? previous.completed : false,
+          loading: !invalid,
+          error: invalid ? new PlacesError("INVALID_INPUT", false) : null,
+          failedPage: pageToken,
+        },
+      });
+
+      if (invalid) return;
+
+      try {
+        const data = await cachedBrowsePlaces(
+          {
+            ...parameters.search,
+            ...(pageToken ? { pageToken } : {}),
+          },
+          languageCode,
+          {
+            signal: controller.signal,
+            bypassCache,
+          },
+        );
+
+        if (
+          controller.signal.aborted ||
+          epoch !== placeSessionVersion()
+        ) {
+          return;
+        }
+
+        updateRequest(requestId, (current) => {
+          const previousRaw = pageToken ? current.rawPlaces : [];
+
+          const rawPlaces = [
+            ...new Map(
+              [...previousRaw, ...data.places].map((place) => [
+                place.placeId,
+                place,
+              ]),
+            ).values(),
+          ];
+
+          return {
+            ...current,
+            rawPlaces,
+            places: rankSearchPlaces(
+              rawPlaces,
+              parameters.search.query,
+              parameters.search.mode,
+            ),
+            nextPageToken: data.nextPageToken,
+            completed: true,
             loading: false,
-            error: error instanceof PlacesError
-              ? error
-              : new PlacesError("NETWORK_ERROR", true),
-          }
-          : previous
-      );
-    } finally {
-      if (own === version.current) {
-        setState((previous) =>
-          previous?.identity === identity && previous.loading
-            ? { ...previous, loading: false }
-            : previous
+            error: null,
+          };
+        });
+      } catch (error: unknown) {
+        if (
+          controller.signal.aborted ||
+          isPlacesCancelled(error) ||
+          epoch !== placeSessionVersion()
+        ) {
+          return;
+        }
+
+        updateRequest(requestId, (current) => ({
+          ...current,
+          loading: false,
+          error: error instanceof PlacesError
+            ? error
+            : new PlacesError("NETWORK_ERROR", true),
+        }));
+      } finally {
+        updateRequest(
+          requestId,
+          (current) =>
+            current.loading ? { ...current, loading: false } : current,
         );
       }
-    }
-  }, [enabled, identity, languageCode]);
+    },
+    [cancel, enabled, epoch, identity, languageCode],
+  );
+
+  const search = (query: string) => {
+    const clean = query.trim();
+
+    if (!enabled || !area || clean.length < 3) return;
+
+    const labels = mode === "cities"
+      ? [area.countryName ?? area.label]
+      : [area.label, area.countryName];
+
+    const areaLabel = [
+      ...new Set(
+        labels
+          .map((value) => value?.trim())
+          .filter((value): value is string => !!value),
+      ),
+    ].join(", ");
+
+    void run({
+      identity,
+      search: {
+        kind: "text",
+        mode,
+        query: clean,
+        areaLabel,
+        ...(area.countryCode ? { countryCode: area.countryCode } : {}),
+        ...(area.center ? { center: area.center } : {}),
+      },
+    });
+  };
 
   const current = enabled &&
       placeSessionEnabled() &&
@@ -196,77 +253,49 @@ export function useExploreSearch(
     error: current?.error ?? null,
     searched: current !== null,
     nextPageToken: current?.nextPageToken ?? null,
+
     cancel,
-    reset,
+    search,
 
-    search: (query: string) => {
+    // Restaura una búsqueda sin repetir una ya completada o en curso.
+    ensure: (query: string) => {
       const clean = query.trim();
+      const saved = useSearchState.getState().value;
 
-      if (!enabled || !area || clean.length < 3) return;
-
-      reset();
-
-      if (clean.length > 200) {
-        setState({
-          identity,
-          places: [],
-          loading: false,
-          nextPageToken: null,
-          error: new PlacesError("INVALID_INPUT", false),
-        });
+      if (
+        saved?.identity === identity &&
+        saved.parameters.search.query === clean &&
+        (saved.loading || saved.completed || saved.error)
+      ) {
         return;
       }
 
-      const labels = mode === "cities"
-        ? [area.countryName ?? area.label]
-        : [area.label, area.countryName];
+      search(clean);
+    },
 
-      const areaLabel = [
-        ...new Set(
-          labels
-            .map((value) => value?.trim())
-            .filter((value): value is string => !!value),
-        ),
-      ].join(", ");
-
-      const parameters: SubmittedSearch = {
-        identity,
-        search: {
-          kind: "text",
-          mode,
-          query: clean,
-          areaLabel,
-          ...(area.countryCode ? { countryCode: area.countryCode } : {}),
-          ...(area.center ? { center: area.center } : {}),
-        },
-      };
-
-      submitted.current = parameters;
-      void run(parameters);
+    reset: () => {
+      cancel();
+      useSearchState.setState({ value: null });
     },
 
     loadMore: () => {
       if (
         current &&
         !current.loading &&
-        current.nextPageToken &&
-        submitted.current?.identity === identity
+        current.nextPageToken
       ) {
-        void run(
-          submitted.current,
-          current.nextPageToken,
-        );
+        void run(current.parameters, current.nextPageToken);
       }
     },
 
     retry: () => {
-      if (
-        current &&
-        !current.loading &&
-        submitted.current?.identity === identity
-      ) {
-        void run(submitted.current, failedPage.current);
-      }
+      if (!current || current.loading) return;
+
+      void run(
+        current.parameters,
+        current.error ? current.failedPage : undefined,
+        true,
+      );
     },
   };
 }

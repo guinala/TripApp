@@ -1,20 +1,13 @@
-import { useEffect, useState, useSyncExternalStore } from "react";
-import {
-    isPlacesCancelled,
-    PlacesError,
-    browsePlaces,
-} from "@/services/places";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { isPlacesCancelled, PlacesError } from "@/services/places";
 import {
     placeSessionEnabled,
     placeSessionVersion,
     subscribePlaceSession,
 } from "@/services/place-session";
-import type {
-    InterestCategory,
-    LatLng,
-    PlaceLanguage,
-} from "@/types/place";
-import type { ExplorePlace } from '@/types/explore';
+import type { InterestCategory, LatLng, PlaceLanguage } from "@/types/place";
+import type { ExplorePlace } from "@/types/explore";
+import { cachedBrowsePlaces } from "@/services/explore-requests";
 
 export function useNearbyPlaces(
     center: LatLng | null,
@@ -22,6 +15,8 @@ export function useNearbyPlaces(
     languageCode: PlaceLanguage,
     enabled: boolean,
 ) {
+    const lastAttempt = useRef(0);
+
     const epoch = useSyncExternalStore(
         subscribePlaceSession,
         placeSessionVersion,
@@ -40,13 +35,24 @@ export function useNearbyPlaces(
     const key = enabled && lat != null && lng != null && placeSessionEnabled()
         ? JSON.stringify([lat, lng, category, languageCode, epoch, attempt])
         : null;
+
     useEffect(() => {
         if (!key || lat == null || lng == null) return;
         const controller = new AbortController();
-        browsePlaces(
-            { kind: 'nearby', center: { lat, lng }, category },
+        const bypassCache = attempt !== lastAttempt.current;
+        lastAttempt.current = attempt;
+
+        cachedBrowsePlaces(
+            {
+                kind: "nearby",
+                center: { lat, lng },
+                category,
+            },
             languageCode,
-            { signal: controller.signal },
+            {
+                signal: controller.signal,
+                bypassCache,
+            },
         )
             .then(({ places }) => {
                 if (!controller.signal.aborted) {
@@ -65,7 +71,7 @@ export function useNearbyPlaces(
                 }
             });
         return () => controller.abort();
-    }, [key, lat, lng, category, languageCode]);
+    }, [key, lat, lng, category, languageCode, attempt]);
     const current = result?.key === key ? result : null;
     return {
         places: current?.places ?? [],

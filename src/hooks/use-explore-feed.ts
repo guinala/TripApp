@@ -5,11 +5,7 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import {
-  discoverPlaces,
-  isPlacesCancelled,
-  PlacesError,
-} from "@/services/places";
+import { isPlacesCancelled, PlacesError } from "@/services/places";
 import {
   placeSessionEnabled,
   placeSessionVersion,
@@ -23,6 +19,8 @@ import type {
   ResolvedExploreArea,
 } from "@/types/explore";
 import type { PlaceLanguage } from "@/types/place";
+import { useExploreCacheStore } from "@/store/exploreCacheStore";
+import { cachedDiscoverPlaces } from "@/services/explore-requests";
 
 type FeedResult = {
   key: string;
@@ -65,6 +63,13 @@ export function useExploreFeed({
       area: ResolvedExploreArea;
     } | null
   >(null);
+
+  const discoveryRevision = useExploreCacheStore(
+    (state) => state.discoveryRevision,
+  );
+
+  const lastRefresh = useRef(0);
+
   const identity = JSON.stringify([
     mode,
     languageCode,
@@ -72,14 +77,18 @@ export function useExploreFeed({
     fallbackCountryCode ?? null,
     timeZone ?? "UTC",
     epoch,
+    discoveryRevision,
   ]);
+
   const areaIdentity = JSON.stringify([
     languageCode,
     area ?? null,
     fallbackCountryCode ?? null,
     timeZone ?? "UTC",
     epoch,
+    discoveryRevision,
   ]);
+
   const resolvedArea = placeSessionEnabled() && areaResult?.key === areaIdentity
     ? areaResult.area
     : null;
@@ -92,10 +101,13 @@ export function useExploreFeed({
       request.current?.abort();
       return;
     }
+    const bypassCache = revision !== lastRefresh.current;
+    lastRefresh.current = revision;
     const controller = new AbortController();
     request.current?.abort();
     request.current = controller;
-    discoverPlaces(
+
+    cachedDiscoverPlaces(
       {
         mode,
         languageCode,
@@ -103,7 +115,10 @@ export function useExploreFeed({
         ...(fallbackCountryCode ? { fallbackCountryCode } : {}),
         ...(timeZone ? { timeZone } : {}),
       },
-      { signal: controller.signal },
+      {
+        signal: controller.signal,
+        bypassCache,
+      },
     )
       .then((data) => {
         if (controller.signal.aborted) return;

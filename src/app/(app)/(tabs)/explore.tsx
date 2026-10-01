@@ -18,7 +18,7 @@ import { colors, fonts } from '@/constants/theme';
 import { usePlaceLanguage } from '@/hooks/use-place-details';
 import { useExploreFeed } from '@/hooks/use-explore-feed';
 import { useExploreSearch } from '@/hooks/use-explore-search';
-import type { ExploreArea, ExploreMode, ExplorePlace } from '@/types/explore';
+import type { ExploreMode, ExplorePlace } from '@/types/explore';
 import { PlacesStatus } from '@/components/explore/PlacesStatus';
 import { PlacesButton, ui } from '@/components/explore/PlacesUI';
 import { DestinationCard } from '@/components/explore/DestinationCard';
@@ -28,8 +28,7 @@ import { PlacesAttribution } from '@/components/explore/PlacesAttribution';
 
 import { formatAreaLabel } from '@/utils/country-names';
 import { useExploreArea } from '@/hooks/use-explore-area';
-
-type ManualArea = { value: ExploreArea; label: string };
+import { ManualExploreArea, useExploreUiStore } from '@/store/exploreUIStore';
 
 const reasonKeys = {
   new_cities: 'dynamicExplore.newCities',
@@ -40,35 +39,66 @@ const reasonKeys = {
 } as const;
 
 export default function ExploreScreen() {
-  const { query, queryKey } = useLocalSearchParams<{ query?: string; queryKey?: string }>();
-  return <ExploreContent key={queryKey ?? query ?? 'default'} initialQuery={query} />;
+  const { query, queryKey } = useLocalSearchParams<{
+    query?: string;
+    queryKey?: string;
+  }>();
+
+  return <ExploreContent initialQuery={query} initialQueryKey={queryKey} />;
 }
 
-function ExploreContent({ initialQuery }: { initialQuery?: string }) {
+function ExploreContent({
+  initialQuery,
+  initialQueryKey,
+}: {
+  initialQuery?: string;
+  initialQueryKey?: string;
+}) {
   const { t } = useTranslation();
   const languageCode = usePlaceLanguage();
   const focused = useIsFocused();
+
   const locales = useLocales();
   const calendars = useCalendars();
+
   const fallbackCountryCode = locales[0]?.regionCode ?? undefined;
   const timeZone = calendars[0]?.timeZone ?? 'UTC';
-  const [query, setQuery] = useState(initialQuery ?? '');
-  const [mode, setMode] = useState<ExploreMode>('cities');
-  const [manualArea, setManualArea] = useState<ManualArea | null>(null);
+
+  const draft = useExploreUiStore((state) => state.draft);
+  const submitted = useExploreUiStore((state) => state.submitted);
+  const mode = useExploreUiStore((state) => state.mode);
+  const manualArea = useExploreUiStore((state) => state.manualArea);
+  const lastRouteKey = useExploreUiStore((state) => state.lastRouteKey);
+
+  const routeKey = initialQuery ? JSON.stringify([initialQueryKey ?? null, initialQuery]) : null;
+
+  const pendingInitial =
+    !!initialQuery && initialQuery.trim().length >= 3 && routeKey !== lastRouteKey;
+
+  const query = pendingInitial ? initialQuery! : draft;
+  const submittedQuery = pendingInitial ? initialQuery!.trim() : submitted;
+
+  const queryEmpty = submittedQuery === '';
+
   const [pickerOpen, setPickerOpen] = useState(false);
   const [visiblePhotos, setVisiblePhotos] = useState(() => new Set<string>());
   const [featuredVisible, setFeaturedVisible] = useState(true);
-  const initialHandled = useRef(false);
-  const queryEmpty = query.trim() === '';
 
-  const areaContext = useExploreArea({
-    languageCode,
-    area: manualArea?.value,
-    fallbackCountryCode,
-    timeZone,
-    enabled: focused,
-  });
+  const listRef = useRef<FlatList<ExplorePlace>>(null);
+  const restoredList = useRef<string | null>(null);
 
+  useEffect(() => {
+    if (!pendingInitial || !initialQuery) return;
+
+    useExploreUiStore.setState({
+      draft: initialQuery,
+      submitted: initialQuery.trim(),
+      lastRouteKey: routeKey,
+      scroll: null,
+    });
+  }, [initialQuery, pendingInitial, routeKey]);
+
+  // En la pantalla inicial Discover ya obtiene recomendaciones y zona.
   const feed = useExploreFeed({
     mode,
     languageCode,
@@ -78,49 +108,122 @@ function ExploreContent({ initialQuery }: { initialQuery?: string }) {
     enabled: focused && queryEmpty,
   });
 
+  // Solo necesitamos una resolución independiente al buscar
+  // o cuando ha fallado el descubrimiento de recomendaciones.
+  const areaContext = useExploreArea({
+    languageCode,
+    area: manualArea?.value,
+    fallbackCountryCode,
+    timeZone,
+    enabled: focused && (!queryEmpty || !!feed.error),
+  });
+
+  const resolvedArea = areaContext.area ?? feed.area;
+
   const search = useExploreSearch(
     languageCode,
     mode,
-    areaContext.area,
-    focused && !queryEmpty && !!areaContext.area,
+    resolvedArea,
+    focused && !queryEmpty && !!resolvedArea,
   );
 
   useEffect(() => {
-    if (
-      initialHandled.current ||
-      !focused ||
-      !feed.area ||
-      !initialQuery ||
-      initialQuery.trim().length < 3
-    ) {
-      return;
-    }
+    if (!focused || !resolvedArea || !submittedQuery) return;
 
-    initialHandled.current = true;
-    search.search(initialQuery);
-  }, [focused, feed.area, initialQuery, search]);
+    search.ensure(submittedQuery);
+  }, [focused, resolvedArea, submittedQuery, search]);
 
   const changeText = (text: string) => {
-    setQuery(text);
-    search.reset();
+    useExploreUiStore.setState({
+      draft: text,
+      ...(text.trim() === '' ? { submitted: '', scroll: null } : {}),
+    });
+
+    if (text.trim() === '') {
+      search.reset();
+    }
   };
+
+  const submitSearch = () => {
+    const clean = query.trim();
+
+    if (clean.length < 3 || !resolvedArea) return;
+
+    if (clean !== submittedQuery) {
+      useExploreUiStore.setState({
+        submitted: clean,
+        scroll: null,
+      });
+    } else {
+      search.ensure(clean);
+    }
+  };
+
   const changeMode = (value: ExploreMode) => {
     if (value === mode) return;
+
     search.reset();
     setVisiblePhotos(new Set());
-    setMode(value);
+
+    useExploreUiStore.setState({
+      mode: value,
+      scroll: null,
+    });
   };
+
+  const setManualArea = (value: ManualExploreArea | null) => {
+    search.reset();
+    setVisiblePhotos(new Set());
+
+    useExploreUiStore.setState({
+      manualArea: value,
+      scroll: null,
+    });
+  };
+
   const openPlace = (placeId: string) => {
     router.push({ pathname: '/places/[placeId]', params: { placeId } });
   };
+
   const featured = queryEmpty ? (feed.places[0] ?? null) : null;
   const cards = queryEmpty ? feed.places.slice(1) : search.places;
+
+  const listKey = JSON.stringify([
+    languageCode,
+    mode,
+    resolvedArea,
+    queryEmpty ? 'feed' : submittedQuery,
+  ]);
+
+  useEffect(() => {
+    restoredList.current = null;
+  }, [listKey]);
+
+  const restoreScroll = () => {
+    if (restoredList.current === listKey || (cards.length === 0 && !featured)) {
+      return;
+    }
+
+    restoredList.current = listKey;
+
+    const saved = useExploreUiStore.getState().scroll;
+    const offset = saved?.key === listKey ? saved.offset : 0;
+
+    listRef.current?.scrollToOffset({
+      offset,
+      animated: false,
+    });
+
+    setFeaturedVisible(offset < 340);
+  };
+
   const areaLabel = formatAreaLabel(
     manualArea?.label,
-    feed.area?.label,
+    resolvedArea?.label,
     fallbackCountryCode,
     languageCode,
   );
+
   const onViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: ViewToken<ExplorePlace>[] }) => {
       setVisiblePhotos(
@@ -131,11 +234,20 @@ function ExploreContent({ initialQuery }: { initialQuery?: string }) {
     },
     [],
   );
+
   const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    setFeaturedVisible(event.nativeEvent.contentOffset.y < 340);
+    const offset = event.nativeEvent.contentOffset.y;
+
+    setFeaturedVisible(offset < 340);
+
+    if (restoredList.current === listKey) {
+      useExploreUiStore.setState({
+        scroll: { key: listKey, offset },
+      });
+    }
   };
 
-  const searchStatus = !areaContext.area ? (
+  const searchStatus = !resolvedArea ? (
     <PlacesStatus
       loading={areaContext.loading}
       error={areaContext.error}
@@ -225,22 +337,13 @@ function ExploreContent({ initialQuery }: { initialQuery?: string }) {
           placeholder={t('places.searchPlaceholder')}
           placeholderTextColor={colors.textSecondary}
           returnKeyType="search"
-          onSubmitEditing={() => {
-            if (feed.area) search.search(query);
-          }}
+          onSubmitEditing={submitSearch}
         />
         {!!query.trim() && (
           <PlacesButton
             title={t('places.search')}
-            disabled={query.trim().length < 3 || search.loading || !feed.area}
-            onPress={() => search.search(query)}
-          />
-        )}
-        {!feed.area && (
-          <PlacesStatus
-            loading={feed.loading || feed.refreshing}
-            error={feed.error}
-            onRetry={feed.error ? feed.refresh : undefined}
+            disabled={query.trim().length < 3 || search.loading || !resolvedArea}
+            onPress={submitSearch}
           />
         )}
         <View style={styles.areaRow}>
@@ -255,7 +358,9 @@ function ExploreContent({ initialQuery }: { initialQuery?: string }) {
         </View>
       </View>
       <FlatList
-        key={`${queryEmpty ? 'feed' : 'search'}-${mode}`}
+        ref={listRef}
+        key={listKey}
+        onContentSizeChange={restoreScroll}
         data={cards}
         numColumns={2}
         keyboardShouldPersistTaps="handled"
@@ -263,9 +368,10 @@ function ExploreContent({ initialQuery }: { initialQuery?: string }) {
         columnWrapperStyle={styles.columns}
         contentContainerStyle={styles.list}
         refreshControl={
-          queryEmpty ? (
-            <RefreshControl refreshing={feed.refreshing} onRefresh={feed.refresh} />
-          ) : undefined
+          <RefreshControl
+            refreshing={queryEmpty ? feed.refreshing : search.loading}
+            onRefresh={queryEmpty ? feed.refresh : search.retry}
+          />
         }
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={{ itemVisiblePercentThreshold: 10 }}

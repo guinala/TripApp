@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import {
-    discoverPlaces,
-    isPlacesCancelled,
-    PlacesError,
-} from "@/services/places";
+    useCallback,
+    useEffect,
+    useRef,
+    useState,
+    useSyncExternalStore,
+} from "react";
+import { isPlacesCancelled, PlacesError } from "@/services/places";
 import {
     placeSessionEnabled,
     placeSessionVersion,
@@ -11,6 +13,8 @@ import {
 } from "@/services/place-session";
 import type { ExploreArea, ResolvedExploreArea } from "@/types/explore";
 import type { PlaceLanguage } from "@/types/place";
+import { useExploreCacheStore } from "@/store/exploreCacheStore";
+import { cachedDiscoverPlaces } from "@/services/explore-requests";
 
 type AreaResult = {
     key: string;
@@ -41,6 +45,13 @@ export function useExploreArea({
     const [attempt, setAttempt] = useState(0);
     const [result, setResult] = useState<AreaResult | null>(null);
 
+    const active = enabled && placeSessionEnabled();
+    const discoveryRevision = useExploreCacheStore(
+        (state) => state.discoveryRevision,
+    );
+
+    const lastAttempt = useRef(0);
+
     const key = JSON.stringify([
         languageCode,
         area ?? null,
@@ -48,16 +59,17 @@ export function useExploreArea({
         timeZone ?? "UTC",
         epoch,
         attempt,
+        discoveryRevision,
     ]);
-
-    const active = enabled && placeSessionEnabled();
 
     useEffect(() => {
         if (!active) return;
 
+        const bypassCache = attempt !== lastAttempt.current;
+        lastAttempt.current = attempt;
         const controller = new AbortController();
 
-        discoverPlaces(
+        cachedDiscoverPlaces(
             {
                 mode: "cities",
                 resolveOnly: true,
@@ -66,7 +78,10 @@ export function useExploreArea({
                 ...(fallbackCountryCode ? { fallbackCountryCode } : {}),
                 ...(timeZone ? { timeZone } : {}),
             },
-            { signal: controller.signal },
+            {
+                signal: controller.signal,
+                bypassCache,
+            },
         )
             .then((data) => {
                 if (controller.signal.aborted) return;
@@ -101,6 +116,7 @@ export function useExploreArea({
         area,
         fallbackCountryCode,
         timeZone,
+        attempt,
     ]);
 
     const current = placeSessionEnabled() && result?.key === key
